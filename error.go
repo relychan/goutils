@@ -14,7 +14,7 @@ var (
 )
 
 // CatchWarnErrorFunc catches the closer function and prints error with the WARN level.
-func CatchWarnError(fn func() error) {
+func CatchWarnErrorFunc(fn func() error) {
 	err := fn()
 	if err != nil {
 		slog.Warn(err.Error())
@@ -22,7 +22,7 @@ func CatchWarnError(fn func() error) {
 }
 
 // CatchWarnContextErrorFunc catches the closer function with context and prints error with the WARN level.
-func CatchWarnContextError(fn func(ctx context.Context) error) {
+func CatchWarnContextErrorFunc(fn func(ctx context.Context) error) {
 	err := fn(context.TODO())
 	if err != nil {
 		slog.Warn(err.Error())

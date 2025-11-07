@@ -35,7 +35,7 @@ func ReadJSONOrYAMLFile[T any](filePath string) (*T, error) {
 			return nil, err
 		}
 
-		defer CatchWarnError(file.Close)
+		defer CatchWarnErrorFunc(file.Close)
 
 		err = json.NewDecoder(file).Decode(&result)
 
@@ -46,7 +46,7 @@ func ReadJSONOrYAMLFile[T any](filePath string) (*T, error) {
 			return nil, err
 		}
 
-		defer CatchWarnError(file.Close)
+		defer CatchWarnErrorFunc(file.Close)
 
 		err = yaml.NewDecoder(file).Decode(&result)
 
