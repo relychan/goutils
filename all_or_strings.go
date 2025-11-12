@@ -75,6 +75,8 @@ func (j *AllOrListString) UnmarshalYAML(value *yaml.Node) error {
 }
 
 // MarshalYAML implements the custom behavior for the yaml.Marshaler interface.
+// If the wildcard state is set (all == true), it serializes as the string "*".
+// Otherwise, it serializes the list as a YAML sequence.
 func (j AllOrListString) MarshalYAML() (any, error) {
 	if j.all {
 		return "*", nil
