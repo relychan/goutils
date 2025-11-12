@@ -15,6 +15,16 @@ type AllOrListString struct {
 	list []string
 }
 
+
+// IsAll returns true if the value represents the wildcard ("all").
+func (j AllOrListString) IsAll() bool {
+	return j.all
+}
+
+// List returns the list of strings, or nil if IsAll() is true.
+func (j AllOrListString) List() []string {
+	return j.list
+}
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *AllOrListString) UnmarshalJSON(data []byte) error {
 	if string(data) == `"*"` {
