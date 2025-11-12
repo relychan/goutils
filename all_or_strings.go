@@ -7,14 +7,15 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-// AllOrListString represents a list of strings or a wildcard.
+// AllOrListString is a type that represents either a wildcard ("*") meaning "all items",
+// or a specific list of strings. This is useful for configuration fields where you want
+// to allow users to specify either all possible values (using "*") or a subset of values.
 type AllOrListString struct {
 	// All represents the wildcard that matches all items.
 	all bool
 	// List of string items. Ignored if all is true.
 	list []string
 }
-
 
 // IsAll returns true if the value represents the wildcard ("all").
 func (j AllOrListString) IsAll() bool {
@@ -25,6 +26,7 @@ func (j AllOrListString) IsAll() bool {
 func (j AllOrListString) List() []string {
 	return j.list
 }
+
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *AllOrListString) UnmarshalJSON(data []byte) error {
 	if string(data) == `"*"` {

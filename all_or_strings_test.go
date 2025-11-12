@@ -27,7 +27,7 @@ func TestAllOrListString(t *testing.T) {
 		}
 
 		if string(rawAOS) != `"*"` {
-			t.Fatalf("expected *, got: %s", aos)
+			t.Fatalf("expected *, got: %s", string(rawAOS))
 		}
 
 		listBytes := []byte(`["foo","bar"]`)
