@@ -9,7 +9,7 @@ import (
 
 // AllOrListString represents a list of strings or a wildcard.
 type AllOrListString struct {
-	// All represents the wildcard that match all items.
+	// All represents the wildcard that matches all items.
 	all bool
 	// List of string items. Ignored if all is true.
 	list []string
