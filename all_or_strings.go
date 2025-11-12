@@ -53,7 +53,9 @@ func (j AllOrListString) MarshalJSON() ([]byte, error) {
 	return json.Marshal(j.list)
 }
 
-// UnmarshalYAML implements the custom behavior for the yaml.Unmarshaler interface.
+// UnmarshalYAML implements custom deserialization for the yaml.Unmarshaler interface.
+// If the YAML value is the string "*", it is treated as a wildcard and sets 'all' to true and 'list' to nil.
+// Otherwise, it expects a list of strings and sets 'list' accordingly, with 'all' set to false.
 func (j *AllOrListString) UnmarshalYAML(value *yaml.Node) error {
 	if value.Value == "*" {
 		j.all = true
