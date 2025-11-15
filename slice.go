@@ -38,3 +38,17 @@ func SliceEqualSorted[T cmp.Ordered](sliceA, sliceB []T) bool {
 
 	return true
 }
+
+// Map applies a function to each element of a slice and returns a new slice
+// with the results.
+// T is the type of the input slice elements.
+// M is the type of the output slice elements.
+func Map[T, M any](input []T, f func(T) M) []M {
+	output := make([]M, len(input))
+
+	for i, v := range input {
+		output[i] = f(v)
+	}
+
+	return output
+}
