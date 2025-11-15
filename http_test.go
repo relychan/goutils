@@ -1,6 +1,8 @@
 package goutils
 
 import (
+	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -68,5 +70,31 @@ func TestParseHttpURL(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TestExtractHeaders(t *testing.T) {
+	testCases := []struct {
+		Input    http.Header
+		Expected map[string]string
+	}{
+		{
+			Input: http.Header{
+				"Content-Type": []string{"application/json"},
+				"FOO":          []string{"BAR"},
+			},
+			Expected: map[string]string{
+				"content-type": "application/json",
+				"foo":          "BAR",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		result := ExtractHeaders(tc.Input)
+
+		if !reflect.DeepEqual(tc.Expected, result) {
+			t.Fatalf("not equal, expected: %v, got: %v", tc.Expected, result)
+		}
 	}
 }

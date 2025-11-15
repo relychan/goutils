@@ -2,6 +2,8 @@ package goutils
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -32,5 +34,17 @@ func TestSliceEqualSorted(t *testing.T) {
 
 	if SliceEqualSorted([]int{0, 1, 2}, []int{0, 2, 3}) {
 		t.Fatalf("expected not equal")
+	}
+}
+
+func TestMapSlice(t *testing.T) {
+	inputs := []string{"Hello", "WORLD"}
+
+	if !reflect.DeepEqual(Map(inputs, strings.ToLower), ToLowerStrings(inputs)) {
+		t.Fatal("lowercase not equal")
+	}
+
+	if !reflect.DeepEqual(Map(inputs, strings.ToUpper), ToUpperStrings(inputs)) {
+		t.Fatal("uppercase not equal")
 	}
 }

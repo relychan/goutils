@@ -2,6 +2,7 @@ package goutils
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 )
@@ -37,4 +38,19 @@ func ParseHTTPURL(input string) (*url.URL, error) {
 	}
 
 	return u, nil
+}
+
+// ExtractHeaders converts the http.Header to string map with lowercase header names.
+func ExtractHeaders(headers http.Header) map[string]string {
+	result := make(map[string]string)
+
+	for key, header := range headers {
+		if len(header) == 0 {
+			continue
+		}
+
+		result[strings.ToLower(key)] = header[0]
+	}
+
+	return result
 }
