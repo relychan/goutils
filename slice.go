@@ -3,7 +3,6 @@ package goutils
 import (
 	"cmp"
 	"slices"
-	"strings"
 )
 
 // ToAnySlice converts the a typed slice to any slice.
@@ -49,28 +48,6 @@ func Map[T, M any](input []T, f func(T) M) []M {
 
 	for i, v := range input {
 		output[i] = f(v)
-	}
-
-	return output
-}
-
-// ToLowerStrings transform string elements in the slice to lowercase.
-func ToLowerStrings(inputs []string) []string {
-	output := make([]string, len(inputs))
-
-	for i, v := range inputs {
-		output[i] = strings.ToLower(v)
-	}
-
-	return output
-}
-
-// ToUpperStrings transform string elements in the slice to UPPERCASE.
-func ToUpperStrings(inputs []string) []string {
-	output := make([]string, len(inputs))
-
-	for i, v := range inputs {
-		output[i] = strings.ToUpper(v)
 	}
 
 	return output

@@ -40,11 +40,7 @@ func TestSliceEqualSorted(t *testing.T) {
 func TestMapSlice(t *testing.T) {
 	inputs := []string{"Hello", "WORLD"}
 
-	if !reflect.DeepEqual(Map(inputs, strings.ToLower), ToLowerStrings(inputs)) {
+	if !reflect.DeepEqual(Map(inputs, strings.ToLower), []string{"hello", "world"}) {
 		t.Fatal("lowercase not equal")
-	}
-
-	if !reflect.DeepEqual(Map(inputs, strings.ToUpper), ToUpperStrings(inputs)) {
-		t.Fatal("uppercase not equal")
 	}
 }
