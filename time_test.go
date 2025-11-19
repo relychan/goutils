@@ -48,7 +48,7 @@ type parsedTime struct {
 	Hour, Minute, Second int // 15:04:05 is 15, 4, 5.
 	Nanosecond           int // Fractional second.
 	Weekday              time.Weekday
-	ZoneOffset           int    // seconds east oftime.UTC, e.g. -7*60*60 for -0700
+	ZoneOffset           int    // seconds east of time.UTC, e.g. -7*60*60 for -0700
 	Zone                 string // e.g., "MST"
 }
 
@@ -226,7 +226,7 @@ func TestUnixMicro(t *testing.T) {
 // (seconds since zero), but we need it to compute the right
 // answer for bizarre roundings like "to the nearest 3 ns".
 // Compute as t - year1 = (t - 1970) + (1970 - 2001) + (2001 - 1).
-// t - 1970 is returned by Unix andtime.Nanosecond.
+// t - 1970 is returned by Unix and time.Nanosecond.
 // 1970 - 2001 is -(31*365+8)*86400 = -978307200 seconds.
 // 2001 - 1 is 2000*365.2425*86400 = 63113904000 seconds.
 const unixToZero = -978307200 + 63113904000
@@ -358,7 +358,7 @@ func TestTruncateRound(t *testing.T) {
 		cfg.MaxCount = 1000
 	}
 
-	// divisors oftime.Second
+	// divisors of time.Second
 	f1 := func(ti int64, tns int32, logdi int32) bool {
 		d := Duration(1)
 		a, b := uint(logdi%9), (logdi>>16)%9
@@ -1140,7 +1140,7 @@ var defaultLocTests = []struct {
 
 func TestDefaultLoc(t *testing.T) {
 	// Verify that all of Time's methods behave identically if loc is set to
-	// nil ortime.UTC.
+	// nil or time.UTC.
 	for _, tt := range defaultLocTests {
 		t1 := Time{}
 		t2 := Time{}.UTC()
@@ -1212,7 +1212,7 @@ func TestZoneBounds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The ZoneBounds of atime.UTC location would just return two zero Time.
+	// The ZoneBounds of a time.UTC location would just return two zero Time.
 	for _, test := range utctests {
 		sec := test.seconds
 		golden := &test.golden
