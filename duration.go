@@ -18,12 +18,13 @@ var (
 	// ErrInvalidDurationString occurs when the duration string is invalid.
 	ErrInvalidDurationString = errors.New("not a valid duration string")
 	// ErrUnknownDurationUnit occurs when the duration unit is unknown.
-	ErrUnknownDurationUnit = errors.New("unknown unit in duration")
+	ErrUnknownDurationUnit = errors.New("unknown duration unit")
+	// ErrInvalidDateTimeString occurs when the date time string is invalid.
+	ErrInvalidDateTimeString = errors.New("not a valid date time string")
 )
 
-// Duration wraps time.Duration. It is used to parse the custom duration format
-// from YAML.
-// This type should not propagate beyond the scope of input/output processing.
+// Duration wraps time.Duration. It is used to parse and format custom duration strings
+// from YAML, JSON, and text formats.
 type Duration time.Duration //nolint:recvcheck
 
 // Set implements pflag/flag.Value.
@@ -103,7 +104,7 @@ func ParseDuration(s string) (Duration, error) {
 
 		unit, ok := unitMap[u]
 		if !ok {
-			return 0, fmt.Errorf("%q is %w %q", u, ErrUnknownDurationUnit, orig)
+			return 0, fmt.Errorf("%w %q in %q", ErrUnknownDurationUnit, u, orig)
 		}
 
 		if unit.pos <= lastUnitPos { // Units must go in order from biggest to smallest.
@@ -125,7 +126,61 @@ func ParseDuration(s string) (Duration, error) {
 	return Duration(dur), nil //nolint:gosec
 }
 
-var _ fmt.Stringer = (*Duration)(nil)
+// Abs return the absolute value of the current duration.
+func (d Duration) Abs() Duration {
+	r := time.Duration(d).Abs()
+
+	return Duration(r)
+}
+
+// Hours returns the duration as a floating point number of hours.
+func (d Duration) Hours() float64 {
+	return time.Duration(d).Hours()
+}
+
+// Microseconds returns the duration as an integer microsecond count.
+func (d Duration) Microseconds() int64 {
+	return time.Duration(d).Microseconds()
+}
+
+// Milliseconds returns the duration as an integer millisecond count.
+func (d Duration) Milliseconds() int64 {
+	return time.Duration(d).Milliseconds()
+}
+
+// Minutes returns the duration as a floating point number of minutes.
+func (d Duration) Minutes() float64 {
+	return time.Duration(d).Minutes()
+}
+
+// Nanoseconds returns the duration as an integer nanosecond count.
+func (d Duration) Nanoseconds() int64 {
+	return time.Duration(d).Nanoseconds()
+}
+
+// Round returns the result of rounding d to the nearest multiple of m.
+// The rounding behavior for halfway values is to round away from zero.
+// If the result exceeds the maximum (or minimum) value that can be stored in a [Duration],
+// Round returns the maximum (or minimum) duration.
+// If m <= 0, Round returns d unchanged.
+func (d Duration) Round(m Duration) Duration {
+	r := time.Duration(d).Round(time.Duration(m))
+
+	return Duration(r)
+}
+
+// Seconds returns the duration as a floating point number of seconds.
+func (d Duration) Seconds() float64 {
+	return time.Duration(d).Seconds()
+}
+
+// Truncate returns the result of rounding d toward zero to a multiple of m.
+// If m <= 0, Truncate returns d unchanged.
+func (d Duration) Truncate(m Duration) Duration {
+	r := time.Duration(d).Truncate(time.Duration(m))
+
+	return Duration(r)
+}
 
 // String implements the fmt.Stringer interface.
 func (d Duration) String() string {
@@ -174,15 +229,19 @@ func (d Duration) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (d *Duration) UnmarshalJSON(bytes []byte) error {
-	var s string
-
-	err := json.Unmarshal(bytes, &s)
-	if err != nil {
-		return err
+func (d *Duration) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return nil
 	}
 
-	dur, err := ParseDuration(s)
+	// Properly unescape a JSON string.
+	if len(data) < 2 || data[0] != '"' || data[len(data)-1] != '"' {
+		return fmt.Errorf("Time.UnmarshalJSON: %w", errInvalidJSONString)
+	}
+
+	data = data[len(`"`) : len(data)-len(`"`)]
+
+	dur, err := ParseDuration(string(data))
 	if err != nil {
 		return err
 	}
@@ -193,7 +252,7 @@ func (d *Duration) UnmarshalJSON(bytes []byte) error {
 }
 
 // MarshalText implements the encoding.TextMarshaler interface.
-func (d *Duration) MarshalText() ([]byte, error) {
+func (d Duration) MarshalText() ([]byte, error) {
 	return []byte(d.String()), nil
 }
 

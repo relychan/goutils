@@ -19,7 +19,29 @@ func IsLowerAlphabet[C byte | rune](c C) bool {
 	return c >= 'a' && c <= 'z'
 }
 
-// IsUpperAlphabet checks if the character is a uppercase alphabet.
+// IsUpperAlphabet checks if the character is an uppercase alphabet.
 func IsUpperAlphabet[C byte | rune](c C) bool {
 	return c >= 'A' && c <= 'Z'
+}
+
+// ParseIntInRange parses s as an integer and
+// verifies that it is within some range.
+// If it is invalid or out-of-range,
+// it sets ok to false and returns the min value.
+func ParseIntInRange[B []byte | string](s B, minValue int, maxValue int) (int, bool) {
+	var x int
+
+	for _, c := range []byte(s) {
+		if !IsDigit(c) {
+			return minValue, false
+		}
+
+		x = x*10 + int(c) - '0'
+	}
+
+	if x < minValue || maxValue < x {
+		return minValue, false
+	}
+
+	return x, true
 }
