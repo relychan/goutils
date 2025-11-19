@@ -409,69 +409,66 @@ func Unix(sec int64, nsec int64) Time {
 
 // ParseDateTime parses date time in RFC 3339 or ISO 8601 format formats.
 func ParseDateTime[B []byte | string](input B) (Time, error) {
-	result, ok := parseDateTimeString(input)
-	if ok {
-		return Time(*result), nil
-	}
+	result, err := ParseDateTimeNative(input)
 
-	return Time{}, fmt.Errorf("%w: %s", ErrInvalidDateTimeString, input)
+	return Time(result), err
 }
 
 // ParseDateTimeNative parses date time in RFC 3339 or ISO 8601 format formats.
 func ParseDateTimeNative[B []byte | string](input B) (time.Time, error) {
 	result, ok := parseDateTimeString(input)
 	if ok {
-		return *result, nil
+		return result, nil
 	}
 
 	return time.Time{}, fmt.Errorf("%w: %s", ErrInvalidDateTimeString, input)
 }
 
-func parseDateTimeString[B []byte | string](s B) (*time.Time, bool) { //nolint:cyclop,funlen
+func parseDateTimeString[B []byte | string](s B) (time.Time, bool) { //nolint:cyclop,funlen
 	// Parse the date and time.
 	if (len(s) < dateLength) || s[4] != '-' || s[7] != '-' {
-		return nil, false
+		return time.Time{}, false
 	}
 
 	year, ok := ParseIntInRange(s[0:4], 0, 9999) // e.g., 2006
 	if !ok {
-		return nil, false
+		return time.Time{}, false
 	}
 
 	month, ok := ParseIntInRange(s[5:7], 1, 12) // e.g., 01
 	if !ok {
-		return nil, false
+		return time.Time{}, false
 	}
 
 	day, ok := ParseIntInRange(s[8:10], 1, daysIn(time.Month(month), year)) // e.g., 02
 	if !ok {
-		return nil, false
+		return time.Time{}, false
 	}
 
 	if len(s) == dateLength {
 		t := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
-		return &t, true
+		return t, true
 	}
 
 	if (len(s) < dateTimeLength) || (s[10] != 'T' && s[10] != ' ') || s[13] != ':' ||
 		s[16] != ':' {
-		return nil, false
+		return time.Time{}, false
 	}
 
 	hour, ok := ParseIntInRange(s[11:13], 0, 23) // e.g., 15
 	if !ok {
-		return nil, false
+		return time.Time{}, false
 	}
 
 	minute, ok := ParseIntInRange(s[14:16], 0, 59) // e.g., 04
 	if !ok {
-		return nil, false
+		return time.Time{}, false
 	}
 
 	sec, ok := ParseIntInRange(s[17:19], 0, 59) // e.g., 05
 	if !ok {
-		return nil, false
+		return time.Time{}, false
 	}
 
 	s = s[19:]
@@ -494,12 +491,12 @@ func parseDateTimeString[B []byte | string](s B) (*time.Time, bool) { //nolint:c
 	t := time.Date(year, time.Month(month), day, hour, minute, sec, nsec, time.UTC)
 
 	if len(s) == 0 || (len(s) == 1 && s[0] == 'Z') {
-		return &t, true
+		return t, true
 	}
 
 	hr, mm, ok := parseTimeZoneOffset(s)
 	if !ok {
-		return nil, false
+		return time.Time{}, false
 	}
 
 	zoneOffset := (hr*60 + mm) * 60
@@ -514,47 +511,28 @@ func parseDateTimeString[B []byte | string](s B) (*time.Time, bool) { //nolint:c
 
 	_, offset := tz.Zone()
 	if offset == zoneOffset {
-		return &tz, true
+		return tz, true
 	}
 
 	t = t.In(time.FixedZone("", zoneOffset))
 
-	return &t, true
+	return t, true
 }
 
 func parseTimeZoneOffset[B []byte | string](s B) (int, int, bool) {
 	var rawHour, rawMinute B
 
-	switch s[0] {
-	case 'Z':
-		if len(s) != 5 {
-			return 0, 0, false
-		}
+	if s[0] != 'Z' && s[0] != '+' && s[0] != '-' {
+		return 0, 0, false
+	}
 
+	switch {
+	case len(s) == 5:
 		rawHour = s[1:3]
 		rawMinute = s[3:5]
-	case '+':
-		if (len(s) != 6) || s[3] != ':' {
-			return 0, 0, false
-		}
-
+	case len(s) == 6 && s[3] == ':':
 		rawHour = s[1:3]
 		rawMinute = s[4:6]
-	case '-':
-		switch len(s) {
-		case 5:
-			rawHour = s[1:3]
-			rawMinute = s[3:5]
-		case 6:
-			if s[3] != ':' {
-				return 0, 0, false
-			}
-
-			rawHour = s[1:3]
-			rawMinute = s[4:6]
-		default:
-			return 0, 0, false
-		}
 	default:
 		return 0, 0, false
 	}

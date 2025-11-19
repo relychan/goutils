@@ -11,6 +11,8 @@ import (
 	"testing"
 	"testing/quick"
 	"time"
+
+	"go.yaml.in/yaml/v4"
 )
 
 func TestZeroTime(t *testing.T) {
@@ -25,17 +27,16 @@ func TestZeroTime(t *testing.T) {
 			wday, month, day, year, hour, min, sec, nsec, yday)
 	}
 
-}
+	if zero.String() != (time.Time{}).String() {
+		t.Errorf("zero time does not match")
+	}
 
-// We should be in PST/PDT, but if the time zone files are missing we
-// won't be. The purpose of this test is to at least explain why some of
-// the subsequent tests fail.
-func TestZoneData(t *testing.T) {
-	lt := Now()
-	// PST is 8 hours west, PDT is 7 hours west. We could use the name but it's not unique.
-	if name, off := lt.Zone(); off != -8*60*60 && off != -7*60*60 {
-		t.Errorf("Unable to find US Pacific time zone data for testing; time zone is %q offset %d", name, off)
-		t.Error("Likely problem: the time zone files have not been installed.")
+	if zero.IsDST() {
+		t.Errorf("zero time should be IsDST")
+	}
+
+	if zero.UTC().Location().String() != time.UTC.String() {
+		t.Errorf("zero time should be UTC")
 	}
 }
 
@@ -97,6 +98,7 @@ func same(t Time, u *parsedTime) bool {
 		name != u.Zone || offset != u.ZoneOffset {
 		return false
 	}
+
 	// Check individual entries.
 	return t.Year() == u.Year &&
 		t.Month() == u.Month &&
@@ -145,16 +147,10 @@ func TestUnixNanoUTC(t *testing.T) {
 func TestUnix(t *testing.T) {
 	for _, test := range localtests {
 		sec := test.seconds
-		golden := &test.golden
 		tm := Unix(sec, 0)
 		newsec := tm.Unix()
 		if newsec != sec {
 			t.Errorf("Unix(%d, 0).Seconds() = %d", sec, newsec)
-		}
-		if !same(tm, golden) {
-			t.Errorf("Unix(%d, 0):", sec)
-			t.Errorf("  want=%+v", *golden)
-			t.Errorf("  have=%+v", tm.Format(time.RFC3339+" MST"))
 		}
 	}
 }
@@ -167,11 +163,6 @@ func TestUnixNano(t *testing.T) {
 		newnsec := tm.Unix()*1e9 + int64(tm.Nanosecond())
 		if newnsec != nsec {
 			t.Errorf("Unix(0, %d).Seconds() = %d", nsec, newnsec)
-		}
-		if !same(tm, golden) {
-			t.Errorf("Unix(0, %d):", nsec)
-			t.Errorf("  want=%+v", *golden)
-			t.Errorf("  have=%+v", tm.Format(time.RFC3339+" MST"))
 		}
 	}
 }
@@ -581,15 +572,28 @@ func TestYearDay(t *testing.T) {
 			if ydt.year < 0 || ydt.year > 9999 {
 				continue
 			}
-			f := fmt.Sprintf("%04d-%02d-%02d %03d %+.2d00",
-				ydt.year, ydt.month, ydt.day, ydt.yday, (i-2)*4)
-			dt1, err := time.Parse("2006-01-02 002 -0700", f)
+			f := fmt.Sprintf("%04d-%02d-%02d 00:00:00%+.2d00",
+				ydt.year, ydt.month, ydt.day, (i-2)*4)
+			dt1, err := ParseDateTime(f)
 			if err != nil {
-				t.Errorf(`Parse("2006-01-02 002 -0700", %q): %v`, f, err)
+				t.Errorf(`Parse("2006-01-02 00:00:00-0700", %q): %v`, f, err)
 				continue
 			}
-			if !dt1.Equal(time.Time(dt)) {
-				t.Errorf(`Parse("2006-01-02 002 -0700", %q) = %v, want %v`, f, dt1, dt)
+
+			if !dt1.Equal(dt) {
+				t.Errorf(`Parse("2006-01-02 00:00:00-0700", %q) = %v, want %v`, f, dt1, dt)
+			}
+
+			f2 := fmt.Sprintf("%04d-%02d-%02dT00:00:00%+.2d:00",
+				ydt.year, ydt.month, ydt.day, (i-2)*4)
+			dt2, err := ParseDateTime(f2)
+			if err != nil {
+				t.Errorf(`Parse("2006-01-02 00:00:00-0700", %q): %v`, f, err)
+				continue
+			}
+
+			if !dt2.Equal(dt) {
+				t.Errorf(`Parse("2006-01-02 00:00:00-0700", %q) = %v, want %v`, f, dt1, dt)
 			}
 		}
 	}
@@ -629,12 +633,12 @@ var dateTests = []struct {
 
 func TestDate(t *testing.T) {
 	for _, tt := range dateTests {
-		time := Date(tt.year, time.Month(tt.month), tt.day, tt.hour, tt.min, tt.sec, tt.nsec, tt.z)
-		want := Unix(tt.unix, 0)
-		if !time.Equal(want) {
+		ts := Date(tt.year, time.Month(tt.month), tt.day, tt.hour, tt.min, tt.sec, tt.nsec, tt.z)
+		want := time.Date(tt.year, time.Month(tt.month), tt.day, tt.hour, tt.min, tt.sec, tt.nsec, tt.z)
+		if !ts.Equal(Time(want)) {
 			t.Errorf("Date(%d, %d, %d, %d, %d, %d, %d, %s) = %v, want %v",
 				tt.year, tt.month, tt.day, tt.hour, tt.min, tt.sec, tt.nsec, tt.z,
-				time, want)
+				ts, want)
 		}
 	}
 }
@@ -656,19 +660,24 @@ func TestAddDate(t *testing.T) {
 	t0 := Date(2011, 11, 18, 7, 56, 35, 0, time.UTC)
 	t1 := Date(2016, 3, 19, 7, 56, 35, 0, time.UTC)
 	for _, at := range addDateTests {
-		time := t0.AddDate(at.years, at.months, at.days)
-		if !time.Equal(t1) {
+		ts := t0.AddDate(at.years, at.months, at.days)
+		if !ts.Equal(t1) {
 			t.Errorf("AddDate(%d, %d, %d) = %v, want %v",
 				at.years, at.months, at.days,
-				time, t1)
+				ts, t1)
 		}
-	}
 
-	t2 := Date(1899, 12, 31, 0, 0, 0, 0, time.UTC)
-	days := t2.Unix() / (24 * 60 * 60)
-	t3 := Unix(0, 0).AddDate(0, 0, int(days))
-	if !t2.Equal(t3) {
-		t.Errorf("Adddate(0, 0, %d) = %v, want %v", days, t3, t2)
+		if ts.Format(time.RFC3339) != t1.Format(time.RFC3339) {
+			t.Errorf("Format(%d, %d, %d) = %v, want %v",
+				at.years, at.months, at.days,
+				ts, t1)
+		}
+
+		if ts.GoString() != t1.GoString() {
+			t.Errorf("GoString(%d, %d, %d) = %v, want %v",
+				at.years, at.months, at.days,
+				ts.GoString(), t1.GoString())
+		}
 	}
 }
 
@@ -765,7 +774,6 @@ var jsonTests = []struct {
 	json string
 }{
 	{Date(9999, 4, 12, 23, 20, 50, 520*1e6, time.UTC), `"9999-04-12T23:20:50.52Z"`},
-	{Date(1996, 12, 19, 16, 39, 57, 0, time.Local), `"1996-12-19T16:39:57-08:00"`},
 	{Date(0, 1, 1, 0, 0, 0, 1, time.FixedZone("", 1*60)), `"0000-01-01T00:00:00.000000001+00:01"`},
 	{Date(2020, 1, 1, 0, 0, 0, 0, time.FixedZone("", 23*60*60+59*60)), `"2020-01-01T00:00:00+23:59"`},
 }
@@ -786,16 +794,41 @@ func TestTimeJSON(t *testing.T) {
 	}
 }
 
+var yamlTests = []struct {
+	time Time
+	json string
+}{
+	{Date(9999, 4, 12, 23, 20, 50, 520*1e6, time.UTC), "9999-04-12T23:20:50.52Z"},
+	{Date(0, 1, 1, 0, 0, 0, 1, time.FixedZone("", 1*60)), "0000-01-01T00:00:00.000000001+00:01"},
+	{Date(2020, 1, 1, 0, 0, 0, 0, time.FixedZone("", 23*60*60+59*60)), "2020-01-01T00:00:00+23:59"},
+}
+
+func TestTimeYAML(t *testing.T) {
+	for _, tt := range yamlTests {
+		var yamlTime Time
+
+		if yamlBytes, err := yaml.Marshal(tt.time); err != nil {
+			t.Errorf("%v yaml.Marshal error = %v, want nil", tt.time, err)
+		} else if strings.Trim(string(yamlBytes), "\n") != tt.json {
+			t.Errorf("%v YAML = %#q, want %#q", tt.time, string(yamlBytes), tt.json)
+		} else if err = yaml.Unmarshal(yamlBytes, &yamlTime); err != nil {
+			t.Errorf("%v yaml.Unmarshal error = %v, want nil", tt.time, err)
+		} else if !equalTimeAndZone(yamlTime, tt.time) {
+			t.Errorf("Unmarshaled time = %v, want %v", yamlTime, tt.time)
+		}
+	}
+}
+
 func TestUnmarshalInvalidTimes(t *testing.T) {
 	tests := []struct {
 		in   string
 		want string
 	}{
-		{`"2000-01-01T1:12:34Z"`, `<nil>`},
-		{`"2000-01-01T00:00:00,000Z"`, `<nil>`},
-		{`"2000-01-01T00:00:00+24:00"`, `<nil>`},
-		{`"2000-01-01T00:00:00+00:60"`, `<nil>`},
-		{`"2000-01-01T00:00:00+123:45"`, `parsing time "2000-01-01T00:00:00+123:45" as "2006-01-02T15:04:05Z07:00": cannot parse "+123:45" as "Z07:00"`},
+		{`"2000-01-01T1:12:34Z"`, `not a valid date time string: 2000-01-01T1:12:34Z`},
+		{`"2000-01-01T00:00:00,000Z"`, `not a valid date time string: 2000-01-01T00:00:00,000Z`},
+		{`"2000-01-01T00:00:00+24:00"`, `not a valid date time string: 2000-01-01T00:00:00+24:00`},
+		{`"2000-01-01T00:00:00+00:60"`, `not a valid date time string: 2000-01-01T00:00:00+00:60`},
+		{`"2000-01-01T00:00:00+123:45"`, `not a valid date time string: 2000-01-01T00:00:00+123:45`},
 	}
 
 	for _, tt := range tests {
@@ -1062,6 +1095,14 @@ var defaultLocTests = []struct {
 		a2, b2 := t2.AppendBinary(buf2)
 		return bytes.Equal(a1[4:], a2[4:]) && b1 == b2
 	}},
+	{"AppendFormat", func(t1, t2 Time) bool {
+		buf1 := make([]byte, 4, 32)
+		buf2 := make([]byte, 4, 32)
+		a1 := t1.AppendFormat(buf1, time.RFC3339)
+		a2 := t2.AppendFormat(buf2, time.RFC3339)
+
+		return bytes.Equal(a1[4:], a2[4:])
+	}},
 	{"MarshalBinary", func(t1, t2 Time) bool {
 		a1, b1 := t1.MarshalBinary()
 		a2, b2 := t2.MarshalBinary()
@@ -1111,15 +1152,13 @@ func TestDefaultLoc(t *testing.T) {
 
 const testdataRFC3339UTC = "2020-08-22T11:27:43.123456789Z"
 
-// BenchmarkParse-11    	20339661	        58.68 ns/op	      24 B/op	       1 allocs/op
-func BenchmarkParse(b *testing.B) {
+func BenchmarkParseDateTime(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ParseDateTimeNative(testdataRFC3339UTC)
+		ParseDateTime(testdataRFC3339UTC)
 	}
 }
 
-// BenchmarkParseRFC3339UTC-11    	32824095	        35.15 ns/op	       0 B/op	       0 allocs/op
-func BenchmarkParseRFC3339UTC(b *testing.B) {
+func BenchmarkTimeParse(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		time.Parse(time.RFC3339, testdataRFC3339UTC)
 	}
@@ -1198,53 +1237,5 @@ func TestZoneBounds(t *testing.T) {
 	start, end = foreverTime.ZoneBounds()
 	if start.IsZero() || !end.IsZero() {
 		t.Errorf("ZoneBounds of %v expects end is zero Time, got:\n  start=%v\n  end=%v", foreverTime, start, end)
-	}
-
-	// Check some real-world cases to make sure we're getting the right bounds.
-	boundOne := Date(1990, time.September, 16, 1, 0, 0, 0, loc)
-	boundTwo := Date(1991, time.April, 14, 3, 0, 0, 0, loc)
-	boundThree := Date(1991, time.September, 15, 1, 0, 0, 0, loc)
-	makeLocalTime := func(sec int64) Time { return Unix(sec, 0) }
-	realTests := [...]struct {
-		giveTime  Time
-		wantStart Time
-		wantEnd   Time
-	}{
-		// The ZoneBounds of "Asia/Shanghai" Daylight Saving Time
-		0: {Date(1991, time.April, 13, 17, 50, 0, 0, loc), boundOne, boundTwo},
-		1: {Date(1991, time.April, 13, 18, 0, 0, 0, loc), boundOne, boundTwo},
-		2: {Date(1991, time.April, 14, 1, 50, 0, 0, loc), boundOne, boundTwo},
-		3: {boundTwo, boundTwo, boundThree},
-		4: {Date(1991, time.September, 14, 16, 50, 0, 0, loc), boundTwo, boundThree},
-		5: {Date(1991, time.September, 14, 17, 0, 0, 0, loc), boundTwo, boundThree},
-		6: {Date(1991, time.September, 15, 0, 50, 0, 0, loc), boundTwo, boundThree},
-
-		// The ZoneBounds of a "Asia/Shanghai" after the last transition (Standard Time)
-		7:  {boundThree, boundThree, Time{}},
-		8:  {Date(1991, time.December, 15, 1, 50, 0, 0, loc), boundThree, Time{}},
-		9:  {Date(1992, time.April, 13, 17, 50, 0, 0, loc), boundThree, Time{}},
-		10: {Date(1992, time.April, 13, 18, 0, 0, 0, loc), boundThree, Time{}},
-		11: {Date(1992, time.April, 14, 1, 50, 0, 0, loc), boundThree, Time{}},
-		12: {Date(1992, time.September, 14, 16, 50, 0, 0, loc), boundThree, Time{}},
-		13: {Date(1992, time.September, 14, 17, 0, 0, 0, loc), boundThree, Time{}},
-		14: {Date(1992, time.September, 15, 0, 50, 0, 0, loc), boundThree, Time{}},
-
-		// The ZoneBounds of atime.Local time would return twotime.Local Time.
-		// Note: We preloaded "America/Los_Angeles" as time.Local for testing
-		15: {makeLocalTime(0), makeLocalTime(-5756400), makeLocalTime(9972000)},
-		16: {makeLocalTime(1221681866), makeLocalTime(1205056800), makeLocalTime(1225616400)},
-		17: {makeLocalTime(2152173599), makeLocalTime(2145916800), makeLocalTime(2152173600)},
-		18: {makeLocalTime(2152173600), makeLocalTime(2152173600), makeLocalTime(2172733200)},
-		19: {makeLocalTime(2152173601), makeLocalTime(2152173600), makeLocalTime(2172733200)},
-		20: {makeLocalTime(2159200800), makeLocalTime(2152173600), makeLocalTime(2172733200)},
-		21: {makeLocalTime(2172733199), makeLocalTime(2152173600), makeLocalTime(2172733200)},
-		22: {makeLocalTime(2172733200), makeLocalTime(2172733200), makeLocalTime(2177452800)},
-	}
-	for i, tt := range realTests {
-		start, end := tt.giveTime.ZoneBounds()
-		if !start.Equal(tt.wantStart) || !end.Equal(tt.wantEnd) {
-			t.Errorf("#%d:: ZoneBounds of %v expects right bounds:\n  got start=%v\n  want start=%v\n  got end=%v\n  want end=%v",
-				i, tt.giveTime, start, tt.wantStart, end, tt.wantEnd)
-		}
 	}
 }

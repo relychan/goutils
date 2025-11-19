@@ -113,7 +113,7 @@ func ParseDuration(s string) (Duration, error) {
 
 		lastUnitPos = unit.pos
 		// Check if the provided duration overflows time.Duration (> ~ 290years).
-		if v > ((1<<63)/unit.mult) {
+		if v > ((1 << 63) / unit.mult) {
 			return 0, ErrDurationOutOfRange
 		}
 
