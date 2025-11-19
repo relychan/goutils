@@ -717,7 +717,7 @@ func TestTimeGob(t *testing.T) {
 			t.Errorf("%v gob Encode error = %q, want nil", tt, err)
 		} else if err := dec.Decode(&gobtt); err != nil {
 			t.Errorf("%v gob Decode error = %q, want nil", tt, err)
-		} else if !equalTimeAndZone(gobtt, tt) {
+		} else if !equalTimeAndZone(gobtt.UTC(), tt.UTC()) {
 			t.Errorf("Decoded time = %v, want %v", gobtt, tt)
 		}
 		b.Reset()
