@@ -113,7 +113,7 @@ func ParseDuration(s string) (Duration, error) {
 
 		lastUnitPos = unit.pos
 		// Check if the provided duration overflows time.Duration (> ~ 290years).
-		if v > 1<<63/unit.mult {
+		if v > ((1<<63)/unit.mult) {
 			return 0, ErrDurationOutOfRange
 		}
 
@@ -126,7 +126,7 @@ func ParseDuration(s string) (Duration, error) {
 	return Duration(dur), nil //nolint:gosec
 }
 
-// Abs return the absolute value of the current duration.
+// Abs returns the absolute value of the current duration.
 func (d Duration) Abs() Duration {
 	r := time.Duration(d).Abs()
 
@@ -236,7 +236,7 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 
 	// Properly unescape a JSON string.
 	if len(data) < 2 || data[0] != '"' || data[len(data)-1] != '"' {
-		return fmt.Errorf("Time.UnmarshalJSON: %w", errInvalidJSONString)
+		return fmt.Errorf("Duration.UnmarshalJSON: %w", errInvalidJSONString)
 	}
 
 	data = data[len(`"`) : len(data)-len(`"`)]

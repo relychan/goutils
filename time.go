@@ -19,7 +19,7 @@ var (
 	errInvalidJSONString = errors.New("input is not a JSON string")
 )
 
-// Time wraps time.Time. It is used to parse and format custom duration strings
+// Time wraps time.Time. It is used to parse and format custom date/time strings
 // from YAML, JSON, and text formats.
 type Time time.Time //nolint:recvcheck
 
@@ -232,7 +232,7 @@ func (t Time) String() string {
 }
 
 // Sub returns the duration t-u.
-// If the result exceeds the maximum (or minimum) value that can be stored in a [Duration],
+// If the result exceeds the maximum (or minimum) value that can be stored in a [time.Duration],
 // the maximum (or minimum) duration will be returned.
 // To compute t-d for a duration d, use t.Add(-d).
 func (t Time) Sub(u Time) time.Duration {
@@ -463,7 +463,7 @@ func parseDateTimeString[B []byte | string](s B) (*time.Time, bool) { //nolint:c
 	// Parse the time zone.
 	t := time.Date(year, time.Month(month), day, hour, minute, sec, nsec, time.UTC)
 
-	if len(s) == 0 || (len(s) == 1 && s[0] != 'Z') {
+	if len(s) == 0 || (len(s) == 1 && s[0] == 'Z') {
 		return &t, true
 	}
 

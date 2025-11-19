@@ -36,7 +36,11 @@ func ParseIntInRange[B []byte | string](s B, minValue int, maxValue int) (int, b
 			return minValue, false
 		}
 
-		x = x*10 + int(c) - '0'
+		digit := int(c) - '0'
+		if x > (maxValue-digit)/10 {
+			return minValue, false
+		}
+		x = x*10 + digit
 	}
 
 	if x < minValue || maxValue < x {
