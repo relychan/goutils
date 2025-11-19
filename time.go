@@ -375,6 +375,38 @@ func (t *Time) UnmarshalYAML(value *yaml.Node) error {
 	return err
 }
 
+// Now returns the current local time.
+func Now() Time {
+	return Time(time.Now())
+}
+
+// Date returns the Time corresponding to
+// yyyy-mm-dd hh:mm:ss + nsec nanoseconds
+// in the appropriate zone for that time in the given location.
+// The month, day, hour, min, sec, and nsec values may be outside their usual ranges and will be normalized during the conversion. For example, October 32 converts to November 1.
+// A daylight savings time transition skips or repeats times. For example, in the United States, March 13, 2011 2:15am never occurred, while November 6, 2011 1:15am occurred twice.
+// In such cases, the choice of time zone, and therefore the time, is not well-defined. Date returns a time that is correct in one of the two zones involved in the transition, but it does not guarantee which.
+// Date panics if loc is nil.
+func Date(
+	year int,
+	month time.Month,
+	day int,
+	hour int,
+	minutes int,
+	sec int,
+	nsec int,
+	loc *time.Location,
+) Time {
+	return Time(time.Date(year, month, day, hour, minutes, sec, nsec, loc))
+}
+
+// Unix returns the local Time corresponding to the given Unix time, sec seconds and nsec nanoseconds since January 1, 1970 UTC.
+// It is valid to pass nsec outside the range [0, 999999999]. Not all sec values have a corresponding time value.
+// One such value is 1<<63-1 (the largest int64 value).
+func Unix(sec int64, nsec int64) Time {
+	return Time(time.Unix(sec, nsec))
+}
+
 // ParseDateTime parses date time in RFC 3339 or ISO 8601 format formats.
 func ParseDateTime[B []byte | string](input B) (Time, error) {
 	result, ok := parseDateTimeString(input)
@@ -397,9 +429,7 @@ func ParseDateTimeNative[B []byte | string](input B) (time.Time, error) {
 
 func parseDateTimeString[B []byte | string](s B) (*time.Time, bool) { //nolint:cyclop,funlen
 	// Parse the date and time.
-	strLength := len(s)
-
-	if (strLength < dateLength) || s[4] != '-' || s[7] != '-' {
+	if (len(s) < dateLength) || s[4] != '-' || s[7] != '-' {
 		return nil, false
 	}
 
@@ -418,13 +448,13 @@ func parseDateTimeString[B []byte | string](s B) (*time.Time, bool) { //nolint:c
 		return nil, false
 	}
 
-	if strLength == dateLength {
+	if len(s) == dateLength {
 		t := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
 		return &t, true
 	}
 
-	if (strLength < dateTimeLength) || (s[10] != 'T' && s[10] != ' ') || s[13] != ':' ||
+	if (len(s) < dateTimeLength) || (s[10] != 'T' && s[10] != ' ') || s[13] != ':' ||
 		s[16] != ':' {
 		return nil, false
 	}

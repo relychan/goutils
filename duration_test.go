@@ -331,3 +331,64 @@ func assertNilError(t *testing.T, err error) {
 		t.Fatalf("Expected nil error, got: %v", err)
 	}
 }
+
+var durationTruncateTests = []struct {
+	d    Duration
+	m    Duration
+	want Duration
+}{
+	{0, Duration(time.Second), 0},
+	{Duration(time.Minute), Duration(-7 * time.Second), Duration(time.Minute)},
+}
+
+func TestDurationTruncate(t *testing.T) {
+	for _, tt := range durationTruncateTests {
+		if got := tt.d.Truncate(tt.m); got != tt.want {
+			t.Errorf("Duration(%s).Truncate(%s) = %s; want: %s", tt.d, tt.m, got, tt.want)
+		}
+	}
+}
+
+var durationRoundTests = []struct {
+	d    Duration
+	m    Duration
+	want Duration
+}{
+	{0, Duration(time.Second), 0},
+	{Duration(time.Minute), Duration(-11 * time.Second), Duration(time.Minute)},
+	{8e18, 3e18, 9e18},
+	{9e18, 5e18, 1<<63 - 1},
+	{-8e18, 3e18, -9e18},
+	{-9e18, 5e18, -1 << 63},
+	{3<<61 - 1, 3 << 61, 3 << 61},
+}
+
+func TestDurationRound(t *testing.T) {
+	for _, tt := range durationRoundTests {
+		if got := tt.d.Round(tt.m); got != tt.want {
+			t.Errorf("Duration(%s).Round(%s) = %s; want: %s", tt.d, tt.m, got, tt.want)
+		}
+	}
+}
+
+var durationAbsTests = []struct {
+	d    Duration
+	want Duration
+}{
+	{0, 0},
+	{1, 1},
+	{-1, 1},
+	{minDuration, maxDuration},
+	{minDuration + 1, maxDuration},
+	{minDuration + 2, maxDuration - 1},
+	{maxDuration, maxDuration},
+	{maxDuration - 1, maxDuration - 1},
+}
+
+func TestDurationAbs(t *testing.T) {
+	for _, tt := range durationAbsTests {
+		if got := tt.d.Abs(); got != tt.want {
+			t.Errorf("Duration(%s).Abs() = %s; want: %s", tt.d, got, tt.want)
+		}
+	}
+}
