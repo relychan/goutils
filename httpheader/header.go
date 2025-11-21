@@ -148,7 +148,7 @@ const (
 	// CFConnectingO2O is the constant of the CF-Connecting-O2O header.
 	// If SSL for SaaS is used for the SaaS provider-owned zone, a HTTP header will be set to cf-connecting-o2o: 1.
 	CFConnectingO2O = "CF-Connecting-O2O"
-	// CFWorker is the constant of the CF-Connecting-O2O header.
+	// CFWorker is the constant of the CF-Worker header.
 	// It is added to an edge Worker sub-request that identifies the host that spawned the sub-request.
 	CFWorker = "CF-Worker"
 )
