@@ -46,8 +46,11 @@ const (
 	UserAgent = "User-Agent"
 	// TE is the constant of the TE header name.
 	TE                            = "TE"
+	// Via is the constant of the Via header name.
 	Via                           = "Via"
+	// Warning is the constant of the Warning header name.
 	Warning                       = "Warning"
+	// Cookie is the constant of the Cookie header name.
 	Cookie                        = "Cookie"
 	Origin                        = "Origin"
 	AcceptDatetime                = "Accept-Datetime"
