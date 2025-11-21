@@ -69,7 +69,7 @@ func NewRFC9457Error(httpStatus int, detail string) RFC9457Error {
 	}
 }
 
-// ErrorDetail is an object to provide explicit details on a problem towards an API consumer..
+// ErrorDetail is an object to provide explicit details on a problem towards an API consumer.
 type ErrorDetail struct {
 	// A granular description on the specific error related to a body property, query parameter, path parameters, and/or header.
 	Detail string `json:"detail"`
@@ -204,7 +204,7 @@ func NewServerError(errors ...ErrorDetail) RFC9457Error {
 	}
 }
 
-// NewMissingRequestHeaderError problem occurs when the request sent to the API is missing an expected request header.
+// NewMissingRequestHeaderError occurs when the request sent to the API is missing an expected request header.
 func NewMissingRequestHeaderError(errors ...ErrorDetail) RFC9457Error {
 	return RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/missing-request-header",
@@ -216,7 +216,7 @@ func NewMissingRequestHeaderError(errors ...ErrorDetail) RFC9457Error {
 	}
 }
 
-// NewMissingRequestParameterError occurs when the request sent to the API is missing an query or path parameter.
+// NewMissingRequestParameterError occurs when the request sent to the API is missing a query or path parameter.
 func NewMissingRequestParameterError(errors ...ErrorDetail) RFC9457Error {
 	return RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/missing-request-parameter",
@@ -228,7 +228,7 @@ func NewMissingRequestParameterError(errors ...ErrorDetail) RFC9457Error {
 	}
 }
 
-// NewInvalidBodyPropertyFormatError occurs when the request body contain a malformed property.
+// NewInvalidBodyPropertyFormatError occurs when the request body contains a malformed property.
 func NewInvalidBodyPropertyFormatError(errors ...ErrorDetail) RFC9457Error {
 	return RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/invalid-body-property-format",
@@ -270,7 +270,7 @@ func NewInvalidRequestHeaderFormatError(errors ...ErrorDetail) RFC9457Error {
 	}
 }
 
-// NewInvalidBodyPropertyValueError occurs when the request body contains a invalid property value.
+// NewInvalidBodyPropertyValueError occurs when the request body contains an invalid property value.
 func NewInvalidBodyPropertyValueError(errors ...ErrorDetail) RFC9457Error {
 	return RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/invalid-body-property-value",
@@ -282,12 +282,12 @@ func NewInvalidBodyPropertyValueError(errors ...ErrorDetail) RFC9457Error {
 	}
 }
 
-// NewInvalidRequestParameterValueError occurs when the request contains a invalid query or path parameter value.
+// NewInvalidRequestParameterValueError occurs when the request contains an invalid query or path parameter value.
 func NewInvalidRequestParameterValueError(errors ...ErrorDetail) RFC9457Error {
 	return RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/invalid-request-parameter-value",
 		Title:  "Invalid Request Parameter Value",
-		Detail: "The request body contains an invalid request parameter value.",
+		Detail: "The request contains an invalid request parameter value.",
 		Status: http.StatusBadRequest,
 		Code:   "400-08",
 		Errors: errors,
