@@ -83,6 +83,7 @@ const (
 	TransferEncoding              = "Transfer-Encoding"
 	Upgrade                       = "Upgrade"
 	Vary                          = "Vary"
+	// WWWAuthenticate is the constant of the WWW-Authenticate header name.
 	WWWAuthenticate               = "WWW-Authenticate"
 
 	XFrameOptions          = "X-Frame-Options"
