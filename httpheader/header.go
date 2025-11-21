@@ -75,24 +75,41 @@ const (
 	Location                      = "Location"
 	P3P                           = "P3P"
 	ProxyAuthenticate             = "Proxy-Authenticate"
+	ProxyAuthenticate             = "Proxy-Authenticate"
+	// Refresh is the constant of the Refresh header name.
 	Refresh                       = "Refresh"
+	// RetryAfter is the constant of the Retry-After header name.
 	RetryAfter                    = "Retry-After"
+	// Server is the constant of the Server header name.
 	Server                        = "Server"
+	// SetCookie is the constant of the Set-Cookie header name.
 	SetCookie                     = "Set-Cookie"
+	// StrictTransportSecurity is the constant of the Strict-Transport-Security header name.
 	StrictTransportSecurity       = "Strict-Transport-Security"
+	// TransferEncoding is the constant of the Transfer-Encoding header name.
 	TransferEncoding              = "Transfer-Encoding"
+	// Upgrade is the constant of the Upgrade header name.
 	Upgrade                       = "Upgrade"
+	// Vary is the constant of the Vary header name.
 	Vary                          = "Vary"
 	// WWWAuthenticate is the constant of the WWW-Authenticate header name.
 	WWWAuthenticate               = "WWW-Authenticate"
 
+	// XFrameOptions is the constant of the X-Frame-Options header name.
 	XFrameOptions          = "X-Frame-Options"
+	// XXSSProtection is the constant of the X-XSS-Protection header name.
 	XXSSProtection         = "X-XSS-Protection"
+	// ContentSecurityPolicy is the constant of the Content-Security-Policy header name.
 	ContentSecurityPolicy  = "Content-Security-Policy"
+	// XContentSecurityPolicy is the constant of the X-Content-Security-Policy header name.
 	XContentSecurityPolicy = "X-Content-Security-Policy"
+	// XWebKitCSP is the constant of the X-WebKit-CSP header name.
 	XWebKitCSP             = "X-WebKit-CSP"
+	// XContentTypeOptions is the constant of the X-Content-Type-Options header name.
 	XContentTypeOptions    = "X-Content-Type-Options"
+	// XPoweredBy is the constant of the X-Powered-By header name.
 	XPoweredBy             = "X-Powered-By"
+	// XUACompatible is the constant of the X-UA-Compatible header name.
 	XUACompatible          = "X-UA-Compatible"
 	// XForwardedProto is the constant of the X-Forwarded-Proto header
 	// that is used to identify the protocol (HTTP or HTTPS) that a visitor used to connect to the proxy server.
