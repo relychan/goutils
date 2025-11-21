@@ -48,38 +48,64 @@ const (
 	TE                            = "TE"
 	// Via is the constant of the Via header name.
 	Via                           = "Via"
+	// Via is the constant of the Via header name.
+	Via                           = "Via"
 	// Warning is the constant of the Warning header name.
 	Warning                       = "Warning"
 	// Cookie is the constant of the Cookie header name.
 	Cookie                        = "Cookie"
+	// Origin is the constant of the Origin header name.
 	Origin                        = "Origin"
+	// AcceptDatetime is the constant of the Accept-Datetime header name.
 	AcceptDatetime                = "Accept-Datetime"
+	// XRequestedWith is the constant of the X-Requested-With header name.
 	XRequestedWith                = "X-Requested-With"
+	// AccessControlAllowOrigin is the constant of the Access-Control-Allow-Origin header name.
 	AccessControlAllowOrigin      = "Access-Control-Allow-Origin"
+	// AccessControlAllowMethods is the constant of the Access-Control-Allow-Methods header name.
 	AccessControlAllowMethods     = "Access-Control-Allow-Methods"
+	// AccessControlAllowHeaders is the constant of the Access-Control-Allow-Headers header name.
 	AccessControlAllowHeaders     = "Access-Control-Allow-Headers"
+	// AccessControlAllowCredentials is the constant of the Access-Control-Allow-Credentials header name.
 	AccessControlAllowCredentials = "Access-Control-Allow-Credentials"
+	// AccessControlExposeHeaders is the constant of the Access-Control-Expose-Headers header name.
 	AccessControlExposeHeaders    = "Access-Control-Expose-Headers"
+	// AccessControlMaxAge is the constant of the Access-Control-Max-Age header name.
 	AccessControlMaxAge           = "Access-Control-Max-Age"
+	// AccessControlRequestMethod is the constant of the Access-Control-Request-Method header name.
 	AccessControlRequestMethod    = "Access-Control-Request-Method"
+	// AccessControlRequestHeaders is the constant of the Access-Control-Request-Headers header name.
 	AccessControlRequestHeaders   = "Access-Control-Request-Headers"
+	// AcceptPatch is the constant of the Accept-Patch header name.
 	AcceptPatch                   = "Accept-Patch"
+	// AcceptRanges is the constant of the Accept-Ranges header name.
 	AcceptRanges                  = "Accept-Ranges"
+	// Allow is the constant of the Allow header name.
 	Allow                         = "Allow"
+	// ContentEncoding is the constant of the Content-Encoding header name.
 	ContentEncoding               = "Content-Encoding"
+	// ContentLanguage is the constant of the Content-Language header name.
 	ContentLanguage               = "Content-Language"
+	// ContentLocation is the constant of the Content-Location header name.
 	ContentLocation               = "Content-Location"
+	// ContentDisposition is the constant of the Content-Disposition header name.
 	ContentDisposition            = "Content-Disposition"
+	// ContentRange is the constant of the Content-Range header name.
 	ContentRange                  = "Content-Range"
+	// ETag is the constant of the ETag header name.
 	ETag                          = "ETag"
+	// Expires is the constant of the Expires header name.
 	Expires                       = "Expires"
+	// LastModified is the constant of the Last-Modified header name.
 	LastModified                  = "Last-Modified"
+	// Link is the constant of the Link header name.
 	Link                          = "Link"
+	// Location is the constant of the Location header name.
 	Location                      = "Location"
+	// P3P is the constant of the P3P header name.
 	P3P                           = "P3P"
+	// ProxyAuthenticate is the constant of the Proxy-Authenticate header name.
 	ProxyAuthenticate             = "Proxy-Authenticate"
-	// Refresh is the constant of the Refresh header name.
-	Refresh                       = "Refresh"
 	// RetryAfter is the constant of the Retry-After header name.
 	RetryAfter                    = "Retry-After"
 	// Server is the constant of the Server header name.
