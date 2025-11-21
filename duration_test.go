@@ -2,6 +2,7 @@ package goutils
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -320,6 +321,14 @@ func assertEqual[T comparable](t *testing.T, expected, value T) {
 	t.Helper()
 
 	if expected != value {
+		t.Errorf("Expected: %v, got: %v", expected, value)
+	}
+}
+
+func assertDeepEqual[T any](t *testing.T, expected, value T) {
+	t.Helper()
+
+	if !reflect.DeepEqual(expected, value) {
 		t.Errorf("Expected: %v, got: %v", expected, value)
 	}
 }
