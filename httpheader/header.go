@@ -78,7 +78,6 @@ const (
 	Location                      = "Location"
 	P3P                           = "P3P"
 	ProxyAuthenticate             = "Proxy-Authenticate"
-	ProxyAuthenticate             = "Proxy-Authenticate"
 	// Refresh is the constant of the Refresh header name.
 	Refresh                       = "Refresh"
 	// RetryAfter is the constant of the Retry-After header name.
