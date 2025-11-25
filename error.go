@@ -17,6 +17,28 @@ var (
 	ErrInvalidSlug = errors.New("invalid slug")
 	// ErrMalformedJSON occurs when the JSON syntax or value is malformed.
 	ErrMalformedJSON = errors.New("malformed JSON")
+	// ErrStringNull occurs when the string value is nil.
+	ErrStringNull = errors.New("the string value must not be null")
+	// ErrMalformedString occurs when the string value is malformed.
+	ErrMalformedString = errors.New("malformed string")
+	// ErrMalformedStringSlice occurs when the string slice is malformed.
+	ErrMalformedStringSlice = errors.New("malformed string slice")
+	// ErrStringSliceNull occurs when the string slice is nil.
+	ErrStringSliceNull = errors.New("string slice must not be null")
+	// ErrNumberNull occurs when the number value is nil.
+	ErrNumberNull = errors.New("the number value must not be null")
+	// ErrMalformedNumber occurs when the number value is malformed.
+	ErrMalformedNumber = errors.New("malformed number")
+	// ErrMalformedNumberSlice occurs when the number slice is malformed.
+	ErrMalformedNumberSlice = errors.New("malformed number slice")
+	// ErrBooleanNull occurs when the boolean value is nil.
+	ErrBooleanNull = errors.New("the boolean value must not be null")
+	// ErrMalformedBoolean occurs when the boolean value is malformed.
+	ErrMalformedBoolean = errors.New("malformed boolean")
+	// ErrMalformedBooleanSlice occurs when the boolean slice is malformed.
+	ErrMalformedBooleanSlice = errors.New("malformed boolean slice")
+	// ErrBooleanSliceNull occurs when the boolean slice is nil.
+	ErrBooleanSliceNull = errors.New("boolean slice must not be null")
 )
 
 // CatchWarnErrorFunc catches the closer function and prints error with the WARN level.

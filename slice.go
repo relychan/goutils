@@ -2,6 +2,7 @@ package goutils
 
 import (
 	"cmp"
+	"fmt"
 	"slices"
 )
 
@@ -14,6 +15,36 @@ func ToAnySlice[T any](inputs []T) []any {
 	}
 
 	return results
+}
+
+// ToNumberSlice converts the element type of a number slice.
+func ToNumberSlice[T1, T2 ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	inputs []T1,
+) []T2 {
+	results := make([]T2, len(inputs))
+
+	for i, value := range inputs {
+		results[i] = T2(value)
+	}
+
+	return results
+}
+
+// PtrToNumberSlice converts the pointer type of a number slice.
+func PtrToNumberSlice[T1, T2 ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	inputs []*T1,
+) ([]T2, error) {
+	results := make([]T2, len(inputs))
+
+	for i, value := range inputs {
+		if value == nil {
+			return nil, fmt.Errorf("element %d: %w", i, ErrNumberNull)
+		}
+
+		results[i] = T2(*value)
+	}
+
+	return results, nil
 }
 
 // SliceEqualSorted checks if both slices's elements are matched with sorted order.

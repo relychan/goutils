@@ -341,6 +341,18 @@ func assertNilError(t *testing.T, err error) {
 	}
 }
 
+func assertError(t *testing.T, err error, msg string) {
+	t.Helper()
+
+	if err == nil {
+		t.Fatal("Expected not null error, got nil")
+	}
+
+	if !strings.Contains(err.Error(), msg) {
+		t.Fatalf("Expected error contains: %s; got: %s", msg, err.Error())
+	}
+}
+
 var durationTruncateTests = []struct {
 	d    Duration
 	m    Duration

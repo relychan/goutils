@@ -1,6 +1,8 @@
 package goutils
 
 import (
+	"reflect"
+
 	"github.com/google/uuid"
 )
 
@@ -17,4 +19,33 @@ func NewUUIDv7() uuid.UUID {
 // ToPtr converts the a typed value to its pointer.
 func ToPtr[T any](value T) *T {
 	return &value
+}
+
+// IsNil a safe function to check null value.
+func IsNil(value any) bool {
+	if value == nil {
+		return true
+	}
+
+	v := reflect.ValueOf(value)
+
+	return v.Kind() == reflect.Pointer && v.IsNil()
+}
+
+// UnwrapPointerFromReflectValue unwraps pointers from the reflect value.
+func UnwrapPointerFromReflectValue(reflectValue reflect.Value) (reflect.Value, bool) {
+	switch reflectValue.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Invalid:
+		return reflectValue, false
+	case reflect.Pointer:
+		if reflectValue.IsNil() {
+			return reflectValue, false
+		}
+
+		return UnwrapPointerFromReflectValue(reflectValue.Elem())
+	case reflect.Slice, reflect.Interface, reflect.Map:
+		return reflectValue, !reflectValue.IsNil()
+	default:
+		return reflectValue, true
+	}
 }
