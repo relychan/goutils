@@ -439,7 +439,7 @@ func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~u
 	}
 }
 
-// DecodeNullableNumberReflection decodes the nullable floating-point value using reflection.
+// DecodeNullableNumberReflection decodes a nullable numeric value (int, uint, or float) using reflection.
 func DecodeNullableNumberReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
 	value reflect.Value,
 ) (*T, error) {

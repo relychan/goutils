@@ -21,7 +21,7 @@ func ToPtr[T any](value T) *T {
 	return &value
 }
 
-// IsNil a safe function to check null value.
+// IsNil safely checks if a value is nil.
 func IsNil(value any) bool {
 	if value == nil {
 		return true
@@ -37,7 +37,9 @@ func IsNil(value any) bool {
 	}
 }
 
-// UnwrapPointerFromReflectValue unwraps pointers from the reflect value.
+// UnwrapPointerFromReflectValue recursively unwraps pointers from a reflect value.
+// Returns the unwrapped value and true if the value is valid and not nil,
+// or false if the value is nil or invalid.
 func UnwrapPointerFromReflectValue(reflectValue reflect.Value) (reflect.Value, bool) {
 	switch reflectValue.Kind() {
 	case reflect.Chan, reflect.Func, reflect.Invalid:

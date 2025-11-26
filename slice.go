@@ -30,7 +30,8 @@ func ToNumberSlice[T1, T2 ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uin
 	return results
 }
 
-// PtrToNumberSlice converts the pointer type of a number slice.
+// PtrToNumberSlice converts a slice of number pointers to a slice of values.
+// Returns nil, nil if inputs is nil. Returns an error if any element in the slice is nil.
 func PtrToNumberSlice[T1, T2 ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
 	inputs []*T1,
 ) ([]T2, error) {
