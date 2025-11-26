@@ -140,11 +140,11 @@ func ToStringWithCustomTypeFormatter( //nolint:cyclop,gocognit,gocyclo,funlen,ma
 	case float32:
 		return strconv.FormatFloat(float64(typedValue), 'f', -1, 32), nil
 	case float64:
-		return strconv.FormatFloat(float64(typedValue), 'f', -1, 64), nil
+		return strconv.FormatFloat(typedValue, 'f', -1, 64), nil
 	case complex64:
 		return strconv.FormatComplex(complex128(typedValue), 'f', -1, 64), nil
 	case complex128:
-		return strconv.FormatComplex(complex128(typedValue), 'f', -1, 128), nil
+		return strconv.FormatComplex(typedValue, 'f', -1, 128), nil
 	case time.Time:
 		return typedValue.Format(time.RFC3339), nil
 	case time.Duration:
@@ -232,7 +232,7 @@ func ToStringWithCustomTypeFormatter( //nolint:cyclop,gocognit,gocyclo,funlen,ma
 			return emptyValue, nil
 		}
 
-		return strconv.FormatFloat(float64(*typedValue), 'f', -1, 64), nil
+		return strconv.FormatFloat(*typedValue, 'f', -1, 64), nil
 	case *complex64:
 		if typedValue == nil {
 			return emptyValue, nil
@@ -244,7 +244,7 @@ func ToStringWithCustomTypeFormatter( //nolint:cyclop,gocognit,gocyclo,funlen,ma
 			return emptyValue, nil
 		}
 
-		return strconv.FormatComplex(complex128(*typedValue), 'f', -1, 128), nil
+		return strconv.FormatComplex(*typedValue, 'f', -1, 128), nil
 	case *time.Time:
 		if typedValue == nil {
 			return emptyValue, nil
