@@ -100,7 +100,7 @@ func ToDebugString(value any, emptyValue string) string {
 //   - For pointers, it dereferences and formats the underlying value, or returns emptyValue if nil.
 //   - For unsupported types, it invokes the customTypeFormatter function to format the value.
 //
-// If JSON marshaling fails, it returns an error.
+// If the customTypeFormatter returns an error, it returns an error.
 //
 // The emptyValue parameter specifies the string to return for nil values or nil pointers.
 func ToStringWithCustomTypeFormatter( //nolint:cyclop,gocognit,gocyclo,funlen,maintidx
