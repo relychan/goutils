@@ -33,7 +33,7 @@ func DecodeNullableString(value any) (*string, error) {
 	}
 }
 
-// DecodeNullableStringReflection a nullable string from reflection value.
+// DecodeNullableStringReflection decodes a nullable string from reflection value.
 func DecodeNullableStringReflection(value reflect.Value) (*string, error) {
 	inferredValue, ok := UnwrapPointerFromReflectValue(value)
 	if !ok {
@@ -227,99 +227,99 @@ func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~
 	case int:
 		return T(v), nil
 	case int8:
-		return (T(v)), nil
+		return T(v), nil
 	case int16:
-		return (T(v)), nil
+		return T(v), nil
 	case int32:
-		return (T(v)), nil
+		return T(v), nil
 	case int64:
-		return (T(v)), nil
+		return T(v), nil
 	case uint:
-		return (T(v)), nil
+		return T(v), nil
 	case uint8:
-		return (T(v)), nil
+		return T(v), nil
 	case uint16:
-		return (T(v)), nil
+		return T(v), nil
 	case uint32:
-		return (T(v)), nil
+		return T(v), nil
 	case uint64:
-		return (T(v)), nil
+		return T(v), nil
 	case float32:
-		return (T(v)), nil
+		return T(v), nil
 	case float64:
-		return (T(v)), nil
+		return T(v), nil
 	case *int:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case *int8:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case *int16:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case *int32:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case *int64:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case *uint:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case *uint8:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case *uint16:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case *uint32:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case *uint64:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case *float32:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case *float64:
 		if v == nil {
 			return 0, ErrNumberNull
 		}
 
-		return (T(*v)), nil
+		return T(*v), nil
 	case bool, string, complex64, complex128, *bool, *string, *complex64, *complex128, map[string]any, []any, []float64:
 		return 0, fmt.Errorf("%w; got: %s", ErrMalformedNumber, reflect.TypeOf(value))
 	default:

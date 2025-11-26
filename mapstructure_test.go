@@ -21,7 +21,7 @@ func TestDecodeBool(t *testing.T) {
 	assertEqual(t, *ptr, *ptr2)
 
 	_, err = DecodeBoolean(nil)
-	assertError(t, err, "the boolean value must not be null")
+	assertError(t, err, "boolean value must not be null")
 
 	_, err = DecodeBoolean("failure")
 	assertError(t, err, "malformed boolean; got: string")
@@ -50,10 +50,10 @@ func TestDecodeBooleanSlice(t *testing.T) {
 	assertError(t, err, "malformed boolean slice; got: struct")
 
 	_, err = DecodeBooleanSlice([]any{nil})
-	assertError(t, err, "element 0: the boolean value must not be null")
+	assertError(t, err, "element 0: boolean value must not be null")
 
 	_, err = DecodeBooleanSlice(&[]any{nil})
-	assertError(t, err, "element 0: the boolean value must not be null")
+	assertError(t, err, "element 0: boolean value must not be null")
 }
 
 func TestDecodeNullableBooleanSlice(t *testing.T) {
@@ -78,7 +78,7 @@ func TestDecodeNullableBooleanSlice(t *testing.T) {
 	assertDeepEqual(t, []bool{true}, *value)
 
 	_, err = DecodeNullableBooleanSlice([]any{nil})
-	assertError(t, err, "element 0: the boolean value must not be null")
+	assertError(t, err, "element 0: boolean value must not be null")
 
 	value, err = DecodeNullableBooleanSlice(nil)
 	assertNilError(t, err)
@@ -144,6 +144,7 @@ func TestDecodeStringSlice(t *testing.T) {
 	assertDeepEqual(t, []string{"foo"}, value)
 
 	value, err = DecodeStringSlice(nil)
+	assertNilError(t, err)
 	assertDeepEqual(t, nil, value)
 
 	_, err = DecodeStringSlice("failure")
@@ -153,10 +154,10 @@ func TestDecodeStringSlice(t *testing.T) {
 	assertError(t, err, "malformed string slice; got: struct")
 
 	_, err = DecodeStringSlice([]any{nil})
-	assertError(t, err, "failed to decode string at 0: the string value must not be null")
+	assertError(t, err, "failed to decode string at 0: string value must not be null")
 
 	_, err = DecodeStringSlice(&[]any{nil})
-	assertError(t, err, "failed to decode element at 0: the string value must not be null")
+	assertError(t, err, "failed to decode element at 0: string value must not be null")
 }
 
 func TestDecodeNumber(t *testing.T) {
@@ -294,7 +295,7 @@ func TestDecodeNumber(t *testing.T) {
 
 	t.Run("decode_nil", func(t *testing.T) {
 		_, err := DecodeNumber[float64](nil)
-		assertError(t, err, "the number value must not be null")
+		assertError(t, err, "number value must not be null")
 	})
 
 	t.Run("decode_invalid_type", func(t *testing.T) {
@@ -307,5 +308,21 @@ func TestDecodeNumberSlice(t *testing.T) {
 	testNumbers := []any{int(1), int8(2), int16(3), int32(4), int64(5), uint(6), uint8(7), uint16(8), uint32(9), uint64(10)}
 	result, err := DecodeNumberSlice[int](testNumbers)
 	assertNilError(t, err)
-	assertDeepEqual(t, []int{(1), (2), (3), (4), (5), (6), (7), (8), (9), (10)}, result)
+	assertDeepEqual(t, []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, result)
+}
+
+func TestGetAny(t *testing.T) {
+	// Test nil map
+	_, ok := GetAny(nil, "key")
+	assertEqual(t, false, ok)
+
+	// Test existing key
+	m := map[string]any{"key": "value"}
+	val, ok := GetAny(m, "key")
+	assertEqual(t, true, ok)
+	assertEqual(t, "value", val)
+
+	// Test non-existing key
+	_, ok = GetAny(m, "missing")
+	assertEqual(t, false, ok)
 }
