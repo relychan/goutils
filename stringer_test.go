@@ -16,12 +16,6 @@ func (c customStringer) String() string {
 	return c.val
 }
 
-type customError struct{}
-
-func (c customError) Error() string {
-	return "custom error"
-}
-
 func TestToString_Primitives(t *testing.T) {
 	now := time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)
 	duration := 2 * time.Hour

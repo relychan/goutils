@@ -66,9 +66,47 @@ func ParseIntInRange[B []byte | string](s B, minValue int, maxValue int) (int, b
 // If JSON marshaling fails, it returns an error.
 //
 // The emptyValue parameter specifies the string to return for nil values or nil pointers.
-func ToString( //nolint:cyclop,gocognit,gocyclo,funlen,maintidx
+func ToString(value any, emptyValue string) (string, error) {
+	return ToStringWithCustomTypeFormatter(value, emptyValue, func(value any) (string, error) {
+		jsonValue, err := json.Marshal(value)
+		if err != nil {
+			return "", err
+		}
+
+		return string(jsonValue), nil
+	})
+}
+
+// ToDebugString returns a string representation of an arbitrary value for debugging or logging purposes.
+// It wraps ToString, and if ToString returns an error, it falls back to fmt.Sprint to ensure a string is always returned.
+// This function never returns an error; it always returns a string.
+// The emptyValue parameter specifies the string to use if the input value is nil or otherwise empty.
+func ToDebugString(value any, emptyValue string) string {
+	result, err := ToString(value, emptyValue)
+	if err != nil {
+		return fmt.Sprint(value)
+	}
+
+	return result
+}
+
+// ToStringWithCustomTypeFormatter converts an arbitrary value to its string representation.
+//
+// It handles the following cases:
+//   - For nil values, it returns the provided emptyValue.
+//   - For primitive types (bool, string, integers, floats, complex), it uses the appropriate formatting.
+//   - For time.Time and *time.Time, it uses the standard time formatting.
+//   - For types implementing fmt.Stringer, it uses their String() method.
+//   - For pointers, it dereferences and formats the underlying value, or returns emptyValue if nil.
+//   - For unsupported types, it invokes the customTypeFormatter function to format the value.
+//
+// If JSON marshaling fails, it returns an error.
+//
+// The emptyValue parameter specifies the string to return for nil values or nil pointers.
+func ToStringWithCustomTypeFormatter( //nolint:cyclop,gocognit,gocyclo,funlen,maintidx
 	value any,
 	emptyValue string,
+	customTypeFormatter func(any) (string, error),
 ) (string, error) {
 	if value == nil {
 		return emptyValue, nil
@@ -226,24 +264,6 @@ func ToString( //nolint:cyclop,gocognit,gocyclo,funlen,maintidx
 
 		return typedValue.String(), nil
 	default:
-		jsonValue, err := json.Marshal(value)
-		if err != nil {
-			return "", err
-		}
-
-		return string(jsonValue), nil
+		return customTypeFormatter(value)
 	}
-}
-
-// ToDebugString returns a string representation of an arbitrary value for debugging or logging purposes.
-// It wraps ToString, and if ToString returns an error, it falls back to fmt.Sprint to ensure a string is always returned.
-// This function never returns an error; it always returns a string.
-// The emptyValue parameter specifies the string to use if the input value is nil or otherwise empty.
-func ToDebugString(value any, emptyValue string) string {
-	result, err := ToString(value, emptyValue)
-	if err != nil {
-		return fmt.Sprint(value)
-	}
-
-	return result
 }
