@@ -109,7 +109,6 @@ func TestDecodeString(t *testing.T) {
 
 	ptr, err := DecodeNullableString("pointer")
 	assertNilError(t, err)
-	assertEqual(t, "success", value)
 	assertEqual(t, "pointer", *ptr)
 
 	ptr2, err := DecodeNullableString(ptr)

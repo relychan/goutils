@@ -168,12 +168,12 @@ func DecodeStringSlice(value any) ([]string, error) {
 	case []bool, []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []float32, []float64, []complex64, []complex128, map[string]any:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedStringSlice, reflect.TypeOf(vs))
 	default:
-		return DecodeStringSliceRefection(reflect.ValueOf(value))
+		return DecodeStringSliceReflection(reflect.ValueOf(value))
 	}
 }
 
-// DecodeStringSliceRefection decodes a string slice from a reflection value.
-func DecodeStringSliceRefection(reflectValue reflect.Value) ([]string, error) {
+// DecodeStringSliceReflection decodes a string slice from a reflection value.
+func DecodeStringSliceReflection(reflectValue reflect.Value) ([]string, error) {
 	reflectValue, ok := UnwrapPointerFromReflectValue(reflectValue)
 	if !ok {
 		return nil, nil
@@ -463,12 +463,12 @@ func DecodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint
 	case []bool, []string, []complex64, []complex128, map[string]any:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumberSlice, reflect.TypeOf(vs))
 	default:
-		return DecodeNumberSliceRefection[T](reflect.ValueOf(value))
+		return DecodeNumberSliceReflection[T](reflect.ValueOf(value))
 	}
 }
 
-// DecodeNumberSliceRefection decodes a number slice from a reflection value.
-func DecodeNumberSliceRefection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+// DecodeNumberSliceReflection decodes a number slice from a reflection value.
+func DecodeNumberSliceReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
 	reflectValue reflect.Value,
 ) ([]T, error) {
 	reflectValue, ok := UnwrapPointerFromReflectValue(reflectValue)
@@ -491,7 +491,7 @@ func DecodeNumberSliceRefection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uin
 		}
 
 		if elem == nil {
-			return nil, fmt.Errorf("failed to number element at %d: %w", i, ErrNumberNull)
+			return nil, fmt.Errorf("failed to decode number element at %d: %w", i, ErrNumberNull)
 		}
 
 		results[i] = *elem
