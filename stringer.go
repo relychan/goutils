@@ -58,7 +58,7 @@ func ParseIntInRange[B []byte | string](s B, minValue int, maxValue int) (int, b
 // It handles the following cases:
 //   - For nil values, it returns the provided emptyValue.
 //   - For primitive types (bool, string, integers, floats, complex), it uses the appropriate formatting.
-//   - For time.Time and *time.Time, it uses the standard time formatting.
+//   - For time.Time, time.Duration, and their pointer types, it uses the standard time formatting.
 //   - For types implementing fmt.Stringer, it uses their String() method.
 //   - For pointers, it dereferences and formats the underlying value, or returns emptyValue if nil.
 //   - For unsupported types, it attempts to marshal the value to JSON.
