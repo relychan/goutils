@@ -157,7 +157,6 @@ func TestToString_JSONMarshalError(t *testing.T) {
 }
 
 func TestToDebugString(t *testing.T) {
-
 	ch := make(chan int)
 	tests := []struct {
 		name       string
