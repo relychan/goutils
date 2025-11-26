@@ -119,6 +119,10 @@ func DecodeString(value any) (string, error) {
 	case string:
 		return v, nil
 	case *string:
+		if v == nil {
+			return "", ErrStringNull
+		}
+
 		return *v, nil
 	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, *bool, *int, *int8, *int16, *int32, *int64, *uint, *uint8, *uint16, *uint32, *uint64, *float32, *float64:
 		return "", fmt.Errorf("%w, got: %s", ErrMalformedString, reflect.TypeOf(v))
@@ -139,6 +143,10 @@ func DecodeStringSlice(value any) ([]string, error) {
 	case []string:
 		return vs, nil
 	case []*string:
+		if vs == nil {
+			return nil, nil
+		}
+
 		results := make([]string, len(vs))
 
 		for i, v := range vs {
@@ -151,6 +159,10 @@ func DecodeStringSlice(value any) ([]string, error) {
 
 		return results, nil
 	case []any:
+		if vs == nil {
+			return nil, nil
+		}
+
 		results := make([]string, len(vs))
 
 		for i, v := range vs {
@@ -204,7 +216,7 @@ func DecodeStringSliceReflection(reflectValue reflect.Value) ([]string, error) {
 }
 
 // DecodeNumber tries to convert an unknown value to a typed number.
-func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen
+func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo
 	value any,
 ) (T, error) {
 	if value == nil {
@@ -237,28 +249,76 @@ func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~
 	case float64:
 		return (T(v)), nil
 	case *int:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case *int8:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case *int16:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case *int32:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case *int64:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case *uint:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case *uint8:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case *uint16:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case *uint32:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case *uint64:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case *float32:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case *float64:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
 		return (T(*v)), nil
 	case bool, string, complex64, complex128, *bool, *string, *complex64, *complex128, map[string]any, []any, []float64:
 		return 0, fmt.Errorf("%w; got: %s", ErrMalformedNumber, reflect.TypeOf(value))
@@ -268,7 +328,7 @@ func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~
 }
 
 // DecodeNullableNumber tries to convert an unknown value to a typed number.
-func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen
+func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo
 	value any,
 ) (*T, error) {
 	if value == nil {
@@ -301,28 +361,76 @@ func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~u
 	case float64:
 		return ToPtr(T(v)), nil
 	case *int:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case *int8:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case *int16:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case *int32:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case *int64:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case *uint:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case *uint8:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case *uint16:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case *uint32:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case *uint64:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case *float32:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case *float64:
+		if v == nil {
+			return nil, nil
+		}
+
 		return ToPtr(T(*v)), nil
 	case bool, string, complex64, complex128, *bool, *string, *complex64, *complex128, map[string]any, []any, []float64:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumber, reflect.TypeOf(value))
@@ -526,6 +634,10 @@ func DecodeBoolean(value any) (bool, error) {
 	case bool:
 		return v, nil
 	case *bool:
+		if v == nil {
+			return false, ErrBooleanNull
+		}
+
 		return *v, nil
 	default:
 		return DecodeBooleanReflection(reflect.ValueOf(value))

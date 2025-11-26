@@ -28,8 +28,13 @@ func IsNil(value any) bool {
 	}
 
 	v := reflect.ValueOf(value)
-
-	return v.Kind() == reflect.Pointer && v.IsNil()
+	// Check for all kinds that can be nil
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return v.IsNil()
+	default:
+		return false
+	}
 }
 
 // UnwrapPointerFromReflectValue unwraps pointers from the reflect value.

@@ -34,6 +34,10 @@ func ToNumberSlice[T1, T2 ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uin
 func PtrToNumberSlice[T1, T2 ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
 	inputs []*T1,
 ) ([]T2, error) {
+	if inputs == nil {
+		return nil, nil
+	}
+
 	results := make([]T2, len(inputs))
 
 	for i, value := range inputs {
