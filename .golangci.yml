@@ -9,6 +9,8 @@ linters:
     - wsl
     - mnd
     - gochecknoglobals
+    - nilnil
+    - ireturn
   settings:
     errcheck:
       # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
@@ -69,6 +71,8 @@ linters:
       allow-first-in-block: true
       allow-whole-block: false
       branch-max-lines: 2
+    exhaustive:
+      default-signifies-exhaustive: true
 
     recvcheck:
       # Disables the built-in method exclusions:

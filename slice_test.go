@@ -44,3 +44,29 @@ func TestMapSlice(t *testing.T) {
 		t.Fatal("lowercase not equal")
 	}
 }
+
+func TestToNumberSlice(t *testing.T) {
+	intSlice := []int{1, 2, 3}
+	floatSlice := ToNumberSlice[int, float64](intSlice)
+	if !reflect.DeepEqual(floatSlice, []float64{1.0, 2.0, 3.0}) {
+		t.Fatal("conversion failed")
+	}
+}
+
+func TestPtrToNumberSlice(t *testing.T) {
+	intSlice := []*int{ToPtr(1), ToPtr(2)}
+	result, err := PtrToNumberSlice[int, float64](intSlice)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(result, []float64{1.0, 2.0}) {
+		t.Fatal("conversion failed")
+	}
+
+	// Test nil element
+	nilSlice := []*int{nil}
+	_, err = PtrToNumberSlice[int, float64](nilSlice)
+	if err == nil {
+		t.Fatal("expected error for nil element")
+	}
+}
