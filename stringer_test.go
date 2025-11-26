@@ -156,7 +156,7 @@ func TestToString_JSONMarshalError(t *testing.T) {
 }
 
 func TestToDebugString(t *testing.T) {
-	type badType struct{}
+
 	ch := make(chan int)
 	tests := []struct {
 		name       string
@@ -211,7 +211,7 @@ func TestToString_ErrorType(t *testing.T) {
 	if err != nil {
 		t.Errorf("ToString() error = %v", err)
 	}
-	if got == `"err"` {
+	if got != "{}" {
 		t.Errorf("ToString() = %v, want {}", got)
 	}
 }

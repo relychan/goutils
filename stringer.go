@@ -53,7 +53,18 @@ func ParseIntInRange[B []byte | string](s B, minValue int, maxValue int) (int, b
 	return x, true
 }
 
-// ToString formats an unknown typed value to string.
+// ToString converts an arbitrary value to its string representation.
+// 
+// It handles the following cases:
+//   - For nil values, it returns the provided emptyValue.
+//   - For primitive types (bool, string, integers, floats, complex), it uses the appropriate formatting.
+//   - For time.Time and *time.Time, it uses the standard time formatting.
+//   - For types implementing fmt.Stringer, it uses their String() method.
+//   - For pointers, it dereferences and formats the underlying value, or returns emptyValue if nil.
+//   - For unsupported types, it attempts to marshal the value to JSON.
+// If JSON marshaling fails, it returns an error.
+//
+// The emptyValue parameter specifies the string to return for nil values or nil pointers.
 func ToString( //nolint:cyclop,gocognit,gocyclo,funlen,maintidx
 	value any,
 	emptyValue string,
@@ -223,8 +234,10 @@ func ToString( //nolint:cyclop,gocognit,gocyclo,funlen,maintidx
 	}
 }
 
-// ToDebugString formats an unknown typed value to string.
-// Fallback to fmt.Sprint if an error happens.
+// ToDebugString returns a string representation of an arbitrary value for debugging or logging purposes.
+// It wraps ToString, and if ToString returns an error, it falls back to fmt.Sprint to ensure a string is always returned.
+// This function never returns an error; it always returns a string.
+// The emptyValue parameter specifies the string to use if the input value is nil or otherwise empty.
 func ToDebugString(value any, emptyValue string) string {
 	result, err := ToString(value, emptyValue)
 	if err != nil {
