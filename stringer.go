@@ -54,7 +54,7 @@ func ParseIntInRange[B []byte | string](s B, minValue int, maxValue int) (int, b
 }
 
 // ToString converts an arbitrary value to its string representation.
-// 
+//
 // It handles the following cases:
 //   - For nil values, it returns the provided emptyValue.
 //   - For primitive types (bool, string, integers, floats, complex), it uses the appropriate formatting.
@@ -62,6 +62,7 @@ func ParseIntInRange[B []byte | string](s B, minValue int, maxValue int) (int, b
 //   - For types implementing fmt.Stringer, it uses their String() method.
 //   - For pointers, it dereferences and formats the underlying value, or returns emptyValue if nil.
 //   - For unsupported types, it attempts to marshal the value to JSON.
+//
 // If JSON marshaling fails, it returns an error.
 //
 // The emptyValue parameter specifies the string to return for nil values or nil pointers.
@@ -219,7 +220,7 @@ func ToString( //nolint:cyclop,gocognit,gocyclo,funlen,maintidx
 
 		return typedValue.String(), nil
 	case fmt.Stringer:
-		if typedValue == nil {
+		if IsNil(typedValue) {
 			return emptyValue, nil
 		}
 

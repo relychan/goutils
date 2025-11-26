@@ -128,6 +128,7 @@ func TestToString_StringerAndFallback(t *testing.T) {
 	}{
 		{"fmt.Stringer", cs, "empty", "custom"},
 		{"fmt.Stringer nil", nilStringer, "empty", "empty"},
+		{"customStringer nil", any((*customStringer)(nil)), "empty", "empty"},
 		{"struct fallback", ts, "empty", `{"A":1,"B":"b"}`},
 		{"slice fallback", []int{1, 2, 3}, "empty", `[1,2,3]`},
 		{"map fallback", map[string]int{"a": 1}, "empty", `{"a":1}`},
