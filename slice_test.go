@@ -20,19 +20,19 @@ func TestSliceEqualSorted(t *testing.T) {
 	sortedInts := []int{0, 1, 2, 3, 4}
 	unsortedInts := []int{1, 3, 0, 2, 4}
 
-	if !SliceEqualSorted(sortedInts, unsortedInts) {
+	if !EqualSliceSorted(sortedInts, unsortedInts) {
 		t.Fatalf("expected equal")
 	}
 
-	if SliceEqualSorted([]int{0}, unsortedInts) {
+	if EqualSliceSorted([]int{0}, unsortedInts) {
 		t.Fatalf("expected not equal")
 	}
 
-	if !SliceEqualSorted([]int{}, []int{}) {
+	if !EqualSliceSorted([]int{}, []int{}) {
 		t.Fatalf("expected equal")
 	}
 
-	if SliceEqualSorted([]int{0, 1, 2}, []int{0, 2, 3}) {
+	if EqualSliceSorted([]int{0, 1, 2}, []int{0, 2, 3}) {
 		t.Fatalf("expected not equal")
 	}
 }
