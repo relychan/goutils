@@ -51,3 +51,21 @@ func TestEqualPtr(t *testing.T) {
 		t.Error("expected equal")
 	}
 }
+
+func TestIsZero(t *testing.T) {
+	if IsZero(&mockEquality{}) {
+		t.Error("expected non-zero")
+	}
+
+	if !IsZeroPtr[any](nil) {
+		t.Error("expected zero")
+	}
+
+	if !IsZero[[]int](nil) {
+		t.Error("expected zero")
+	}
+
+	if !IsZero[[]struct{}](nil) {
+		t.Error("expected zero")
+	}
+}
