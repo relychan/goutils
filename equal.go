@@ -390,7 +390,7 @@ func EqualComparableSlice[T comparable](x []T, y any, omitZero bool) bool {
 
 // EqualPtr checks if the value of both pointers are equal.
 func EqualPtr[T Equaler[T]](a, b *T) bool {
-	if (a == b) || (a == nil && b == nil) {
+	if a == b {
 		return true
 	}
 
