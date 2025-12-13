@@ -17,45 +17,45 @@ type Equaler[T any] interface {
 func DeepEqual[T any](x, y T, omitZero bool) bool { //nolint:cyclop,funlen,gocyclo,gocognit,maintidx
 	switch vx := any(x).(type) {
 	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, complex64, complex128, time.Duration, time.Time, uuid.UUID:
-		return EqualComparable(vx, y)
+		return EqualComparableAny(vx, y)
 	case *bool:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *string:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *int:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *int8:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *int16:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *int32:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *int64:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *uint:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *uint8:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *uint16:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *uint32:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *uint64:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *float32:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *float64:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *complex64:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *complex128:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *time.Duration:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *time.Time:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case *uuid.UUID:
-		return EqualComparablePtr(vx, y)
+		return EqualComparableAnyPtr(vx, y)
 	case Equaler[T]:
 		vy := any(y)
 
@@ -253,8 +253,8 @@ func DeepEqualPtr[T any](x, y *T, omitZero bool) bool {
 	return DeepEqual(*x, *y, omitZero)
 }
 
-// EqualComparable checks if the y is comparable and equal x.
-func EqualComparable[T comparable](x T, y any) bool {
+// EqualComparableAny checks if the y is comparable and equal x.
+func EqualComparableAny[T comparable](x T, y any) bool {
 	vy, ok := y.(T)
 	if ok {
 		return x == vy
@@ -268,8 +268,8 @@ func EqualComparable[T comparable](x T, y any) bool {
 	return false
 }
 
-// EqualComparablePtr checks if the y is comparable and equal the pointer x.
-func EqualComparablePtr[T comparable](x *T, y any) bool {
+// EqualComparableAnyPtr checks if the y is comparable and equal the pointer x.
+func EqualComparableAnyPtr[T comparable](x *T, y any) bool {
 	if x == nil && y == nil {
 		return true
 	}
@@ -289,6 +289,15 @@ func EqualComparablePtr[T comparable](x *T, y any) bool {
 	}
 
 	return false
+}
+
+// EqualComparablePtr checks if the y is comparable and equal the pointer x.
+func EqualComparablePtr[T comparable](x, y *T) bool {
+	if x == y {
+		return true
+	}
+
+	return x != nil && y != nil && *x == *y
 }
 
 // EqualMap checks if both maps' elements are matched.

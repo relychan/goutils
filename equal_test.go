@@ -28,25 +28,25 @@ func (t testIsZeroer) IsZero() bool {
 
 func TestEqualComparable(t *testing.T) {
 	t.Run("equal values", func(t *testing.T) {
-		if !EqualComparable(42, 42) {
+		if !EqualComparableAny(42, 42) {
 			t.Error("expected equal")
 		}
-		if !EqualComparable("hello", "hello") {
+		if !EqualComparableAny("hello", "hello") {
 			t.Error("expected equal")
 		}
-		if !EqualComparable(true, true) {
+		if !EqualComparableAny(true, true) {
 			t.Error("expected equal")
 		}
-		if !EqualComparable(3.14, 3.14) {
+		if !EqualComparableAny(3.14, 3.14) {
 			t.Error("expected equal")
 		}
 	})
 
 	t.Run("different values", func(t *testing.T) {
-		if EqualComparable(42, 43) {
+		if EqualComparableAny(42, 43) {
 			t.Error("expected not equal")
 		}
-		if EqualComparable("hello", "world") {
+		if EqualComparableAny("hello", "world") {
 			t.Error("expected not equal")
 		}
 	})
@@ -54,13 +54,13 @@ func TestEqualComparable(t *testing.T) {
 	t.Run("value vs pointer", func(t *testing.T) {
 		val := 42
 		ptr := &val
-		if !EqualComparable(42, ptr) {
+		if !EqualComparableAny(42, ptr) {
 			t.Error("expected equal when comparing value to pointer")
 		}
 	})
 
 	t.Run("wrong type", func(t *testing.T) {
-		if EqualComparable(42, "42") {
+		if EqualComparableAny(42, "42") {
 			t.Error("expected not equal for different types")
 		}
 	})
@@ -79,7 +79,7 @@ func TestEqualComparablePtr(t *testing.T) {
 		if EqualComparablePtr(&val, nil) {
 			t.Error("expected not equal when one is nil")
 		}
-		if EqualComparablePtr[int](nil, 42) {
+		if EqualComparableAnyPtr[int](nil, 42) {
 			t.Error("expected not equal when pointer is nil")
 		}
 	})
@@ -94,7 +94,7 @@ func TestEqualComparablePtr(t *testing.T) {
 
 	t.Run("pointer vs value", func(t *testing.T) {
 		val := 42
-		if !EqualComparablePtr(&val, 42) {
+		if !EqualComparableAnyPtr(&val, 42) {
 			t.Error("expected equal when comparing pointer to value")
 		}
 	})
