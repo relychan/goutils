@@ -6,6 +6,21 @@ import (
 	"github.com/google/uuid"
 )
 
+// Equaler abstracts an interface to check the equality.
+type Equaler[T any] interface {
+	// Equal checks if the target value is equal.
+	Equal(target T) bool
+}
+
+// EqualPtr checks if the value of both pointers are equal.
+func EqualPtr[T Equaler[T]](a, b *T) bool {
+	if a == nil && b == nil {
+		return true
+	}
+
+	return a != nil && b != nil && (*a).Equal(*b)
+}
+
 // NewUUIDv7 creates a random UUID version 7. Fallback to v4 if there is error.
 func NewUUIDv7() uuid.UUID {
 	value, err := uuid.NewV7()
