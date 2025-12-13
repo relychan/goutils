@@ -423,6 +423,13 @@ func TestDeepEqual(t *testing.T) {
 		if DeepEqual(eq1, eq3, false) {
 			t.Error("expected not equal for Equaler")
 		}
+
+		if !DeepEqualPtr(&eq1, &eq2, false) {
+			t.Error("expected equal for Equaler")
+		}
+		if DeepEqualPtr(&eq1, &eq3, false) {
+			t.Error("expected not equal for Equaler")
+		}
 	})
 
 	t.Run("maps with string keys", func(t *testing.T) {
@@ -609,6 +616,20 @@ func TestDeepEqual(t *testing.T) {
 			t.Error("expected equal with omitZero")
 		}
 	})
+}
+
+func TestEqualPtr(t *testing.T) {
+	if !EqualPtr(&testEqualer{}, &testEqualer{}) {
+		t.Error("expected equal")
+	}
+
+	if EqualPtr(&testEqualer{}, nil) {
+		t.Error("expected not equal")
+	}
+
+	if !EqualPtr[testEqualer](nil, nil) {
+		t.Error("expected equal")
+	}
 }
 
 func createBenchmarkObject() map[string]any {

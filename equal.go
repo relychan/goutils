@@ -240,6 +240,19 @@ func DeepEqual[T any](x, y T, omitZero bool) bool { //nolint:cyclop,funlen,gocyc
 	}
 }
 
+// DeepEqualPtr checks if both pointers are equal recursively.
+func DeepEqualPtr[T any](x, y *T, omitZero bool) bool {
+	if x == y {
+		return true
+	}
+
+	if x == nil || y == nil {
+		return false
+	}
+
+	return DeepEqual(*x, *y, omitZero)
+}
+
 // EqualComparable checks if the y is comparable and equal x.
 func EqualComparable[T comparable](x T, y any) bool {
 	vy, ok := y.(T)
@@ -373,4 +386,13 @@ func EqualComparableSlice[T comparable](x []T, y any, omitZero bool) bool {
 	}
 
 	return EqualSlice(x, vy, omitZero)
+}
+
+// EqualPtr checks if the value of both pointers are equal.
+func EqualPtr[T Equaler[T]](a, b *T) bool {
+	if a == b {
+		return true
+	}
+
+	return a != nil && b != nil && (*a).Equal(*b)
 }
