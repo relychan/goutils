@@ -31,3 +31,23 @@ func TestIsNil(t *testing.T) {
 		t.Error("expected not nil, got: nil")
 	}
 }
+
+type mockEquality struct{}
+
+func (m mockEquality) Equal(target mockEquality) bool {
+	return m == target
+}
+
+func TestEqualPtr(t *testing.T) {
+	if !EqualPtr(&mockEquality{}, &mockEquality{}) {
+		t.Error("expected equal")
+	}
+
+	if EqualPtr(&mockEquality{}, nil) {
+		t.Error("expected not equal")
+	}
+
+	if !EqualPtr[mockEquality](nil, nil) {
+		t.Error("expected equal")
+	}
+}
