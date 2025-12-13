@@ -53,7 +53,7 @@ func PtrToNumberSlice[T1, T2 ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~
 	return results, nil
 }
 
-// EqualSlice checks if both slices's elements are matched.
+// EqualSlice checks if both slices' elements are matched.
 func EqualSlice[T any](sliceA, sliceB []T, omitZero bool) bool {
 	if sliceA == nil || sliceB == nil {
 		if omitZero {
@@ -63,7 +63,7 @@ func EqualSlice[T any](sliceA, sliceB []T, omitZero bool) bool {
 		return sliceA == nil && sliceB == nil
 	}
 
-	// the both maps have the same pointer, they should equal.
+	// if both slices have the same pointer, they should be considered equal.
 	if reflect.ValueOf(sliceA).UnsafePointer() == reflect.ValueOf(sliceB).UnsafePointer() {
 		return true
 	}
@@ -74,7 +74,7 @@ func EqualSlice[T any](sliceA, sliceB []T, omitZero bool) bool {
 
 	for i, a := range sliceA {
 		b := sliceB[i]
-		if !DeepEqual(a, b, false) {
+		if !DeepEqual(a, b, omitZero) {
 			return false
 		}
 	}
@@ -82,7 +82,7 @@ func EqualSlice[T any](sliceA, sliceB []T, omitZero bool) bool {
 	return true
 }
 
-// EqualSlicePtr checks if both slices's pointer elements are matched.
+// EqualSlicePtr checks if both slices' pointer elements are matched.
 func EqualSlicePtr[T Equaler[T]](sliceA, sliceB []*T) bool {
 	if len(sliceA) != len(sliceB) {
 		return false

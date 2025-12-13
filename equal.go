@@ -278,7 +278,7 @@ func EqualComparablePtr[T comparable](x *T, y any) bool {
 	return false
 }
 
-// EqualMap checks if both map's elements are matched.
+// EqualMap checks if both maps' elements are matched.
 func EqualMap[K comparable, V any](mapA, mapB map[K]V, omitZero bool) bool {
 	if mapA == nil || mapB == nil {
 		if omitZero {
@@ -318,7 +318,7 @@ func EqualMap[K comparable, V any](mapA, mapB map[K]V, omitZero bool) bool {
 	return true
 }
 
-// EqualMapPointer checks if both map's pointer elements are matched.
+// EqualMapPointer checks if both maps' pointer elements are matched.
 func EqualMapPointer[K comparable, V Equaler[V]]( //nolint:cyclop
 	mapA, mapB map[K]*V,
 	omitZero bool,
