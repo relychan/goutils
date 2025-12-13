@@ -6,10 +6,34 @@ import (
 	"github.com/google/uuid"
 )
 
-// Equaler abstracts an interface to check the equality.
-type Equaler[T any] interface {
-	// Equal checks if the target value is equal.
-	Equal(target T) bool
+// IsZeroer abstracts an interface to check if the instance is zero.
+type IsZeroer interface {
+	IsZero() bool
+}
+
+// IsZeroPtr checks if the pointer is zero.
+func IsZeroPtr[T any](ptr *T) bool {
+	if ptr == nil {
+		return true
+	}
+
+	return IsZero(*ptr)
+}
+
+// IsZero checks if the value is zero.
+func IsZero[T any](value T) bool {
+	switch v := any(value).(type) {
+	case IsZeroer:
+		return v.IsZero()
+	case []any:
+		return len(v) == 0
+	case map[string]any:
+		return len(v) == 0
+	case map[any]any:
+		return len(v) == 0
+	default:
+		return false
+	}
 }
 
 // EqualPtr checks if the value of both pointers are equal.

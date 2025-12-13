@@ -3,6 +3,7 @@ package goutils
 import (
 	"cmp"
 	"fmt"
+	"reflect"
 	"slices"
 )
 
@@ -52,8 +53,66 @@ func PtrToNumberSlice[T1, T2 ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~
 	return results, nil
 }
 
-// SliceEqualSorted checks if both slices's elements are matched with sorted order.
-func SliceEqualSorted[T cmp.Ordered](sliceA, sliceB []T) bool {
+// EqualSlice checks if both slices's elements are matched.
+func EqualSlice[T any](sliceA, sliceB []T, omitZero bool) bool {
+	if sliceA == nil || sliceB == nil {
+		if omitZero {
+			return len(sliceA) == len(sliceB)
+		}
+
+		return sliceA == nil && sliceB == nil
+	}
+
+	// the both maps have the same pointer, they should equal.
+	if reflect.ValueOf(sliceA).UnsafePointer() == reflect.ValueOf(sliceB).UnsafePointer() {
+		return true
+	}
+
+	if len(sliceA) != len(sliceB) {
+		return false
+	}
+
+	for i, a := range sliceA {
+		b := sliceB[i]
+		if !DeepEqual(a, b, false) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EqualSlicePtr checks if both slices's pointer elements are matched.
+func EqualSlicePtr[T Equaler[T]](sliceA, sliceB []*T) bool {
+	if len(sliceA) != len(sliceB) {
+		return false
+	}
+
+	if len(sliceA) == 0 {
+		return true
+	}
+
+	for i, a := range sliceA {
+		b := sliceB[i]
+
+		if a == nil && b == nil {
+			continue
+		}
+
+		if a == nil || b == nil {
+			return false
+		}
+
+		if !(*a).Equal(*b) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EqualSliceSorted checks if both slices's elements are matched with sorted order.
+func EqualSliceSorted[T cmp.Ordered](sliceA, sliceB []T) bool {
 	if len(sliceA) != len(sliceB) {
 		return false
 	}
