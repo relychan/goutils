@@ -17,6 +17,30 @@ type AllOrListString struct {
 	list []string
 }
 
+// NewAll creates an [AllOrListString] that accepts all values.
+func NewAll() AllOrListString {
+	return AllOrListString{
+		all: true,
+	}
+}
+
+// NewStringList creates an [AllOrListString] with a list of static strings.
+func NewStringList(list []string) AllOrListString {
+	return AllOrListString{
+		list: list,
+	}
+}
+
+// IsZero returns true if the current instance is in its zero state (neither all nor list is set).
+func (j AllOrListString) IsZero() bool {
+	return !j.all && len(j.list) == 0
+}
+
+// Equal checks if the target value is equal.
+func (j AllOrListString) Equal(target AllOrListString) bool {
+	return j.all == target.all && EqualSliceSorted(j.list, target.list)
+}
+
 // IsAll returns true if the value represents the wildcard ("all").
 func (j AllOrListString) IsAll() bool {
 	return j.all

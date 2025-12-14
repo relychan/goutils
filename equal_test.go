@@ -616,6 +616,67 @@ func TestDeepEqual(t *testing.T) {
 			t.Error("expected equal with omitZero")
 		}
 	})
+
+	t.Run("AllOrListString", func(t *testing.T) {
+		// Test with all strings.
+		list1 := NewAll()
+		list2 := NewAll()
+		emptyList := NewStringList([]string{})
+
+		if !DeepEqual(list1, list2, true) {
+			t.Error("expected equal")
+		}
+
+		if !emptyList.IsZero() {
+			t.Error("expected empty")
+		}
+
+		if DeepEqual(list1, emptyList, true) {
+			t.Error("expected not equal")
+		}
+	})
+
+	t.Run("Duration", func(t *testing.T) {
+		// Test with Duration values.
+		v1 := Duration(time.Second)
+		v2 := Duration(time.Second)
+		zero := Duration(0)
+
+		if !DeepEqual(v1, v2, true) {
+			t.Error("expected equal")
+		}
+
+		if !IsZero(zero) {
+			t.Error("expected empty")
+		}
+
+		if DeepEqual(v1, zero, true) {
+			t.Error("expected not equal")
+		}
+	})
+
+	t.Run("Slug", func(t *testing.T) {
+
+		v1 := Slug("test")
+		v2 := Slug("test")
+		zero := Slug("")
+
+		if !DeepEqual(v1, v2, true) {
+			t.Error("expected equal")
+		}
+
+		if !IsZero(zero) {
+			t.Error("expected empty")
+		}
+
+		if IsZero(string(zero)) {
+			t.Error("expected non-empty")
+		}
+
+		if DeepEqual(v1, zero, true) {
+			t.Error("expected not equal")
+		}
+	})
 }
 
 func TestDeepEqual_WithAnyType(t *testing.T) {

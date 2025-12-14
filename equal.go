@@ -26,7 +26,7 @@ func DeepEqual[T any]( //nolint:cyclop,funlen,gocyclo,gocognit,maintidx
 	}
 
 	switch vx := anyX.(type) {
-	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, complex64, complex128, time.Duration, time.Time, uuid.UUID:
+	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, complex64, complex128, time.Duration, time.Time, uuid.UUID, Duration, Time, Slug:
 		return EqualComparableAny(vx, y)
 	case *bool:
 		return EqualComparableAnyPtr(vx, y)
@@ -65,6 +65,12 @@ func DeepEqual[T any]( //nolint:cyclop,funlen,gocyclo,gocognit,maintidx
 	case *time.Time:
 		return EqualComparableAnyPtr(vx, y)
 	case *uuid.UUID:
+		return EqualComparableAnyPtr(vx, y)
+	case *Duration:
+		return EqualComparableAnyPtr(vx, y)
+	case *Time:
+		return EqualComparableAnyPtr(vx, y)
+	case *Slug:
 		return EqualComparableAnyPtr(vx, y)
 	case Equaler[T]:
 		vy, ok := y.(T)
