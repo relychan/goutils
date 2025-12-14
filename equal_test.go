@@ -618,6 +618,475 @@ func TestDeepEqual(t *testing.T) {
 	})
 }
 
+func TestDeepEqual_WithAnyType(t *testing.T) {
+	t.Run("primitive types as any", func(t *testing.T) {
+		// int
+		if !DeepEqual(42, any(42), false) {
+			t.Error("expected equal for int vs any(int)")
+		}
+		if DeepEqual(42, any(43), false) {
+			t.Error("expected not equal for different int values")
+		}
+
+		// string
+		if !DeepEqual("hello", any("hello"), false) {
+			t.Error("expected equal for string vs any(string)")
+		}
+		if DeepEqual("hello", any("world"), false) {
+			t.Error("expected not equal for different string values")
+		}
+
+		// bool
+		if !DeepEqual(true, any(true), false) {
+			t.Error("expected equal for bool vs any(bool)")
+		}
+		if DeepEqual(true, any(false), false) {
+			t.Error("expected not equal for different bool values")
+		}
+
+		// float64
+		if !DeepEqual(3.14, any(3.14), false) {
+			t.Error("expected equal for float64 vs any(float64)")
+		}
+		if DeepEqual(3.14, any(2.71), false) {
+			t.Error("expected not equal for different float64 values")
+		}
+	})
+
+	t.Run("nil comparisons with any", func(t *testing.T) {
+		// nil slice vs any(nil slice) - both are nil slices, should be equal
+		var slice []int
+		var nilSlice []int
+		if !DeepEqual(slice, any(nilSlice), false) {
+			t.Error("expected equal for nil slice vs any(nil slice)")
+		}
+
+		// nil map vs any(nil map) - both are nil maps, should be equal
+		var m map[string]int
+		var nilMap map[string]int
+		if !DeepEqual(m, any(nilMap), false) {
+			t.Error("expected equal for nil map vs any(nil map)")
+		}
+
+		// non-nil vs any(nil)
+		var nilAny any
+		if DeepEqual(42, nilAny, false) {
+			t.Error("expected not equal for non-nil vs any(nil)")
+		}
+
+		// nil pointer vs non-nil any
+		var ptr *int
+		if DeepEqual(ptr, any(42), false) {
+			t.Error("expected not equal for nil pointer vs non-nil any")
+		}
+
+		// empty slice vs nil slice wrapped in any
+		emptySlice := []int{}
+		if DeepEqual(emptySlice, any(nilSlice), false) {
+			t.Error("expected not equal for empty slice vs any(nil slice)")
+		}
+
+		// empty map vs nil map wrapped in any
+		emptyMap := map[string]int{}
+		if DeepEqual(emptyMap, any(nilMap), false) {
+			t.Error("expected not equal for empty map vs any(nil map)")
+		}
+	})
+
+	t.Run("slices as any", func(t *testing.T) {
+		// []int vs any([]int)
+		slice1 := []int{1, 2, 3}
+		slice2 := any([]int{1, 2, 3})
+		if !DeepEqual(slice1, slice2, false) {
+			t.Error("expected equal for []int vs any([]int)")
+		}
+
+		// different values
+		slice3 := any([]int{1, 2, 4})
+		if DeepEqual(slice1, slice3, false) {
+			t.Error("expected not equal for different slice values")
+		}
+
+		// []string vs any([]string)
+		strSlice1 := []string{"a", "b", "c"}
+		strSlice2 := any([]string{"a", "b", "c"})
+		if !DeepEqual(strSlice1, strSlice2, false) {
+			t.Error("expected equal for []string vs any([]string)")
+		}
+
+		// []any vs any([]any)
+		anySlice1 := []any{1, "test", true}
+		anySlice2 := any([]any{1, "test", true})
+		if !DeepEqual(anySlice1, anySlice2, false) {
+			t.Error("expected equal for []any vs any([]any)")
+		}
+	})
+
+	t.Run("maps as any", func(t *testing.T) {
+		// map[string]int vs any(map[string]int)
+		map1 := map[string]int{"a": 1, "b": 2}
+		map2 := any(map[string]int{"a": 1, "b": 2})
+		if !DeepEqual(map1, map2, false) {
+			t.Error("expected equal for map[string]int vs any(map[string]int)")
+		}
+
+		// different values
+		map3 := any(map[string]int{"a": 1, "b": 3})
+		if DeepEqual(map1, map3, false) {
+			t.Error("expected not equal for different map values")
+		}
+
+		// map[string]any vs any(map[string]any)
+		anyMap1 := map[string]any{"a": 1, "b": "test"}
+		anyMap2 := any(map[string]any{"a": 1, "b": "test"})
+		if !DeepEqual(anyMap1, anyMap2, false) {
+			t.Error("expected equal for map[string]any vs any(map[string]any)")
+		}
+	})
+
+	t.Run("time types as any", func(t *testing.T) {
+		// time.Time
+		now := time.Now()
+		if !DeepEqual(now, any(now), false) {
+			t.Error("expected equal for time.Time vs any(time.Time)")
+		}
+
+		later := now.Add(time.Hour)
+		if DeepEqual(now, any(later), false) {
+			t.Error("expected not equal for different time.Time values")
+		}
+
+		// time.Duration
+		dur := 5 * time.Second
+		if !DeepEqual(dur, any(dur), false) {
+			t.Error("expected equal for time.Duration vs any(time.Duration)")
+		}
+
+		dur2 := 10 * time.Second
+		if DeepEqual(dur, any(dur2), false) {
+			t.Error("expected not equal for different time.Duration values")
+		}
+	})
+
+	t.Run("uuid as any", func(t *testing.T) {
+		id := uuid.New()
+		if !DeepEqual(id, any(id), false) {
+			t.Error("expected equal for uuid.UUID vs any(uuid.UUID)")
+		}
+
+		id2 := uuid.New()
+		if DeepEqual(id, any(id2), false) {
+			t.Error("expected not equal for different uuid.UUID values")
+		}
+	})
+
+	t.Run("pointer types as any", func(t *testing.T) {
+		val := 42
+		ptr1 := &val
+		ptr2 := any(&val)
+		if !DeepEqual(ptr1, ptr2, false) {
+			t.Error("expected equal for *int vs any(*int)")
+		}
+
+		val2 := 43
+		ptr3 := any(&val2)
+		if DeepEqual(ptr1, ptr3, false) {
+			t.Error("expected not equal for different pointer values")
+		}
+	})
+
+	t.Run("type mismatches with any", func(t *testing.T) {
+		// int vs any(string)
+		if DeepEqual(42, any("42"), false) {
+			t.Error("expected not equal for int vs any(string)")
+		}
+
+		// int vs any(float64)
+		if DeepEqual(42, any(42.0), false) {
+			t.Error("expected not equal for int vs any(float64)")
+		}
+
+		// []int vs any([]string)
+		if DeepEqual([]int{1, 2, 3}, any([]string{"1", "2", "3"}), false) {
+			t.Error("expected not equal for []int vs any([]string)")
+		}
+
+		// map[string]int vs any(map[string]string)
+		if DeepEqual(map[string]int{"a": 1}, any(map[string]string{"a": "1"}), false) {
+			t.Error("expected not equal for map[string]int vs any(map[string]string)")
+		}
+	})
+
+	t.Run("Equaler interface with any", func(t *testing.T) {
+		eq1 := testEqualer{Value: 1}
+		eq2 := any(testEqualer{Value: 1})
+		if !DeepEqual(eq1, eq2, false) {
+			t.Error("expected equal for Equaler vs any(Equaler)")
+		}
+
+		eq3 := any(testEqualer{Value: 2})
+		if DeepEqual(eq1, eq3, false) {
+			t.Error("expected not equal for different Equaler values")
+		}
+	})
+
+	t.Run("nested structures with any", func(t *testing.T) {
+		// nested map
+		nested1 := map[string]any{
+			"level1": map[string]any{
+				"level2": map[string]any{
+					"value": 42,
+				},
+			},
+		}
+		nested2 := any(map[string]any{
+			"level1": map[string]any{
+				"level2": map[string]any{
+					"value": 42,
+				},
+			},
+		})
+		if !DeepEqual(nested1, nested2, false) {
+			t.Error("expected equal for nested map vs any(nested map)")
+		}
+
+		// nested slice
+		nestedSlice1 := []any{[]any{[]any{1, 2, 3}}}
+		nestedSlice2 := any([]any{[]any{[]any{1, 2, 3}}})
+		if !DeepEqual(nestedSlice1, nestedSlice2, false) {
+			t.Error("expected equal for nested slice vs any(nested slice)")
+		}
+	})
+
+	t.Run("all integer types as any", func(t *testing.T) {
+		// int8
+		if !DeepEqual(int8(42), any(int8(42)), false) {
+			t.Error("expected equal for int8 vs any(int8)")
+		}
+		// int16
+		if !DeepEqual(int16(42), any(int16(42)), false) {
+			t.Error("expected equal for int16 vs any(int16)")
+		}
+		// int32
+		if !DeepEqual(int32(42), any(int32(42)), false) {
+			t.Error("expected equal for int32 vs any(int32)")
+		}
+		// int64
+		if !DeepEqual(int64(42), any(int64(42)), false) {
+			t.Error("expected equal for int64 vs any(int64)")
+		}
+		// uint
+		if !DeepEqual(uint(42), any(uint(42)), false) {
+			t.Error("expected equal for uint vs any(uint)")
+		}
+		// uint8
+		if !DeepEqual(uint8(42), any(uint8(42)), false) {
+			t.Error("expected equal for uint8 vs any(uint8)")
+		}
+		// uint16
+		if !DeepEqual(uint16(42), any(uint16(42)), false) {
+			t.Error("expected equal for uint16 vs any(uint16)")
+		}
+		// uint32
+		if !DeepEqual(uint32(42), any(uint32(42)), false) {
+			t.Error("expected equal for uint32 vs any(uint32)")
+		}
+		// uint64
+		if !DeepEqual(uint64(42), any(uint64(42)), false) {
+			t.Error("expected equal for uint64 vs any(uint64)")
+		}
+	})
+
+	t.Run("float and complex types as any", func(t *testing.T) {
+		// float32
+		if !DeepEqual(float32(3.14), any(float32(3.14)), false) {
+			t.Error("expected equal for float32 vs any(float32)")
+		}
+		// float64
+		if !DeepEqual(float64(3.14), any(float64(3.14)), false) {
+			t.Error("expected equal for float64 vs any(float64)")
+		}
+		// complex64
+		if !DeepEqual(complex64(1+2i), any(complex64(1+2i)), false) {
+			t.Error("expected equal for complex64 vs any(complex64)")
+		}
+		// complex128
+		if !DeepEqual(complex128(1+2i), any(complex128(1+2i)), false) {
+			t.Error("expected equal for complex128 vs any(complex128)")
+		}
+	})
+
+	t.Run("all map key types as any", func(t *testing.T) {
+		// map[bool]any
+		if !DeepEqual(map[bool]any{true: 1}, any(map[bool]any{true: 1}), false) {
+			t.Error("expected equal for map[bool]any vs any(map[bool]any)")
+		}
+		// map[int]any
+		if !DeepEqual(map[int]any{1: "a"}, any(map[int]any{1: "a"}), false) {
+			t.Error("expected equal for map[int]any vs any(map[int]any)")
+		}
+		// map[float64]any
+		if !DeepEqual(map[float64]any{1.5: "a"}, any(map[float64]any{1.5: "a"}), false) {
+			t.Error("expected equal for map[float64]any vs any(map[float64]any)")
+		}
+		// map[complex128]any
+		if !DeepEqual(map[complex128]any{1 + 2i: "a"}, any(map[complex128]any{1 + 2i: "a"}), false) {
+			t.Error("expected equal for map[complex128]any vs any(map[complex128]any)")
+		}
+	})
+
+	t.Run("empty collections as any", func(t *testing.T) {
+		// empty slice
+		if !DeepEqual([]int{}, any([]int{}), false) {
+			t.Error("expected equal for empty []int vs any(empty []int)")
+		}
+
+		// empty map
+		if !DeepEqual(map[string]int{}, any(map[string]int{}), false) {
+			t.Error("expected equal for empty map vs any(empty map)")
+		}
+
+		// empty string
+		if !DeepEqual("", any(""), false) {
+			t.Error("expected equal for empty string vs any(empty string)")
+		}
+	})
+
+	t.Run("all slice types as any", func(t *testing.T) {
+		// []int8
+		if !DeepEqual([]int8{1, 2}, any([]int8{1, 2}), false) {
+			t.Error("expected equal for []int8 vs any([]int8)")
+		}
+		// []int16
+		if !DeepEqual([]int16{1, 2}, any([]int16{1, 2}), false) {
+			t.Error("expected equal for []int16 vs any([]int16)")
+		}
+		// []int32
+		if !DeepEqual([]int32{1, 2}, any([]int32{1, 2}), false) {
+			t.Error("expected equal for []int32 vs any([]int32)")
+		}
+		// []int64
+		if !DeepEqual([]int64{1, 2}, any([]int64{1, 2}), false) {
+			t.Error("expected equal for []int64 vs any([]int64)")
+		}
+		// []uint
+		if !DeepEqual([]uint{1, 2}, any([]uint{1, 2}), false) {
+			t.Error("expected equal for []uint vs any([]uint)")
+		}
+		// []uint8
+		if !DeepEqual([]uint8{1, 2}, any([]uint8{1, 2}), false) {
+			t.Error("expected equal for []uint8 vs any([]uint8)")
+		}
+		// []uint16
+		if !DeepEqual([]uint16{1, 2}, any([]uint16{1, 2}), false) {
+			t.Error("expected equal for []uint16 vs any([]uint16)")
+		}
+		// []uint32
+		if !DeepEqual([]uint32{1, 2}, any([]uint32{1, 2}), false) {
+			t.Error("expected equal for []uint32 vs any([]uint32)")
+		}
+		// []uint64
+		if !DeepEqual([]uint64{1, 2}, any([]uint64{1, 2}), false) {
+			t.Error("expected equal for []uint64 vs any([]uint64)")
+		}
+		// []float32
+		if !DeepEqual([]float32{1.5, 2.5}, any([]float32{1.5, 2.5}), false) {
+			t.Error("expected equal for []float32 vs any([]float32)")
+		}
+		// []float64
+		if !DeepEqual([]float64{1.5, 2.5}, any([]float64{1.5, 2.5}), false) {
+			t.Error("expected equal for []float64 vs any([]float64)")
+		}
+		// []complex64
+		if !DeepEqual([]complex64{1 + 2i}, any([]complex64{1 + 2i}), false) {
+			t.Error("expected equal for []complex64 vs any([]complex64)")
+		}
+		// []complex128
+		if !DeepEqual([]complex128{1 + 2i}, any([]complex128{1 + 2i}), false) {
+			t.Error("expected equal for []complex128 vs any([]complex128)")
+		}
+		// []bool
+		if !DeepEqual([]bool{true, false}, any([]bool{true, false}), false) {
+			t.Error("expected equal for []bool vs any([]bool)")
+		}
+		// []time.Time
+		now := time.Now()
+		if !DeepEqual([]time.Time{now}, any([]time.Time{now}), false) {
+			t.Error("expected equal for []time.Time vs any([]time.Time)")
+		}
+		// []time.Duration
+		if !DeepEqual([]time.Duration{time.Second}, any([]time.Duration{time.Second}), false) {
+			t.Error("expected equal for []time.Duration vs any([]time.Duration)")
+		}
+		// []uuid.UUID
+		id := uuid.New()
+		if !DeepEqual([]uuid.UUID{id}, any([]uuid.UUID{id}), false) {
+			t.Error("expected equal for []uuid.UUID vs any([]uuid.UUID)")
+		}
+	})
+
+	t.Run("complex real-world scenarios with any", func(t *testing.T) {
+		// Mixed types in map[string]any
+		complex1 := map[string]any{
+			"string":   "value",
+			"int":      42,
+			"float":    3.14,
+			"bool":     true,
+			"slice":    []int{1, 2, 3},
+			"map":      map[string]string{"key": "value"},
+			"time":     time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			"duration": time.Second,
+			"uuid":     uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+		}
+		complex2 := any(map[string]any{
+			"string":   "value",
+			"int":      42,
+			"float":    3.14,
+			"bool":     true,
+			"slice":    []int{1, 2, 3},
+			"map":      map[string]string{"key": "value"},
+			"time":     time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			"duration": time.Second,
+			"uuid":     uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+		})
+		if !DeepEqual(complex1, complex2, false) {
+			t.Error("expected equal for complex real-world map")
+		}
+
+		// Change one value
+		complex3 := any(map[string]any{
+			"string":   "value",
+			"int":      43, // changed
+			"float":    3.14,
+			"bool":     true,
+			"slice":    []int{1, 2, 3},
+			"map":      map[string]string{"key": "value"},
+			"time":     time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			"duration": time.Second,
+			"uuid":     uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
+		})
+		if DeepEqual(complex1, complex3, false) {
+			t.Error("expected not equal when one value differs")
+		}
+	})
+
+	t.Run("omitZero with any type", func(t *testing.T) {
+		// map with zero values
+		map1 := map[string]int{"a": 1, "b": 2}
+		map2 := any(map[string]int{"a": 1, "b": 2})
+		if !DeepEqual(map1, map2, true) {
+			t.Error("expected equal with omitZero")
+		}
+
+		// slice with any
+		slice1 := []int{1, 2, 3}
+		slice2 := any([]int{1, 2, 3})
+		if !DeepEqual(slice1, slice2, true) {
+			t.Error("expected equal with omitZero")
+		}
+	})
+}
+
 func TestEqualPtr(t *testing.T) {
 	if !EqualPtr(&testEqualer{}, &testEqualer{}) {
 		t.Error("expected equal")
@@ -667,8 +1136,8 @@ func createBenchmarkObject() map[string]any {
 	}
 }
 
-// BenchmarkDeepEqual-11    	  296131	      4009 ns/op	    5848 B/op	      70 allocs/op
-func BenchmarkDeepEqual(b *testing.B) {
+// BenchmarkDeepEqualReflection-11    	  296131	      4009 ns/op	    5848 B/op	      70 allocs/op
+func BenchmarkDeepEqualReflection(b *testing.B) {
 	obj1 := createBenchmarkObject()
 	obj2 := createBenchmarkObject()
 
@@ -677,8 +1146,8 @@ func BenchmarkDeepEqual(b *testing.B) {
 	}
 }
 
-// BenchmarkDeepEqual2-11    	 1904056	       636.6 ns/op	       0 B/op	       0 allocs/op
-func BenchmarkDeepEqual2(b *testing.B) {
+// BenchmarkDeepEqual-11    	 1904056	       636.6 ns/op	       0 B/op	       0 allocs/op
+func BenchmarkDeepEqual(b *testing.B) {
 	obj1 := createBenchmarkObject()
 	obj2 := createBenchmarkObject()
 	for b.Loop() {

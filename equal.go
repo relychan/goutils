@@ -14,8 +14,18 @@ type Equaler[T any] interface {
 }
 
 // DeepEqual checks if both values are equal recursively.
-func DeepEqual[T any](x, y T, omitZero bool) bool { //nolint:cyclop,funlen,gocyclo,gocognit,maintidx
-	switch vx := any(x).(type) {
+func DeepEqual[T any]( //nolint:cyclop,funlen,gocyclo,gocognit,maintidx
+	x T,
+	y any,
+	omitZero bool,
+) bool {
+	anyX := any(x)
+
+	if y == nil && anyX == nil {
+		return y == anyX
+	}
+
+	switch vx := anyX.(type) {
 	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, complex64, complex128, time.Duration, time.Time, uuid.UUID:
 		return EqualComparableAny(vx, y)
 	case *bool:
@@ -57,134 +67,138 @@ func DeepEqual[T any](x, y T, omitZero bool) bool { //nolint:cyclop,funlen,gocyc
 	case *uuid.UUID:
 		return EqualComparableAnyPtr(vx, y)
 	case Equaler[T]:
-		vy := any(y)
-
-		if vx == nil || vy == nil {
-			return vx == vy
+		vy, ok := y.(T)
+		if ok {
+			return vx.Equal(vy)
 		}
 
-		return vx.Equal(y)
+		vyp, ok := y.(*T)
+		if ok && vyp != nil {
+			return vx.Equal(*vyp)
+		}
+
+		return false
 	case map[string]any:
-		mapY, ok := any(y).(map[string]any)
+		mapY, ok := y.(map[string]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[string]string:
-		mapY, ok := any(y).(map[string]string)
+		mapY, ok := y.(map[string]string)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[bool]any:
-		mapY, ok := any(y).(map[bool]any)
+		mapY, ok := y.(map[bool]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[int]any:
-		mapY, ok := any(y).(map[int]any)
+		mapY, ok := y.(map[int]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[int8]any:
-		mapY, ok := any(y).(map[int8]any)
+		mapY, ok := y.(map[int8]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[int16]any:
-		mapY, ok := any(y).(map[int16]any)
+		mapY, ok := y.(map[int16]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[int32]any:
-		mapY, ok := any(y).(map[int32]any)
+		mapY, ok := y.(map[int32]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[int64]any:
-		mapY, ok := any(y).(map[int64]any)
+		mapY, ok := y.(map[int64]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[uint]any:
-		mapY, ok := any(y).(map[uint]any)
+		mapY, ok := y.(map[uint]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[uint8]any:
-		mapY, ok := any(y).(map[uint8]any)
+		mapY, ok := y.(map[uint8]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[uint16]any:
-		mapY, ok := any(y).(map[uint16]any)
+		mapY, ok := y.(map[uint16]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[uint32]any:
-		mapY, ok := any(y).(map[uint32]any)
+		mapY, ok := y.(map[uint32]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[uint64]any:
-		mapY, ok := any(y).(map[uint64]any)
+		mapY, ok := y.(map[uint64]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[float32]any:
-		mapY, ok := any(y).(map[float32]any)
+		mapY, ok := y.(map[float32]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[float64]any:
-		mapY, ok := any(y).(map[float64]any)
+		mapY, ok := y.(map[float64]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[complex64]any:
-		mapY, ok := any(y).(map[complex64]any)
+		mapY, ok := y.(map[complex64]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[complex128]any:
-		mapY, ok := any(y).(map[complex128]any)
+		mapY, ok := y.(map[complex128]any)
 		if !ok {
 			return false
 		}
 
 		return EqualMap(vx, mapY, omitZero)
 	case map[any]any:
-		mapY, ok := any(y).(map[any]any)
+		mapY, ok := y.(map[any]any)
 		if !ok {
 			return false
 		}
@@ -229,7 +243,7 @@ func DeepEqual[T any](x, y T, omitZero bool) bool { //nolint:cyclop,funlen,gocyc
 	case []uuid.UUID:
 		return EqualComparableSlice(vx, y, omitZero)
 	case []any:
-		sliceY, ok := any(y).([]any)
+		sliceY, ok := y.([]any)
 		if !ok {
 			return false
 		}
