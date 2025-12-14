@@ -106,6 +106,10 @@ func IsZero[T any](value T) bool { //nolint:cyclop,funlen,gocyclo
 		return len(v) == 0
 	case time.Duration:
 		return v == 0
+	case Duration:
+		return v == 0
+	case Slug:
+		return v == ""
 	case IsZeroer:
 		return v.IsZero()
 	default:
@@ -180,6 +184,13 @@ func isZeroReflection(reflectValue reflect.Value) bool {
 		elem := reflectValue.Elem()
 
 		return isZeroReflection(elem)
+	case reflect.String:
+		// only alias types of string are checked.
+		if reflectValue.Type().Name() != "string" {
+			return reflectValue.Len() == 0
+		}
+
+		return false
 	default:
 		return false
 	}
