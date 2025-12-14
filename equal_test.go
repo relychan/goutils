@@ -637,7 +637,7 @@ func TestDeepEqual(t *testing.T) {
 	})
 
 	t.Run("Duration", func(t *testing.T) {
-		// Test with all strings.
+		// Test with Duration values.
 		v1 := Duration(time.Second)
 		v2 := Duration(time.Second)
 		zero := Duration(0)
@@ -656,7 +656,7 @@ func TestDeepEqual(t *testing.T) {
 	})
 
 	t.Run("Slug", func(t *testing.T) {
-		// Test with all strings.
+
 		v1 := Slug("test")
 		v2 := Slug("test")
 		zero := Slug("")

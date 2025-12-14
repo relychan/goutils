@@ -31,7 +31,7 @@ func NewStringList(list []string) AllOrListString {
 	}
 }
 
-// IsZero if the current instance is empty.
+// IsZero returns true if the current instance is in its zero state (neither all nor list is set).
 func (j AllOrListString) IsZero() bool {
 	return !j.all && len(j.list) == 0
 }
