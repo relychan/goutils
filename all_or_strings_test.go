@@ -710,6 +710,22 @@ func TestWildcard_String(t *testing.T) {
 // ============================================================================
 
 func TestAllOrListWildcardString_ParseStrings(t *testing.T) {
+	t.Run("constructors", func(t *testing.T) {
+		aos := NewAllWildcard()
+		if !aos.IsAll() {
+			t.Error("expected IsAll() to be true")
+		}
+
+		aos = NewAllOrListWildcardStringFromStrings([]string{"foo", "bar", "baz"})
+		if len(aos.List()) != 3 {
+			t.Errorf("expected 3 static strings, got: %d", len(aos.List()))
+		}
+
+		if len(aos.Wildcards()) != 0 {
+			t.Errorf("expected 0 wildcards, got: %d", len(aos.Wildcards()))
+		}
+	})
+
 	t.Run("only static strings", func(t *testing.T) {
 		var aos AllOrListWildcardString
 		aos.parseStrings([]string{"foo", "bar", "baz"})

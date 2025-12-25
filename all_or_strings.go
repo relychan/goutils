@@ -187,21 +187,14 @@ func NewAllWildcard() AllOrListWildcardString {
 // NewAllOrListWildcardStringFromStrings constructs an AllOrListWildcardString from
 // the provided list of strings, parsing any wildcard patterns using the same logic
 // as JSON/YAML unmarshaling.
-func NewAllOrListWildcardStringFromStrings(values []string) (AllOrListWildcardString, error) {
+func NewAllOrListWildcardStringFromStrings(values []string) AllOrListWildcardString {
 	var res AllOrListWildcardString
 
-	if err := res.parseStrings(values); err != nil {
-		return AllOrListWildcardString{}, err
-	}
+	res.parseStrings(values)
 
-	return res, nil
+	return res
 }
 
-// NewAllOrListWildcardString constructs an AllOrListWildcardString from a variadic
-// list of strings. It is a convenience wrapper around NewAllOrListWildcardStringFromStrings.
-func NewAllOrListWildcardString(values ...string) (AllOrListWildcardString, error) {
-	return NewAllOrListWildcardStringFromStrings(values)
-}
 // IsZero returns true if the current instance is in its zero state (neither all nor list is set).
 func (j AllOrListWildcardString) IsZero() bool {
 	return j.AllOrListString.IsZero() &&
