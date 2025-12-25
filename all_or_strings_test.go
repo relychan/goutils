@@ -778,29 +778,6 @@ func TestAllOrListWildcardString_ParseStrings(t *testing.T) {
 		}
 	})
 
-	t.Run("case normalization", func(t *testing.T) {
-		var aos AllOrListWildcardString
-		aos.parseStrings([]string{"FOO", "Test*", "*VALUE"})
-
-		list := aos.List()
-		if len(list) != 1 || list[0] != "foo" {
-			t.Errorf("expected normalized static string 'foo', got: %v", list)
-		}
-
-		wildcards := aos.Wildcards()
-		if len(wildcards) != 2 {
-			t.Errorf("expected 2 wildcards, got: %d", len(wildcards))
-		}
-
-		// Check that wildcards are normalized
-		if wildcards[0].prefix != "test" {
-			t.Errorf("expected normalized prefix 'test', got: %s", wildcards[0].prefix)
-		}
-		if wildcards[1].suffix != "value" {
-			t.Errorf("expected normalized suffix 'value', got: %s", wildcards[1].suffix)
-		}
-	})
-
 	t.Run("empty string", func(t *testing.T) {
 		var aos AllOrListWildcardString
 		aos.parseStrings([]string{""})

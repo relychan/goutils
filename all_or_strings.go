@@ -348,8 +348,6 @@ func (j *AllOrListWildcardString) parseString(input string) {
 		return
 	}
 
-	// Normalize
-	input = strings.ToLower(input)
 	if input == "*" {
 		// If "*" is present in the list, turn the whole list into a match all
 		j.all = true
