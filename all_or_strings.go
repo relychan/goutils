@@ -140,7 +140,7 @@ func NewWildcard(input string) (Wildcard, bool) {
 	}
 
 	if found {
-		result.suffix = strings.TrimPrefix(after, "*")
+		result.suffix = strings.TrimLeft(after, "*")
 	}
 
 	return result, found
@@ -177,6 +177,31 @@ type AllOrListWildcardString struct { //nolint:recvcheck
 	wildcards []Wildcard
 }
 
+// NewAllWildcard creates an AllOrListWildcardString that represents all items ("*").
+func NewAllWildcard() AllOrListWildcardString {
+	return AllOrListWildcardString{
+		AllOrListString: NewAll(),
+	}
+}
+
+// NewAllOrListWildcardStringFromStrings constructs an AllOrListWildcardString from
+// the provided list of strings, parsing any wildcard patterns using the same logic
+// as JSON/YAML unmarshaling.
+func NewAllOrListWildcardStringFromStrings(values []string) (AllOrListWildcardString, error) {
+	var res AllOrListWildcardString
+
+	if err := res.parseStrings(values); err != nil {
+		return AllOrListWildcardString{}, err
+	}
+
+	return res, nil
+}
+
+// NewAllOrListWildcardString constructs an AllOrListWildcardString from a variadic
+// list of strings. It is a convenience wrapper around NewAllOrListWildcardStringFromStrings.
+func NewAllOrListWildcardString(values ...string) (AllOrListWildcardString, error) {
+	return NewAllOrListWildcardStringFromStrings(values)
+}
 // IsZero returns true if the current instance is in its zero state (neither all nor list is set).
 func (j AllOrListWildcardString) IsZero() bool {
 	return j.AllOrListString.IsZero() &&
