@@ -3,6 +3,7 @@ package goutils
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v4"
@@ -40,6 +41,16 @@ func (j AllOrListString) IsZero() bool {
 // Equal checks if the target value is equal.
 func (j AllOrListString) Equal(target AllOrListString) bool {
 	return j.all == target.all && EqualSliceSorted(j.list, target.list)
+}
+
+// Contains reports whether the input value is accepted. It returns true if the
+// wildcard "all" is set or if the input value is present in the list.
+func (j AllOrListString) Contains(input string) bool {
+	if j.all {
+		return true
+	}
+
+	return slices.Contains(j.list, input)
 }
 
 // IsAll returns true if the value represents the wildcard ("all").
@@ -210,6 +221,24 @@ func (j AllOrListWildcardString) Equal(target AllOrListWildcardString) bool {
 // Wildcards returns the list of wildcards, or nil if IsAll() is true.
 func (j AllOrListWildcardString) Wildcards() []Wildcard {
 	return j.wildcards
+}
+
+// Contains reports whether the input value is contained in this set.
+// It returns true if the embedded AllOrListString is in the "all" state,
+// or if the input value is present in its static list, or if the input
+// matches any of the configured wildcard patterns.
+func (j AllOrListWildcardString) Contains(input string) bool {
+	if j.AllOrListString.Contains(input) {
+		return true
+	}
+
+	for _, w := range j.wildcards {
+		if w.Match(input) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // UnmarshalJSON implements json.Unmarshaler.

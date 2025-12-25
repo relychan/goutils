@@ -27,6 +27,10 @@ func TestAllOrListString_NewAll(t *testing.T) {
 		t.Error("expected IsZero() to be false")
 	}
 
+	if !aos.Contains("bar") {
+		t.Error("expected Contains() to be true")
+	}
+
 	if aos.String() != "*" {
 		t.Errorf("expected String() to be '*', got: %s", aos.String())
 	}
@@ -42,6 +46,10 @@ func TestAllOrListString_NewStringList(t *testing.T) {
 
 	if aos.IsZero() {
 		t.Error("expected IsZero() to be false")
+	}
+
+	if !aos.Contains("bar") {
+		t.Error("expected Contains() to be true")
 	}
 
 	gotList := aos.List()
@@ -724,6 +732,10 @@ func TestAllOrListWildcardString_ParseStrings(t *testing.T) {
 		if len(aos.Wildcards()) != 0 {
 			t.Errorf("expected 0 wildcards, got: %d", len(aos.Wildcards()))
 		}
+
+		if !aos.Contains("bar") {
+			t.Error("expected Contains() to be true")
+		}
 	})
 
 	t.Run("only static strings", func(t *testing.T) {
@@ -740,6 +752,10 @@ func TestAllOrListWildcardString_ParseStrings(t *testing.T) {
 
 		if len(aos.Wildcards()) != 0 {
 			t.Errorf("expected 0 wildcards, got: %d", len(aos.Wildcards()))
+		}
+
+		if !aos.Contains("bar") {
+			t.Error("expected Contains() to be true")
 		}
 	})
 
@@ -774,6 +790,14 @@ func TestAllOrListWildcardString_ParseStrings(t *testing.T) {
 
 		if len(aos.Wildcards()) != 2 {
 			t.Errorf("expected 2 wildcards, got: %d", len(aos.Wildcards()))
+		}
+
+		if !aos.Contains("testvalue") {
+			t.Error("expected Contains() to be true")
+		}
+
+		if aos.Contains("not contains") {
+			t.Error("expected Contains() to be false")
 		}
 	})
 
