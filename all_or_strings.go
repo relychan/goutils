@@ -146,7 +146,7 @@ func NewWildcard(input string) (Wildcard, bool) {
 	return result, found
 }
 
-// IsZero returns true if the current instance is in its zero state (neither all nor list is set).
+// IsZero returns true if the current instance is in its zero state (both prefix and suffix are empty).
 func (w Wildcard) IsZero() bool {
 	return w.prefix == "" && w.suffix == ""
 }
