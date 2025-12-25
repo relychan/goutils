@@ -43,7 +43,8 @@ func (j AllOrListString) Equal(target AllOrListString) bool {
 	return j.all == target.all && EqualSliceSorted(j.list, target.list)
 }
 
-// Contains reports whether the input value is present in slice.
+// Contains reports whether the input value is accepted. It returns true if the
+// wildcard "all" is set or if the input value is present in the list.
 func (j AllOrListString) Contains(input string) bool {
 	if j.all {
 		return true
@@ -222,7 +223,10 @@ func (j AllOrListWildcardString) Wildcards() []Wildcard {
 	return j.wildcards
 }
 
-// Contains reports whether the input value is present in slice.
+// Contains reports whether the input value is contained in this set.
+// It returns true if the embedded AllOrListString is in the "all" state,
+// or if the input value is present in its static list, or if the input
+// matches any of the configured wildcard patterns.
 func (j AllOrListWildcardString) Contains(input string) bool {
 	if j.AllOrListString.Contains(input) {
 		return true
