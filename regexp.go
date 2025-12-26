@@ -79,8 +79,8 @@ func (j RegexpMatcher) String() string {
 	}
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler] by calling
-// [Compile] on the encoded value.
+// UnmarshalText implements [encoding.TextUnmarshaler] by compiling the
+// encoded value with [regexp.Compile] when treating it as a regular expression.
 func (j *RegexpMatcher) UnmarshalText(bs []byte) error {
 	text := string(bs)
 	op := containOp
