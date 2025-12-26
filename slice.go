@@ -147,15 +147,3 @@ func Map[T, M any](input []T, f func(T) M) []M {
 
 	return output
 }
-
-// Every checks if all elements of the slice satisfy the predicate.
-// T is the type of the input slice elements.
-func Every[T any](input []T, predicate func(T) bool) bool {
-	for _, v := range input {
-		if !predicate(v) {
-			return false
-		}
-	}
-
-	return true
-}

@@ -8,10 +8,21 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
+type matchOp int8
+
+const (
+	equalOp matchOp = iota
+	prefixOp
+	suffixOp
+	containOp
+	regexpOp
+)
+
 // RegexpMatcher wraps the regexp.Regexp with a string for simple matching.
 type RegexpMatcher struct { //nolint:recvcheck
 	text   *string
 	regexp *regexp.Regexp
+	op     matchOp
 }
 
 // NewRegexpMatcher creates a [RegexpMatcher] from a raw string.
@@ -19,6 +30,18 @@ func NewRegexpMatcher(input string) (*RegexpMatcher, error) {
 	result := &RegexpMatcher{}
 
 	return result, result.UnmarshalText([]byte(input))
+}
+
+// MustRegexpMatcher creates a [RegexpMatcher] from a raw string. Panic if error.
+func MustRegexpMatcher(input string) *RegexpMatcher {
+	result := &RegexpMatcher{}
+
+	err := result.UnmarshalText([]byte(input))
+	if err != nil {
+		panic(err)
+	}
+
+	return result
 }
 
 // IsZero returns true if the current instance is in its zero state.
@@ -50,19 +73,60 @@ func (j RegexpMatcher) String() string {
 // [Compile] on the encoded value.
 func (j *RegexpMatcher) UnmarshalText(bs []byte) error {
 	text := string(bs)
+	op := containOp
 
-	if !Every(bs, IsMetaCharacter) {
-		j.text = &text
-		j.regexp = nil
-	} else {
+	switch {
+	case len(bs) == 0:
+	case len(bs) == 1:
+		if isRegexSyntaxChar(rune(bs[0])) {
+			op = regexpOp
+		}
+	case bs[0] == '^' && bs[len(bs)-1] == '$':
+		subtext := text[1 : len(bs)-1]
+		if isRegexSyntax(subtext) {
+			op = regexpOp
+		} else {
+			op = equalOp
+			text = subtext
+		}
+	case bs[0] == '^':
+		subtext := text[1:]
+		if isRegexSyntax(subtext) {
+			op = regexpOp
+		} else {
+			op = prefixOp
+			text = subtext
+		}
+	case bs[len(bs)-1] == '$':
+		subtext := text[:len(text)-1]
+		if isRegexSyntax(subtext) {
+			op = regexpOp
+		} else {
+			op = suffixOp
+			text = subtext
+		}
+	default:
+		if isRegexSyntax(text) {
+			op = regexpOp
+		}
+	}
+
+	if op == regexpOp {
 		re, err := regexp.Compile(text)
 		if err != nil {
 			return err
 		}
 
-		j.regexp = re
 		j.text = nil
+		j.regexp = re
+		j.op = op
+
+		return nil
 	}
+
+	j.op = op
+	j.text = &text
+	j.regexp = nil
 
 	return nil
 }
@@ -103,26 +167,40 @@ func (j RegexpMatcher) MarshalYAML() (any, error) {
 
 // Match reports whether the byte slice b contains any match of the regular expression re.
 func (j *RegexpMatcher) Match(b []byte) bool {
-	if j.text != nil {
-		return strings.Contains(string(b), *j.text)
+	switch j.op {
+	case equalOp:
+		return j.text != nil && *j.text == string(b)
+	case prefixOp:
+		return j.text != nil && strings.HasPrefix(string(b), *j.text)
+	case suffixOp:
+		return j.text != nil && strings.HasSuffix(string(b), *j.text)
+	case containOp:
+		return j.text != nil && strings.Contains(string(b), *j.text)
+	default:
+		return j.regexp != nil && j.regexp.Match(b)
 	}
-
-	if j.regexp != nil {
-		return j.regexp.Match(b)
-	}
-
-	return false
 }
 
 // MatchString reports whether the string s contains any match of the regular expression re.
 func (j *RegexpMatcher) MatchString(s string) bool {
-	if j.text != nil {
-		return strings.Contains(s, *j.text)
+	switch j.op {
+	case equalOp:
+		return j.text != nil && *j.text == s
+	case prefixOp:
+		return j.text != nil && strings.HasPrefix(s, *j.text)
+	case suffixOp:
+		return j.text != nil && strings.HasSuffix(s, *j.text)
+	case containOp:
+		return j.text != nil && strings.Contains(s, *j.text)
+	default:
+		return j.regexp != nil && j.regexp.MatchString(s)
 	}
+}
 
-	if j.regexp != nil {
-		return j.regexp.MatchString(s)
-	}
+func isRegexSyntaxChar(r rune) bool {
+	return !IsMetaCharacter(r) && !strings.ContainsRune("`~@#%&; ", r)
+}
 
-	return false
+func isRegexSyntax(s string) bool {
+	return strings.ContainsFunc(s, isRegexSyntaxChar)
 }
