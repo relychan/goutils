@@ -9,6 +9,8 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
+const wildcardSymbol = "*"
+
 // AllOrListString is a type that represents either a wildcard ("*") meaning "all items",
 // or a specific list of strings. This is useful for configuration fields where you want
 // to allow users to specify either all possible values (using "*") or a subset of values.
@@ -85,7 +87,7 @@ func (j *AllOrListString) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements json.Marshaler.
 func (j AllOrListString) MarshalJSON() ([]byte, error) {
 	if j.all {
-		return json.Marshal("*")
+		return json.Marshal(wildcardSymbol)
 	}
 
 	return json.Marshal(j.list)
@@ -95,7 +97,7 @@ func (j AllOrListString) MarshalJSON() ([]byte, error) {
 // If the YAML value is the string "*", it is treated as a wildcard and sets 'all' to true and 'list' to nil.
 // Otherwise, it expects a list of strings and sets 'list' accordingly, with 'all' set to false.
 func (j *AllOrListString) UnmarshalYAML(value *yaml.Node) error {
-	if value.Value == "*" {
+	if value.Value == wildcardSymbol {
 		j.all = true
 		j.list = nil
 
@@ -117,7 +119,7 @@ func (j *AllOrListString) UnmarshalYAML(value *yaml.Node) error {
 // Otherwise, it serializes the list as a YAML sequence.
 func (j AllOrListString) MarshalYAML() (any, error) {
 	if j.all {
-		return "*", nil
+		return wildcardSymbol, nil
 	}
 
 	return j.list, nil
@@ -126,7 +128,7 @@ func (j AllOrListString) MarshalYAML() (any, error) {
 // String implements the custom behavior for the fmt.Stringer interface.
 func (j AllOrListString) String() string {
 	if j.all {
-		return "*"
+		return wildcardSymbol
 	}
 
 	return fmt.Sprintf("%v", j.list)
@@ -144,14 +146,14 @@ func NewWildcard(input string) (Wildcard, bool) {
 		return Wildcard{}, false
 	}
 
-	before, after, found := strings.Cut(input, "*")
+	before, after, found := strings.Cut(input, wildcardSymbol)
 	result := Wildcard{
 		prefix: before,
 		suffix: after,
 	}
 
 	if found {
-		result.suffix = strings.TrimLeft(after, "*")
+		result.suffix = strings.TrimLeft(after, wildcardSymbol)
 	}
 
 	return result, found
@@ -176,7 +178,7 @@ func (w Wildcard) Match(s string) bool {
 
 // String implements the fmt.Stringer interface.
 func (w Wildcard) String() string {
-	return w.prefix + "*" + w.suffix
+	return w.prefix + wildcardSymbol + w.suffix
 }
 
 // AllOrListWildcardString is a type that represents either a wildcard ("*") meaning "all items",
@@ -270,7 +272,7 @@ func (j *AllOrListWildcardString) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements json.Marshaler.
 func (j AllOrListWildcardString) MarshalJSON() ([]byte, error) {
 	if j.all {
-		return json.Marshal("*")
+		return json.Marshal(wildcardSymbol)
 	}
 
 	return json.Marshal(j.toStrings())
@@ -280,7 +282,7 @@ func (j AllOrListWildcardString) MarshalJSON() ([]byte, error) {
 // If the YAML value is the string "*", it is treated as a wildcard and sets 'all' to true and 'list' to nil.
 // Otherwise, it expects a list of strings and sets 'list' accordingly, with 'all' set to false.
 func (j *AllOrListWildcardString) UnmarshalYAML(value *yaml.Node) error {
-	if value.Value == "*" {
+	if value.Value == wildcardSymbol {
 		j.all = true
 		j.list = nil
 		j.wildcards = nil
@@ -309,7 +311,7 @@ func (j *AllOrListWildcardString) UnmarshalYAML(value *yaml.Node) error {
 // Otherwise, it serializes the list as a YAML sequence.
 func (j AllOrListWildcardString) MarshalYAML() (any, error) {
 	if j.all {
-		return "*", nil
+		return wildcardSymbol, nil
 	}
 
 	return j.toStrings(), nil
@@ -318,7 +320,7 @@ func (j AllOrListWildcardString) MarshalYAML() (any, error) {
 // String implements the custom behavior for the fmt.Stringer interface.
 func (j AllOrListWildcardString) String() string {
 	if j.all {
-		return "*"
+		return wildcardSymbol
 	}
 
 	var sb strings.Builder
@@ -370,7 +372,7 @@ func (j *AllOrListWildcardString) parseString(input string) {
 		return
 	}
 
-	if input == "*" {
+	if input == wildcardSymbol {
 		// If "*" is present in the list, turn the whole list into a match all
 		j.all = true
 		j.list = nil
