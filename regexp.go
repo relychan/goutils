@@ -52,6 +52,7 @@ func (j RegexpMatcher) IsZero() bool {
 // Equal checks if the target value is equal.
 func (j RegexpMatcher) Equal(target RegexpMatcher) bool {
 	return EqualComparablePtr(j.text, target.text) &&
+		j.op == target.op &&
 		(j.regexp == target.regexp || (j.regexp != nil && target.regexp != nil &&
 			j.regexp.String() == target.regexp.String()))
 }
@@ -62,11 +63,20 @@ func (j RegexpMatcher) String() string {
 		return j.regexp.String()
 	}
 
-	if j.text != nil {
-		return *j.text
+	if j.text == nil {
+		return ""
 	}
 
-	return ""
+	switch j.op {
+	case equalOp:
+		return "^" + *j.text + "$"
+	case prefixOp:
+		return "^" + *j.text
+	case suffixOp:
+		return *j.text + "$"
+	default:
+		return *j.text
+	}
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler] by calling

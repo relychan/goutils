@@ -834,3 +834,806 @@ func TestRegexpMatcher_EdgeCases(t *testing.T) {
 		}
 	})
 }
+
+func TestMustRegexpMatcher(t *testing.T) {
+	t.Run("valid pattern", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello world")
+		if rm == nil {
+			t.Error("expected non-nil result")
+		}
+		if rm.text == nil || *rm.text != "hello world" {
+			t.Error("expected text to be 'hello world'")
+		}
+	})
+
+	t.Run("valid regexp", func(t *testing.T) {
+		rm := MustRegexpMatcher("^[a-z]+$")
+		if rm == nil {
+			t.Error("expected non-nil result")
+		}
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("panic on invalid regexp", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("expected panic for invalid regexp")
+			}
+		}()
+		MustRegexpMatcher("[invalid")
+	})
+}
+
+func TestRegexpMatcher_PrefixOp(t *testing.T) {
+	t.Run("prefix match with caret", func(t *testing.T) {
+		rm := MustRegexpMatcher("^hello")
+		tests := []struct {
+			input    string
+			expected bool
+		}{
+			{"hello", true},
+			{"hello world", true},
+			{"helloworld", true},
+			{"say hello", false},
+			{"HELLO", false},
+			{"", false},
+		}
+
+		for _, tt := range tests {
+			result := rm.MatchString(tt.input)
+			if result != tt.expected {
+				t.Errorf("MatchString(%q) = %v, expected %v", tt.input, result, tt.expected)
+			}
+		}
+	})
+
+	t.Run("prefix with meta characters only", func(t *testing.T) {
+		rm := MustRegexpMatcher("^test123")
+		if !rm.MatchString("test123") {
+			t.Error("expected to match 'test123'")
+		}
+		if !rm.MatchString("test123abc") {
+			t.Error("expected to match 'test123abc'")
+		}
+		if rm.MatchString("abc test123") {
+			t.Error("expected not to match 'abc test123'")
+		}
+	})
+
+	t.Run("prefix with special chars becomes regexp", func(t *testing.T) {
+		rm := MustRegexpMatcher("^hello.world")
+		// "." is regex syntax, so this becomes a regexp
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+}
+
+func TestRegexpMatcher_SuffixOp(t *testing.T) {
+	t.Run("suffix match with dollar", func(t *testing.T) {
+		rm := MustRegexpMatcher("world$")
+		tests := []struct {
+			input    string
+			expected bool
+		}{
+			{"world", true},
+			{"hello world", true},
+			{"helloworld", true},
+			{"world hello", false},
+			{"WORLD", false},
+			{"", false},
+		}
+
+		for _, tt := range tests {
+			result := rm.MatchString(tt.input)
+			if result != tt.expected {
+				t.Errorf("MatchString(%q) = %v, expected %v", tt.input, result, tt.expected)
+			}
+		}
+	})
+
+	t.Run("suffix with meta characters only", func(t *testing.T) {
+		rm := MustRegexpMatcher("test123$")
+		if !rm.MatchString("test123") {
+			t.Error("expected to match 'test123'")
+		}
+		if !rm.MatchString("abc test123") {
+			t.Error("expected to match 'abc test123'")
+		}
+		if rm.MatchString("test123 abc") {
+			t.Error("expected not to match 'test123 abc'")
+		}
+	})
+
+	t.Run("suffix with special chars becomes regexp", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello.world$")
+		// "." is regex syntax, so this becomes a regexp
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+}
+
+func TestRegexpMatcher_EqualOp(t *testing.T) {
+	t.Run("exact match with anchors", func(t *testing.T) {
+		rm := MustRegexpMatcher("^hello$")
+		tests := []struct {
+			input    string
+			expected bool
+		}{
+			{"hello", true},
+			{"hello world", false},
+			{"say hello", false},
+			{"helloworld", false},
+			{"HELLO", false},
+			{"", false},
+		}
+
+		for _, tt := range tests {
+			result := rm.MatchString(tt.input)
+			if result != tt.expected {
+				t.Errorf("MatchString(%q) = %v, expected %v", tt.input, result, tt.expected)
+			}
+		}
+	})
+
+	t.Run("exact match with spaces", func(t *testing.T) {
+		rm := MustRegexpMatcher("^hello world$")
+		if !rm.MatchString("hello world") {
+			t.Error("expected to match 'hello world'")
+		}
+		if rm.MatchString("hello world!") {
+			t.Error("expected not to match 'hello world!'")
+		}
+		if rm.MatchString("say hello world") {
+			t.Error("expected not to match 'say hello world'")
+		}
+	})
+
+	t.Run("exact match with meta characters", func(t *testing.T) {
+		rm := MustRegexpMatcher("^test_value-123$")
+		if !rm.MatchString("test_value-123") {
+			t.Error("expected to match 'test_value-123'")
+		}
+		if rm.MatchString("test_value-123 ") {
+			t.Error("expected not to match with trailing space")
+		}
+		if rm.MatchString(" test_value-123") {
+			t.Error("expected not to match with leading space")
+		}
+	})
+
+	t.Run("exact match with regex chars becomes regexp", func(t *testing.T) {
+		rm := MustRegexpMatcher("^hello.world$")
+		// "." is regex syntax, so this becomes a regexp
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+}
+
+func TestRegexpMatcher_ContainOp(t *testing.T) {
+	t.Run("contain match default", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello")
+		tests := []struct {
+			input    string
+			expected bool
+		}{
+			{"hello", true},
+			{"hello world", true},
+			{"say hello there", true},
+			{"helloworld", true},
+			{"HELLO", false},
+			{"hell", false},
+			{"", false},
+		}
+
+		for _, tt := range tests {
+			result := rm.MatchString(tt.input)
+			if result != tt.expected {
+				t.Errorf("MatchString(%q) = %v, expected %v", tt.input, result, tt.expected)
+			}
+		}
+	})
+
+	t.Run("contain with spaces", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello world")
+		if !rm.MatchString("hello world") {
+			t.Error("expected to match 'hello world'")
+		}
+		if !rm.MatchString("say hello world there") {
+			t.Error("expected to match 'say hello world there'")
+		}
+		if rm.MatchString("hello  world") {
+			t.Error("expected not to match with double space")
+		}
+	})
+
+	t.Run("contain with special allowed chars", func(t *testing.T) {
+		rm := MustRegexpMatcher("user@example")
+		if !rm.MatchString("user@example") {
+			t.Error("expected to match 'user@example'")
+		}
+		if !rm.MatchString("contact: user@example.com") {
+			t.Error("expected to match as substring")
+		}
+	})
+}
+
+func TestRegexpMatcher_SingleCharacter(t *testing.T) {
+	t.Run("single meta character", func(t *testing.T) {
+		rm := MustRegexpMatcher("a")
+		if !rm.MatchString("a") {
+			t.Error("expected to match 'a'")
+		}
+		if !rm.MatchString("abc") {
+			t.Error("expected to match 'abc'")
+		}
+		if rm.MatchString("bc") {
+			t.Error("expected not to match 'bc'")
+		}
+	})
+
+	t.Run("single regex char", func(t *testing.T) {
+		rm := MustRegexpMatcher(".")
+		// "." is regex syntax, becomes regexp
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+		if !rm.MatchString("a") {
+			t.Error("expected to match any character")
+		}
+		if !rm.MatchString("x") {
+			t.Error("expected to match any character")
+		}
+	})
+
+	t.Run("single special allowed char", func(t *testing.T) {
+		rm := MustRegexpMatcher("@")
+		if !rm.MatchString("@") {
+			t.Error("expected to match '@'")
+		}
+		if !rm.MatchString("user@example") {
+			t.Error("expected to match as substring")
+		}
+	})
+}
+
+func TestRegexpMatcher_MatchOperations(t *testing.T) {
+	t.Run("Match with prefix op", func(t *testing.T) {
+		rm := MustRegexpMatcher("^hello")
+		tests := []struct {
+			input    []byte
+			expected bool
+		}{
+			{[]byte("hello"), true},
+			{[]byte("hello world"), true},
+			{[]byte("say hello"), false},
+		}
+
+		for _, tt := range tests {
+			result := rm.Match(tt.input)
+			if result != tt.expected {
+				t.Errorf("Match(%q) = %v, expected %v", tt.input, result, tt.expected)
+			}
+		}
+	})
+
+	t.Run("Match with suffix op", func(t *testing.T) {
+		rm := MustRegexpMatcher("world$")
+		tests := []struct {
+			input    []byte
+			expected bool
+		}{
+			{[]byte("world"), true},
+			{[]byte("hello world"), true},
+			{[]byte("world hello"), false},
+		}
+
+		for _, tt := range tests {
+			result := rm.Match(tt.input)
+			if result != tt.expected {
+				t.Errorf("Match(%q) = %v, expected %v", tt.input, result, tt.expected)
+			}
+		}
+	})
+
+	t.Run("Match with equal op", func(t *testing.T) {
+		rm := MustRegexpMatcher("^hello$")
+		tests := []struct {
+			input    []byte
+			expected bool
+		}{
+			{[]byte("hello"), true},
+			{[]byte("hello world"), false},
+			{[]byte("say hello"), false},
+		}
+
+		for _, tt := range tests {
+			result := rm.Match(tt.input)
+			if result != tt.expected {
+				t.Errorf("Match(%q) = %v, expected %v", tt.input, result, tt.expected)
+			}
+		}
+	})
+
+	t.Run("Match with contain op", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello")
+		tests := []struct {
+			input    []byte
+			expected bool
+		}{
+			{[]byte("hello"), true},
+			{[]byte("hello world"), true},
+			{[]byte("say hello"), true},
+			{[]byte("hell"), false},
+		}
+
+		for _, tt := range tests {
+			result := rm.Match(tt.input)
+			if result != tt.expected {
+				t.Errorf("Match(%q) = %v, expected %v", tt.input, result, tt.expected)
+			}
+		}
+	})
+}
+
+func TestRegexpMatcher_ComplexPatterns(t *testing.T) {
+	t.Run("prefix with allowed special chars", func(t *testing.T) {
+		rm := MustRegexpMatcher("^user@")
+		if !rm.MatchString("user@example") {
+			t.Error("expected to match 'user@example'")
+		}
+		if !rm.MatchString("user@") {
+			t.Error("expected to match 'user@'")
+		}
+		if rm.MatchString("admin@example") {
+			t.Error("expected not to match 'admin@example'")
+		}
+	})
+
+	t.Run("suffix with allowed special chars", func(t *testing.T) {
+		rm := MustRegexpMatcher("@example$")
+		if !rm.MatchString("user@example") {
+			t.Error("expected to match 'user@example'")
+		}
+		if !rm.MatchString("@example") {
+			t.Error("expected to match '@example'")
+		}
+		if rm.MatchString("@example.com") {
+			t.Error("expected not to match '@example.com'")
+		}
+	})
+
+	t.Run("exact match with allowed special chars", func(t *testing.T) {
+		rm := MustRegexpMatcher("^user@example$")
+		if !rm.MatchString("user@example") {
+			t.Error("expected to match 'user@example'")
+		}
+		if rm.MatchString("user@example.com") {
+			t.Error("expected not to match 'user@example.com'")
+		}
+		if rm.MatchString("admin@example") {
+			t.Error("expected not to match 'admin@example'")
+		}
+	})
+
+	t.Run("pattern with multiple special chars", func(t *testing.T) {
+		rm := MustRegexpMatcher("test@#%")
+		if !rm.MatchString("test@#%") {
+			t.Error("expected to match 'test@#%'")
+		}
+		if !rm.MatchString("prefix test@#% suffix") {
+			t.Error("expected to match as substring")
+		}
+	})
+
+	t.Run("empty pattern with anchors", func(t *testing.T) {
+		rm := MustRegexpMatcher("^$")
+		if !rm.MatchString("") {
+			t.Error("expected to match empty string")
+		}
+		if rm.MatchString("a") {
+			t.Error("expected not to match non-empty string")
+		}
+	})
+
+	t.Run("only caret", func(t *testing.T) {
+		rm := MustRegexpMatcher("^")
+		// "^" alone is regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("only dollar", func(t *testing.T) {
+		rm := MustRegexpMatcher("$")
+		// "$" alone is regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+}
+
+func TestRegexpMatcher_StringRepresentation(t *testing.T) {
+	t.Run("prefix op string", func(t *testing.T) {
+		rm := MustRegexpMatcher("^hello")
+		// String() reconstructs the original pattern with anchors
+		if rm.String() != "^hello" {
+			t.Errorf("expected '^hello', got: %s", rm.String())
+		}
+	})
+
+	t.Run("suffix op string", func(t *testing.T) {
+		rm := MustRegexpMatcher("world$")
+		// String() reconstructs the original pattern with anchors
+		if rm.String() != "world$" {
+			t.Errorf("expected 'world$', got: %s", rm.String())
+		}
+	})
+
+	t.Run("equal op string", func(t *testing.T) {
+		rm := MustRegexpMatcher("^hello$")
+		// String() reconstructs the original pattern with anchors
+		if rm.String() != "^hello$" {
+			t.Errorf("expected '^hello$', got: %s", rm.String())
+		}
+	})
+
+	t.Run("contain op string", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello")
+		if rm.String() != "hello" {
+			t.Errorf("expected 'hello', got: %s", rm.String())
+		}
+	})
+
+	t.Run("regexp op string", func(t *testing.T) {
+		rm := MustRegexpMatcher("^[a-z]+$")
+		if rm.String() != "^[a-z]+$" {
+			t.Errorf("expected '^[a-z]+$', got: %s", rm.String())
+		}
+	})
+}
+
+func TestRegexpMatcher_JSONRoundTrip(t *testing.T) {
+	t.Run("round trip prefix", func(t *testing.T) {
+		original := MustRegexpMatcher("^hello")
+		data, err := json.Marshal(original)
+		if err != nil {
+			t.Fatalf("marshal error: %v", err)
+		}
+
+		var decoded RegexpMatcher
+		err = json.Unmarshal(data, &decoded)
+		if err != nil {
+			t.Fatalf("unmarshal error: %v", err)
+		}
+
+		if !original.Equal(decoded) {
+			t.Error("round trip failed for prefix")
+		}
+	})
+
+	t.Run("round trip suffix", func(t *testing.T) {
+		original := MustRegexpMatcher("world$")
+		data, err := json.Marshal(original)
+		if err != nil {
+			t.Fatalf("marshal error: %v", err)
+		}
+
+		var decoded RegexpMatcher
+		err = json.Unmarshal(data, &decoded)
+		if err != nil {
+			t.Fatalf("unmarshal error: %v", err)
+		}
+
+		if !original.Equal(decoded) {
+			t.Error("round trip failed for suffix")
+		}
+	})
+
+	t.Run("round trip equal", func(t *testing.T) {
+		original := MustRegexpMatcher("^hello$")
+		data, err := json.Marshal(original)
+		if err != nil {
+			t.Fatalf("marshal error: %v", err)
+		}
+
+		var decoded RegexpMatcher
+		err = json.Unmarshal(data, &decoded)
+		if err != nil {
+			t.Fatalf("unmarshal error: %v", err)
+		}
+
+		if !original.Equal(decoded) {
+			t.Error("round trip failed for equal")
+		}
+	})
+}
+
+func TestRegexpMatcher_YAMLRoundTrip(t *testing.T) {
+	t.Run("round trip prefix", func(t *testing.T) {
+		original := MustRegexpMatcher("^hello")
+		data, err := yaml.Marshal(original)
+		if err != nil {
+			t.Fatalf("marshal error: %v", err)
+		}
+
+		var decoded RegexpMatcher
+		err = yaml.Unmarshal(data, &decoded)
+		if err != nil {
+			t.Fatalf("unmarshal error: %v", err)
+		}
+
+		if !original.Equal(decoded) {
+			t.Error("round trip failed for prefix")
+		}
+	})
+
+	t.Run("round trip suffix", func(t *testing.T) {
+		original := MustRegexpMatcher("world$")
+		data, err := yaml.Marshal(original)
+		if err != nil {
+			t.Fatalf("marshal error: %v", err)
+		}
+
+		var decoded RegexpMatcher
+		err = yaml.Unmarshal(data, &decoded)
+		if err != nil {
+			t.Fatalf("unmarshal error: %v", err)
+		}
+
+		if !original.Equal(decoded) {
+			t.Error("round trip failed for suffix")
+		}
+	})
+
+	t.Run("round trip equal", func(t *testing.T) {
+		original := MustRegexpMatcher("^hello$")
+		data, err := yaml.Marshal(original)
+		if err != nil {
+			t.Fatalf("marshal error: %v", err)
+		}
+
+		var decoded RegexpMatcher
+		err = yaml.Unmarshal(data, &decoded)
+		if err != nil {
+			t.Fatalf("unmarshal error: %v", err)
+		}
+
+		if !original.Equal(decoded) {
+			t.Error("round trip failed for equal")
+		}
+	})
+}
+
+func TestRegexpMatcher_BoundaryConditions(t *testing.T) {
+	t.Run("very long text pattern", func(t *testing.T) {
+		longText := "this_is_a_very_long_text_pattern_with_only_meta_characters_0123456789"
+		rm := MustRegexpMatcher(longText)
+		if !rm.MatchString(longText) {
+			t.Error("expected to match long text")
+		}
+	})
+
+	t.Run("very long regexp pattern", func(t *testing.T) {
+		pattern := "^test.*with.*many.*wildcards.*and.*patterns$"
+		rm := MustRegexpMatcher(pattern)
+		if !rm.MatchString("test with many wildcards and patterns") {
+			t.Error("expected to match long regexp")
+		}
+	})
+
+	t.Run("unicode in text", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello世界")
+		if !rm.MatchString("hello世界") {
+			t.Error("expected to match unicode text")
+		}
+		if !rm.MatchString("say hello世界 there") {
+			t.Error("expected to match as substring")
+		}
+	})
+
+	t.Run("unicode in prefix", func(t *testing.T) {
+		rm := MustRegexpMatcher("^hello世界")
+		if !rm.MatchString("hello世界") {
+			t.Error("expected to match unicode prefix")
+		}
+		if !rm.MatchString("hello世界 test") {
+			t.Error("expected to match with suffix")
+		}
+		if rm.MatchString("test hello世界") {
+			t.Error("expected not to match with prefix")
+		}
+	})
+
+	t.Run("unicode in suffix", func(t *testing.T) {
+		rm := MustRegexpMatcher("世界$")
+		if !rm.MatchString("世界") {
+			t.Error("expected to match unicode suffix")
+		}
+		if !rm.MatchString("hello 世界") {
+			t.Error("expected to match with prefix")
+		}
+		if rm.MatchString("世界 test") {
+			t.Error("expected not to match with suffix")
+		}
+	})
+
+	t.Run("pattern with newline character", func(t *testing.T) {
+		// Newline is not a meta character, so it triggers regexp
+		rm := MustRegexpMatcher("hello\nworld")
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set for pattern with newline")
+		}
+	})
+
+	t.Run("pattern with tab character", func(t *testing.T) {
+		// Tab is not a meta character, so it triggers regexp
+		rm := MustRegexpMatcher("hello\tworld")
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set for pattern with tab")
+		}
+	})
+}
+
+func TestRegexpMatcher_EqualityChecks(t *testing.T) {
+	t.Run("equal prefix patterns", func(t *testing.T) {
+		rm1 := MustRegexpMatcher("^hello")
+		rm2 := MustRegexpMatcher("^hello")
+		if !rm1.Equal(*rm2) {
+			t.Error("expected equal prefix patterns to be equal")
+		}
+	})
+
+	t.Run("different prefix patterns", func(t *testing.T) {
+		rm1 := MustRegexpMatcher("^hello")
+		rm2 := MustRegexpMatcher("^world")
+		if rm1.Equal(*rm2) {
+			t.Error("expected different prefix patterns to not be equal")
+		}
+	})
+
+	t.Run("equal suffix patterns", func(t *testing.T) {
+		rm1 := MustRegexpMatcher("hello$")
+		rm2 := MustRegexpMatcher("hello$")
+		if !rm1.Equal(*rm2) {
+			t.Error("expected equal suffix patterns to be equal")
+		}
+	})
+
+	t.Run("equal exact patterns", func(t *testing.T) {
+		rm1 := MustRegexpMatcher("^hello$")
+		rm2 := MustRegexpMatcher("^hello$")
+		if !rm1.Equal(*rm2) {
+			t.Error("expected equal exact patterns to be equal")
+		}
+	})
+
+	t.Run("prefix vs suffix - different ops", func(t *testing.T) {
+		rm1 := MustRegexpMatcher("^hello")
+		rm2 := MustRegexpMatcher("hello$")
+		// Both have text="hello" but different ops, Equal checks op field
+		if rm1.Equal(*rm2) {
+			t.Error("expected prefix and suffix to not be equal (different ops)")
+		}
+	})
+
+	t.Run("prefix vs contain - different ops", func(t *testing.T) {
+		rm1 := MustRegexpMatcher("^hello")
+		rm2 := MustRegexpMatcher("hello")
+		// Both have text="hello" but different ops, Equal checks op field
+		if rm1.Equal(*rm2) {
+			t.Error("expected prefix and contain to not be equal (different ops)")
+		}
+	})
+
+	t.Run("exact vs contain - different ops", func(t *testing.T) {
+		rm1 := MustRegexpMatcher("^hello$")
+		rm2 := MustRegexpMatcher("hello")
+		// Both have text="hello" but different ops, Equal checks op field
+		if rm1.Equal(*rm2) {
+			t.Error("expected exact and contain to not be equal (different ops)")
+		}
+	})
+
+	t.Run("different text values", func(t *testing.T) {
+		rm1 := MustRegexpMatcher("^hello")
+		rm2 := MustRegexpMatcher("^world")
+		if rm1.Equal(*rm2) {
+			t.Error("expected different text values to not be equal")
+		}
+	})
+}
+
+func TestRegexpMatcher_SpecialCases(t *testing.T) {
+	t.Run("caret in middle of text", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello^world")
+		// "^" in middle is regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("dollar in middle of text", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello$world")
+		// "$" in middle is regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("multiple carets", func(t *testing.T) {
+		rm := MustRegexpMatcher("^^hello")
+		// Multiple "^" is regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("multiple dollars", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello$$")
+		// Multiple "$" is regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("escaped characters in pattern", func(t *testing.T) {
+		rm := MustRegexpMatcher(`hello\.world`)
+		// Backslash is regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("parentheses in pattern", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello(world)")
+		// Parentheses are regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("pipe in pattern", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello|world")
+		// Pipe is regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("plus in pattern", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello+")
+		// Plus is regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("asterisk in pattern", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello*")
+		// Asterisk is regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("question mark in pattern", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello?")
+		// Question mark is regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+
+	t.Run("curly braces in pattern", func(t *testing.T) {
+		rm := MustRegexpMatcher("hello{2}")
+		// Curly braces are regex syntax
+		if rm.regexp == nil {
+			t.Error("expected regexp to be set")
+		}
+	})
+}
