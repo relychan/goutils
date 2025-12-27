@@ -2,6 +2,7 @@ package goutils
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -61,6 +62,21 @@ func TestAllOrListString_NewStringList(t *testing.T) {
 		if gotList[i] != v {
 			t.Errorf("expected list[%d] to be %s, got: %s", i, v, gotList[i])
 		}
+	}
+
+	aos2 := aos.Map(func(s string, _ int) string {
+		return s + "1"
+	})
+
+	if !slices.Equal(aos2.List(), []string{"foo1", "bar1", "baz1"}) {
+		t.Error("expected equal")
+	}
+
+	aos3 := NewAll().Map(func(s string, _ int) string {
+		return s + "1"
+	})
+	if !aos3.IsAll() {
+		t.Error("expected IsAll() to be true")
 	}
 }
 

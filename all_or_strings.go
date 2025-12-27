@@ -65,6 +65,23 @@ func (j AllOrListString) List() []string {
 	return j.list
 }
 
+// Map returns a new [AllOrListString] with transformed list string.
+func (j AllOrListString) Map(f func(s string, i int) string) AllOrListString {
+	if j.all {
+		return j
+	}
+
+	result := AllOrListString{
+		list: make([]string, len(j.list)),
+	}
+
+	for i, s := range j.list {
+		result.list[i] = f(s, i)
+	}
+
+	return result
+}
+
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *AllOrListString) UnmarshalJSON(data []byte) error {
 	if string(data) == `"*"` {
