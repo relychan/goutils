@@ -64,7 +64,7 @@ func TestAllOrListString_NewStringList(t *testing.T) {
 		}
 	}
 
-	aos2 := aos.Map(func(s string, _ int) string {
+	aos2 := aos.Map(func(s string) string {
 		return s + "1"
 	})
 
@@ -72,7 +72,7 @@ func TestAllOrListString_NewStringList(t *testing.T) {
 		t.Error("expected equal")
 	}
 
-	aos3 := NewAll().Map(func(s string, _ int) string {
+	aos3 := NewAll().Map(func(s string) string {
 		return s + "1"
 	})
 	if !aos3.IsAll() {

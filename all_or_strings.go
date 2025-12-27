@@ -66,7 +66,7 @@ func (j AllOrListString) List() []string {
 }
 
 // Map returns a new [AllOrListString] with transformed list string.
-func (j AllOrListString) Map(f func(s string, i int) string) AllOrListString {
+func (j AllOrListString) Map(f func(s string) string) AllOrListString {
 	if j.all {
 		return j
 	}
@@ -76,7 +76,7 @@ func (j AllOrListString) Map(f func(s string, i int) string) AllOrListString {
 	}
 
 	for i, s := range j.list {
-		result.list[i] = f(s, i)
+		result.list[i] = f(s)
 	}
 
 	return result
