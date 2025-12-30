@@ -87,6 +87,8 @@ func (j *RegexpMatcher) UnmarshalText(bs []byte) error {
 
 	switch {
 	case len(bs) == 0:
+		// If the string is empty, should check equal for security reasons.
+		op = equalOp
 	case len(bs) == 1:
 		if isRegexSyntaxChar(rune(bs[0])) {
 			op = regexpOp
