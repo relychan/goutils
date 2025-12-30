@@ -702,8 +702,8 @@ func TestRegexpMatcher_EdgeCases(t *testing.T) {
 		if !rm.MatchString("") {
 			t.Error("expected empty pattern to match empty string")
 		}
-		if !rm.MatchString("anything") {
-			t.Error("expected empty pattern to match any string (contains empty)")
+		if rm.MatchString("anything") {
+			t.Error("expected empty pattern to not match any string")
 		}
 	})
 
