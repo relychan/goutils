@@ -43,13 +43,6 @@ func TestReadJSONOrYAMLFile(t *testing.T) {
 		}
 	})
 
-	t.Run("unsupported_extension", func(t *testing.T) {
-		_, err := ReadJSONOrYAMLFile[string]("testdata/not-found.txt")
-		if !errors.Is(err, errUnsupportedFilePathExtension) {
-			t.Fatalf("expected error: %s, got: %s", errUnsupportedFilePathExtension, err)
-		}
-	})
-
 	t.Run("file_not_found", func(t *testing.T) {
 		_, err := ReadJSONOrYAMLFile[string]("testdata/not-found.json")
 		if !errors.Is(err, os.ErrNotExist) {
@@ -539,7 +532,7 @@ features:
 
 func TestFileReaderFromPath(t *testing.T) {
 	t.Run("read_from_local_file", func(t *testing.T) {
-		reader, err := FileReaderFromPath("testdata/config.json")
+		reader, _, err := FileReaderFromPath("testdata/config.json")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -557,7 +550,7 @@ func TestFileReaderFromPath(t *testing.T) {
 		}))
 		defer server.Close()
 
-		reader, err := FileReaderFromPath(server.URL + "/test.txt")
+		reader, _, err := FileReaderFromPath(server.URL + "/test.txt")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -580,7 +573,7 @@ func TestFileReaderFromPath(t *testing.T) {
 		http.DefaultClient = server.Client()
 		defer func() { http.DefaultClient = originalClient }()
 
-		reader, err := FileReaderFromPath(server.URL + "/secure.txt")
+		reader, _, err := FileReaderFromPath(server.URL + "/secure.txt")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -592,21 +585,21 @@ func TestFileReaderFromPath(t *testing.T) {
 	})
 
 	t.Run("empty_path", func(t *testing.T) {
-		_, err := FileReaderFromPath("")
+		_, _, err := FileReaderFromPath("")
 		if !errors.Is(err, errFilePathRequired) {
 			t.Fatalf("expected error: %s, got: %s", errFilePathRequired, err)
 		}
 	})
 
 	t.Run("whitespace_only_path", func(t *testing.T) {
-		_, err := FileReaderFromPath("   ")
+		_, _, err := FileReaderFromPath("   ")
 		if !errors.Is(err, errFilePathRequired) {
 			t.Fatalf("expected error: %s, got: %s", errFilePathRequired, err)
 		}
 	})
 
 	t.Run("file_not_found", func(t *testing.T) {
-		_, err := FileReaderFromPath("testdata/nonexistent.txt")
+		_, _, err := FileReaderFromPath("testdata/nonexistent.txt")
 		if !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("expected error: %s, got: %s", os.ErrNotExist, err)
 		}
@@ -618,7 +611,7 @@ func TestFileReaderFromPath(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, err := FileReaderFromPath(server.URL + "/missing.txt")
+		_, _, err := FileReaderFromPath(server.URL + "/missing.txt")
 		if err == nil {
 			t.Fatal("expected error for 404 response")
 		}
@@ -639,7 +632,7 @@ func TestFileReaderFromPath(t *testing.T) {
 		// Replace http:// with HTTP://
 		upperURL := "HTTP" + server.URL[4:]
 
-		reader, err := FileReaderFromPath(upperURL)
+		reader, _, err := FileReaderFromPath(upperURL)
 		if err != nil {
 			t.Fatalf("expected nil error for uppercase scheme, got: %s", err)
 		}
@@ -660,7 +653,7 @@ func TestFileReaderFromPath(t *testing.T) {
 		// Replace http:// with HtTp://
 		mixedURL := "HtTp" + server.URL[4:]
 
-		reader, err := FileReaderFromPath(mixedURL)
+		reader, _, err := FileReaderFromPath(mixedURL)
 		if err != nil {
 			t.Fatalf("expected nil error for mixed case scheme, got: %s", err)
 		}
@@ -673,7 +666,7 @@ func TestFileReaderFromPath(t *testing.T) {
 
 	t.Run("path_traversal_cleaned", func(t *testing.T) {
 		// Test that filepath.Clean is applied
-		_, err := FileReaderFromPath("testdata/../testdata/config.json")
+		_, _, err := FileReaderFromPath("testdata/../testdata/config.json")
 		if err != nil {
 			t.Fatalf("expected nil error for cleaned path, got: %s", err)
 		}

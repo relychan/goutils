@@ -359,6 +359,10 @@ func NewValidationError(errors ...ErrorDetail) RFC9457Error {
 
 // NewRFC9457ErrorFromResponse creates an [RFC9457Error] from an HTTP response.
 func NewRFC9457ErrorFromResponse(resp *http.Response) RFC9457Error {
+	if resp == nil {
+		return NewServerError()
+	}
+
 	respError := NewRFC9457Error(resp.StatusCode, "")
 
 	switch resp.StatusCode {
@@ -379,7 +383,7 @@ func NewRFC9457ErrorFromResponse(resp *http.Response) RFC9457Error {
 	default:
 	}
 
-	if resp != nil && resp.Request != nil && resp.Request.URL != nil {
+	if resp.Request != nil && resp.Request.URL != nil {
 		respError.Instance = resp.Request.URL.String()
 	}
 

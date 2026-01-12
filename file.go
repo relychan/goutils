@@ -26,33 +26,19 @@ var (
 func ReadJSONOrYAMLFile[T any](filePath string) (*T, error) {
 	var result T
 
-	filePath = strings.TrimSpace(filePath)
-	if filePath == "" {
-		return nil, errFilePathRequired
+	file, ext, err := FileReaderFromPath(filePath)
+	if err != nil {
+		return nil, err
 	}
 
-	ext := filepath.Ext(filePath)
+	defer CatchWarnErrorFunc(file.Close)
 
 	switch ext {
 	case ".json":
-		file, err := FileReaderFromPath(filePath)
-		if err != nil {
-			return nil, err
-		}
-
-		defer CatchWarnErrorFunc(file.Close)
-
 		err = json.NewDecoder(file).Decode(&result)
 
 		return &result, err
 	case ".yaml", ".yml":
-		file, err := FileReaderFromPath(filePath)
-		if err != nil {
-			return nil, err
-		}
-
-		defer CatchWarnErrorFunc(file.Close)
-
 		err = yaml.NewDecoder(file).Decode(&result)
 
 		return &result, err
@@ -72,39 +58,43 @@ func ReadJSONOrYAMLFile[T any](filePath string) (*T, error) {
 // is treated as a filesystem path, cleaned with filepath.Clean, and opened via os.Open.
 //
 // The caller is responsible for closing the returned io.ReadCloser when finished with it.
-func FileReaderFromPath(filePath string) (io.ReadCloser, error) {
+func FileReaderFromPath(filePath string) (io.ReadCloser, string, error) {
 	filePath = strings.TrimSpace(filePath)
 	if filePath == "" {
-		return nil, errFilePathRequired
+		return nil, "", errFilePathRequired
 	}
 
 	fileURL, err := url.Parse(filePath)
 	if err == nil && slices.Contains([]string{"http", "https"}, strings.ToLower(fileURL.Scheme)) {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, filePath, nil)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		if resp.StatusCode != http.StatusOK {
 			respError := NewRFC9457ErrorFromResponse(resp)
 			respError.Title = "Read File Failure"
 
-			return nil, respError
+			return nil, "", respError
 		}
 
 		if resp.Body == nil {
-			return nil, errFileNoContent
+			return nil, "", errFileNoContent
 		}
 
-		return resp.Body, nil
+		ext := filepath.Ext(filePath)
+
+		return resp.Body, ext, nil
 	}
 
 	filePath = filepath.Clean(filePath)
+	ext := filepath.Ext(filePath)
+	reader, err := os.Open(filePath)
 
-	return os.Open(filePath)
+	return reader, ext, err
 }
