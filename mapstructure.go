@@ -26,7 +26,36 @@ func DecodeNullableString(value any) (*string, error) {
 		}
 
 		return v, nil
-	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, *bool, *int, *int8, *int16, *int32, *int64, *uint, *uint8, *uint16, *uint32, *uint64, *float32, *float64, complex64, complex128, *complex64, *complex128:
+	case bool,
+		int,
+		int8,
+		int16,
+		int32,
+		int64,
+		uint,
+		uint8,
+		uint16,
+		uint32,
+		uint64,
+		float32,
+		float64,
+		*bool,
+		*int,
+		*int8,
+		*int16,
+		*int32,
+		*int64,
+		*uint,
+		*uint8,
+		*uint16,
+		*uint32,
+		*uint64,
+		*float32,
+		*float64,
+		complex64,
+		complex128,
+		*complex64,
+		*complex128:
 		return nil, fmt.Errorf("%w, got: %v", ErrMalformedString, reflect.TypeOf(v))
 	default:
 		return DecodeNullableStringReflection(reflect.ValueOf(value))
@@ -124,7 +153,32 @@ func DecodeString(value any) (string, error) {
 		}
 
 		return *v, nil
-	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, *bool, *int, *int8, *int16, *int32, *int64, *uint, *uint8, *uint16, *uint32, *uint64, *float32, *float64:
+	case bool,
+		int,
+		int8,
+		int16,
+		int32,
+		int64,
+		uint,
+		uint8,
+		uint16,
+		uint32,
+		uint64,
+		float32,
+		float64,
+		*bool,
+		*int,
+		*int8,
+		*int16,
+		*int32,
+		*int64,
+		*uint,
+		*uint8,
+		*uint16,
+		*uint32,
+		*uint64,
+		*float32,
+		*float64:
 		return "", fmt.Errorf("%w, got: %s", ErrMalformedString, reflect.TypeOf(v))
 	case complex64, complex128, *complex64, *complex128, map[string]any, []any:
 		return "", fmt.Errorf("%w, got: %s", ErrMalformedString, reflect.TypeOf(v))
@@ -134,7 +188,7 @@ func DecodeString(value any) (string, error) {
 }
 
 // DecodeStringSlice decodes a string slice from an unknown value.
-func DecodeStringSlice(value any) ([]string, error) {
+func DecodeStringSlice(value any) ([]string, error) { //nolint:funlen
 	if value == nil {
 		return nil, nil
 	}
@@ -175,9 +229,55 @@ func DecodeStringSlice(value any) ([]string, error) {
 		}
 
 		return results, nil
-	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, *bool, *string, *int, *int8, *int16, *int32, *int64, *uint, *uint8, *uint16, *uint32, *uint64, *float32, *float64, complex64, complex128, *complex64, *complex128:
+	case bool,
+		string,
+		int,
+		int8,
+		int16,
+		int32,
+		int64,
+		uint,
+		uint8,
+		uint16,
+		uint32,
+		uint64,
+		float32,
+		float64,
+		*bool,
+		*string,
+		*int,
+		*int8,
+		*int16,
+		*int32,
+		*int64,
+		*uint,
+		*uint8,
+		*uint16,
+		*uint32,
+		*uint64,
+		*float32,
+		*float64,
+		complex64,
+		complex128,
+		*complex64,
+		*complex128:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedStringSlice, reflect.TypeOf(vs))
-	case []bool, []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []float32, []float64, []complex64, []complex128, map[string]any:
+	case []bool,
+		[]int,
+		[]int8,
+		[]int16,
+		[]int32,
+		[]int64,
+		[]uint,
+		[]uint8,
+		[]uint16,
+		[]uint32,
+		[]uint64,
+		[]float32,
+		[]float64,
+		[]complex64,
+		[]complex128,
+		map[string]any:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedStringSlice, reflect.TypeOf(vs))
 	default:
 		return DecodeStringSliceReflection(reflect.ValueOf(value))
@@ -320,7 +420,17 @@ func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~
 		}
 
 		return T(*v), nil
-	case bool, string, complex64, complex128, *bool, *string, *complex64, *complex128, map[string]any, []any, []float64:
+	case bool,
+		string,
+		complex64,
+		complex128,
+		*bool,
+		*string,
+		*complex64,
+		*complex128,
+		map[string]any,
+		[]any,
+		[]float64:
 		return 0, fmt.Errorf("%w; got: %s", ErrMalformedNumber, reflect.TypeOf(value))
 	default:
 		return DecodeNumberReflection[T](reflect.ValueOf(value))
@@ -432,7 +542,17 @@ func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~u
 		}
 
 		return ToPtr(T(*v)), nil
-	case bool, string, complex64, complex128, *bool, *string, *complex64, *complex128, map[string]any, []any, []float64:
+	case bool,
+		string,
+		complex64,
+		complex128,
+		*bool,
+		*string,
+		*complex64,
+		*complex128,
+		map[string]any,
+		[]any,
+		[]float64:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumber, reflect.TypeOf(value))
 	default:
 		return DecodeNullableNumberReflection[T](reflect.ValueOf(value))
@@ -566,7 +686,38 @@ func DecodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint
 		}
 
 		return results, nil
-	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, *bool, *string, *int, *int8, *int16, *int32, *int64, *uint, *uint8, *uint16, *uint32, *uint64, *float32, *float64, complex64, complex128, *complex64, *complex128:
+	case bool,
+		string,
+		int,
+		int8,
+		int16,
+		int32,
+		int64,
+		uint,
+		uint8,
+		uint16,
+		uint32,
+		uint64,
+		float32,
+		float64,
+		*bool,
+		*string,
+		*int,
+		*int8,
+		*int16,
+		*int32,
+		*int64,
+		*uint,
+		*uint8,
+		*uint16,
+		*uint32,
+		*uint64,
+		*float32,
+		*float64,
+		complex64,
+		complex128,
+		*complex64,
+		*complex128:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumberSlice, reflect.TypeOf(vs))
 	case []bool, []string, []complex64, []complex128, map[string]any:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumberSlice, reflect.TypeOf(vs))
