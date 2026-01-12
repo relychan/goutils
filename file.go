@@ -21,7 +21,8 @@ var (
 	errUnsupportedFilePathExtension = errors.New("only {json,yaml,yml} extension is supported")
 )
 
-// ReadJSONOrYAMLFile reads and decodes the json or yaml file from the path.
+// ReadJSONOrYAMLFile reads and decodes a JSON or YAML document from the given source,
+// which may be a local file path or an HTTP/HTTPS URL.
 func ReadJSONOrYAMLFile[T any](filePath string) (*T, error) {
 	var result T
 
@@ -60,8 +61,17 @@ func ReadJSONOrYAMLFile[T any](filePath string) (*T, error) {
 	}
 }
 
-// FileReaderFromPath reads content from either file path or URL.
-// Returns a ReadCloser instance.
+// FileReaderFromPath reads content from either a local filesystem path or an HTTP/HTTPS URL.
+//
+// Supported URL schemes are "http" and "https". If the provided path parses as a URL
+// with one of these schemes, an HTTP GET request is issued using http.DefaultClient
+// without an explicit timeout configured. Callers that require timeouts or custom
+// HTTP behavior should arrange this outside of this helper.
+//
+// For other schemes, or if the input does not represent an http/https URL, the value
+// is treated as a filesystem path, cleaned with filepath.Clean, and opened via os.Open.
+//
+// The caller is responsible for closing the returned io.ReadCloser when finished with it.
 func FileReaderFromPath(filePath string) (io.ReadCloser, error) {
 	filePath = strings.TrimSpace(filePath)
 	if filePath == "" {
@@ -70,7 +80,7 @@ func FileReaderFromPath(filePath string) (io.ReadCloser, error) {
 
 	fileURL, err := url.Parse(filePath)
 	if err == nil && slices.Contains([]string{"http", "https"}, strings.ToLower(fileURL.Scheme)) {
-		req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, filePath, nil)
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, filePath, nil)
 		if err != nil {
 			return nil, err
 		}

@@ -379,7 +379,9 @@ func NewRFC9457ErrorFromResponse(resp *http.Response) RFC9457Error {
 	default:
 	}
 
-	respError.Instance = resp.Request.URL.String()
+	if resp != nil && resp.Request != nil && resp.Request.URL != nil {
+		respError.Instance = resp.Request.URL.String()
+	}
 
 	if resp.Body != nil {
 		defer CatchWarnErrorFunc(resp.Body.Close)
