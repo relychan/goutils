@@ -1,10 +1,15 @@
 package goutils
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v4"
@@ -12,25 +17,24 @@ import (
 
 var (
 	errFilePathRequired             = errors.New("file path is required")
+	errFileNoContent                = errors.New("file has no content")
 	errUnsupportedFilePathExtension = errors.New("only {json,yaml,yml} extension is supported")
 )
 
 // ReadJSONOrYAMLFile reads and decodes the json or yaml file from the path.
 func ReadJSONOrYAMLFile[T any](filePath string) (*T, error) {
+	var result T
+
 	filePath = strings.TrimSpace(filePath)
 	if filePath == "" {
 		return nil, errFilePathRequired
 	}
 
-	filePath = filepath.Clean(filePath)
-
-	var result T
-
 	ext := filepath.Ext(filePath)
 
 	switch ext {
 	case ".json":
-		file, err := os.Open(filePath)
+		file, err := FileReaderFromPath(filePath)
 		if err != nil {
 			return nil, err
 		}
@@ -41,7 +45,7 @@ func ReadJSONOrYAMLFile[T any](filePath string) (*T, error) {
 
 		return &result, err
 	case ".yaml", ".yml":
-		file, err := os.Open(filePath)
+		file, err := FileReaderFromPath(filePath)
 		if err != nil {
 			return nil, err
 		}
@@ -54,4 +58,43 @@ func ReadJSONOrYAMLFile[T any](filePath string) (*T, error) {
 	default:
 		return nil, errUnsupportedFilePathExtension
 	}
+}
+
+// FileReaderFromPath reads content from either file path or URL.
+// Returns a ReadCloser instance.
+func FileReaderFromPath(filePath string) (io.ReadCloser, error) {
+	filePath = strings.TrimSpace(filePath)
+	if filePath == "" {
+		return nil, errFilePathRequired
+	}
+
+	fileURL, err := url.Parse(filePath)
+	if err == nil && slices.Contains([]string{"http", "https"}, strings.ToLower(fileURL.Scheme)) {
+		req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, filePath, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			respError := NewRFC9457ErrorFromResponse(resp)
+			respError.Title = "Read File Failure"
+
+			return nil, respError
+		}
+
+		if resp.Body == nil {
+			return nil, errFileNoContent
+		}
+
+		return resp.Body, nil
+	}
+
+	filePath = filepath.Clean(filePath)
+
+	return os.Open(filePath)
 }

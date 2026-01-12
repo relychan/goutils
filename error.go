@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -354,6 +355,42 @@ func NewValidationError(errors ...ErrorDetail) RFC9457Error {
 		Code:   "422-02",
 		Errors: errors,
 	}
+}
+
+// NewRFC9457ErrorFromResponse creates an [RFC9457Error] from an HTTP response.
+func NewRFC9457ErrorFromResponse(resp *http.Response) RFC9457Error {
+	respError := NewRFC9457Error(resp.StatusCode, "")
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest:
+		respError = NewBadRequestError()
+	case http.StatusUnauthorized:
+		respError = NewUnauthorizedError()
+	case http.StatusForbidden:
+		respError = NewForbiddenError()
+	case http.StatusNotFound:
+		respError = NewNotFoundError()
+	case http.StatusInternalServerError:
+		respError = NewServerError()
+	case http.StatusUnprocessableEntity:
+		respError = NewValidationError()
+	case http.StatusServiceUnavailable:
+		respError = NewServiceUnavailableError()
+	default:
+	}
+
+	respError.Instance = resp.Request.URL.String()
+
+	if resp.Body != nil {
+		defer CatchWarnErrorFunc(resp.Body.Close)
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err == nil {
+			respError.Detail = string(bodyBytes)
+		}
+	}
+
+	return respError
 }
 
 // Error implements the error interface for RFC9457Error.
