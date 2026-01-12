@@ -188,7 +188,7 @@ func DecodeString(value any) (string, error) {
 }
 
 // DecodeStringSlice decodes a string slice from an unknown value.
-func DecodeStringSlice(value any) ([]string, error) {
+func DecodeStringSlice(value any) ([]string, error) { //nolint:funlen
 	if value == nil {
 		return nil, nil
 	}
