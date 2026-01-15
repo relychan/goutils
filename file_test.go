@@ -1,6 +1,7 @@
 package goutils
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +12,7 @@ import (
 
 func TestReadJSONOrYAMLFile(t *testing.T) {
 	t.Run("read_json", func(t *testing.T) {
-		result, err := ReadJSONOrYAMLFile[map[string]string]("testdata/config.json")
+		result, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), "testdata/config.json")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -24,7 +25,7 @@ func TestReadJSONOrYAMLFile(t *testing.T) {
 	})
 
 	t.Run("read_yaml", func(t *testing.T) {
-		result, err := ReadJSONOrYAMLFile[map[string]string]("testdata/config.yaml")
+		result, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), "testdata/config.yaml")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -37,19 +38,19 @@ func TestReadJSONOrYAMLFile(t *testing.T) {
 	})
 
 	t.Run("path_required", func(t *testing.T) {
-		_, err := ReadJSONOrYAMLFile[string]("")
+		_, err := ReadJSONOrYAMLFile[string](context.Background(), "")
 		if !errors.Is(err, errFilePathRequired) {
 			t.Fatalf("expected error: %s, got: %s", errFilePathRequired, err)
 		}
 	})
 
 	t.Run("file_not_found", func(t *testing.T) {
-		_, err := ReadJSONOrYAMLFile[string]("testdata/not-found.json")
+		_, err := ReadJSONOrYAMLFile[string](context.Background(), "testdata/not-found.json")
 		if !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("expected error: %s, got: %s", os.ErrNotExist, err)
 		}
 
-		_, err = ReadJSONOrYAMLFile[string]("testdata/not-found.yaml")
+		_, err = ReadJSONOrYAMLFile[string](context.Background(), "testdata/not-found.yaml")
 		if !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("expected error: %s, got: %s", os.ErrNotExist, err)
 		}
@@ -71,7 +72,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 			Value int    `json:"value"`
 		}
 
-		result, err := ReadJSONOrYAMLFile[TestData](server.URL + "/config.json")
+		result, err := ReadJSONOrYAMLFile[TestData](context.Background(), server.URL+"/config.json")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -99,7 +100,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 			Value int    `yaml:"value"`
 		}
 
-		result, err := ReadJSONOrYAMLFile[TestData](server.URL + "/config.yaml")
+		result, err := ReadJSONOrYAMLFile[TestData](context.Background(), server.URL+"/config.yaml")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -122,7 +123,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 		}))
 		defer server.Close()
 
-		result, err := ReadJSONOrYAMLFile[map[string]string](server.URL + "/config.yml")
+		result, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/config.yml")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -151,7 +152,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 			Secure bool `json:"secure"`
 		}
 
-		result, err := ReadJSONOrYAMLFile[TestData](server.URL + "/config.json")
+		result, err := ReadJSONOrYAMLFile[TestData](context.Background(), server.URL+"/config.json")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -168,7 +169,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, err := ReadJSONOrYAMLFile[map[string]string](server.URL + "/missing.json")
+		_, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/missing.json")
 		if err == nil {
 			t.Fatal("expected error for 404 response")
 		}
@@ -190,7 +191,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, err := ReadJSONOrYAMLFile[map[string]string](server.URL + "/error.json")
+		_, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/error.json")
 		if err == nil {
 			t.Fatal("expected error for 500 response")
 		}
@@ -212,7 +213,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, err := ReadJSONOrYAMLFile[map[string]string](server.URL + "/empty.json")
+		_, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/empty.json")
 		if err == nil {
 			t.Fatal("expected error for empty body")
 		}
@@ -226,7 +227,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, err := ReadJSONOrYAMLFile[map[string]string](server.URL + "/invalid.json")
+		_, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/invalid.json")
 		if err == nil {
 			t.Fatal("expected error for invalid JSON")
 		}
@@ -244,7 +245,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 			Name string `yaml:"name"`
 		}
 
-		_, err := ReadJSONOrYAMLFile[SimpleStruct](server.URL + "/invalid.yaml")
+		_, err := ReadJSONOrYAMLFile[SimpleStruct](context.Background(), server.URL+"/invalid.yaml")
 		// Should not error on parsing, but result might be empty
 		if err != nil {
 			// This is acceptable - YAML parser might reject it
@@ -284,7 +285,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 			Metadata Metadata `json:"metadata"`
 		}
 
-		result, err := ReadJSONOrYAMLFile[Config](server.URL + "/config.json")
+		result, err := ReadJSONOrYAMLFile[Config](context.Background(), server.URL+"/config.json")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -343,7 +344,7 @@ features:
 			Features []Feature `yaml:"features"`
 		}
 
-		result, err := ReadJSONOrYAMLFile[Config](server.URL + "/config.yaml")
+		result, err := ReadJSONOrYAMLFile[Config](context.Background(), server.URL+"/config.yaml")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -376,7 +377,7 @@ features:
 		// Note: This is a known limitation - filepath.Ext() includes query parameters
 		// in the extension, so "config.json?version=v1" has extension ".json?version=v1"
 		// which doesn't match ".json"
-		_, err := ReadJSONOrYAMLFile[map[string]string](server.URL + "/config.json?version=v1")
+		_, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/config.json?version=v1")
 		if !errors.Is(err, errUnsupportedFilePathExtension) {
 			t.Fatalf("expected unsupported extension error due to query params, got: %s", err)
 		}
@@ -394,7 +395,7 @@ features:
 			Path string `json:"path"`
 		}
 
-		result, err := ReadJSONOrYAMLFile[Response](server.URL + "/path/to/config.json")
+		result, err := ReadJSONOrYAMLFile[Response](context.Background(), server.URL+"/path/to/config.json")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -411,7 +412,7 @@ features:
 		}))
 		defer server.Close()
 
-		_, err := ReadJSONOrYAMLFile[map[string]string](server.URL + "/secure.json")
+		_, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/secure.json")
 		if err == nil {
 			t.Fatal("expected error for 401 response")
 		}
@@ -433,7 +434,7 @@ features:
 		}))
 		defer server.Close()
 
-		_, err := ReadJSONOrYAMLFile[map[string]string](server.URL + "/forbidden.json")
+		_, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/forbidden.json")
 		if err == nil {
 			t.Fatal("expected error for 403 response")
 		}
@@ -455,7 +456,7 @@ features:
 		}))
 		defer server.Close()
 
-		_, err := ReadJSONOrYAMLFile[map[string]string](server.URL + "/unavailable.json")
+		_, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/unavailable.json")
 		if err == nil {
 			t.Fatal("expected error for 503 response")
 		}
@@ -487,7 +488,7 @@ features:
 			Redirected bool `json:"redirected"`
 		}
 
-		result, err := ReadJSONOrYAMLFile[Response](redirectServer.URL + "/redirect.json")
+		result, err := ReadJSONOrYAMLFile[Response](context.Background(), redirectServer.URL+"/redirect.json")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -499,7 +500,7 @@ features:
 
 	t.Run("invalid_url_scheme", func(t *testing.T) {
 		// ftp:// is not supported, should fall back to file path
-		_, err := ReadJSONOrYAMLFile[map[string]string]("ftp://example.com/config.json")
+		_, err := ReadJSONOrYAMLFile[map[string]string](context.Background(), "ftp://example.com/config.json")
 		// This should fail as a file path
 		if err == nil {
 			t.Fatal("expected error for unsupported URL scheme")
@@ -519,7 +520,7 @@ features:
 		}
 
 		// URL with leading/trailing whitespace should be trimmed
-		result, err := ReadJSONOrYAMLFile[Response]("  " + server.URL + "/config.json  ")
+		result, err := ReadJSONOrYAMLFile[Response](context.Background(), "  "+server.URL+"/config.json  ")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -532,7 +533,7 @@ features:
 
 func TestFileReaderFromPath(t *testing.T) {
 	t.Run("read_from_local_file", func(t *testing.T) {
-		reader, _, err := FileReaderFromPath("testdata/config.json")
+		reader, _, err := FileReaderFromPath(context.Background(), "testdata/config.json")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -550,7 +551,7 @@ func TestFileReaderFromPath(t *testing.T) {
 		}))
 		defer server.Close()
 
-		reader, _, err := FileReaderFromPath(server.URL + "/test.txt")
+		reader, _, err := FileReaderFromPath(context.Background(), server.URL+"/test.txt")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -573,7 +574,7 @@ func TestFileReaderFromPath(t *testing.T) {
 		http.DefaultClient = server.Client()
 		defer func() { http.DefaultClient = originalClient }()
 
-		reader, _, err := FileReaderFromPath(server.URL + "/secure.txt")
+		reader, _, err := FileReaderFromPath(context.Background(), server.URL+"/secure.txt")
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
 		}
@@ -585,21 +586,21 @@ func TestFileReaderFromPath(t *testing.T) {
 	})
 
 	t.Run("empty_path", func(t *testing.T) {
-		_, _, err := FileReaderFromPath("")
+		_, _, err := FileReaderFromPath(context.Background(), "")
 		if !errors.Is(err, errFilePathRequired) {
 			t.Fatalf("expected error: %s, got: %s", errFilePathRequired, err)
 		}
 	})
 
 	t.Run("whitespace_only_path", func(t *testing.T) {
-		_, _, err := FileReaderFromPath("   ")
+		_, _, err := FileReaderFromPath(context.Background(), "   ")
 		if !errors.Is(err, errFilePathRequired) {
 			t.Fatalf("expected error: %s, got: %s", errFilePathRequired, err)
 		}
 	})
 
 	t.Run("file_not_found", func(t *testing.T) {
-		_, _, err := FileReaderFromPath("testdata/nonexistent.txt")
+		_, _, err := FileReaderFromPath(context.Background(), "testdata/nonexistent.txt")
 		if !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("expected error: %s, got: %s", os.ErrNotExist, err)
 		}
@@ -611,7 +612,7 @@ func TestFileReaderFromPath(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, _, err := FileReaderFromPath(server.URL + "/missing.txt")
+		_, _, err := FileReaderFromPath(context.Background(), server.URL+"/missing.txt")
 		if err == nil {
 			t.Fatal("expected error for 404 response")
 		}
@@ -632,7 +633,7 @@ func TestFileReaderFromPath(t *testing.T) {
 		// Replace http:// with HTTP://
 		upperURL := "HTTP" + server.URL[4:]
 
-		reader, _, err := FileReaderFromPath(upperURL)
+		reader, _, err := FileReaderFromPath(context.Background(), upperURL)
 		if err != nil {
 			t.Fatalf("expected nil error for uppercase scheme, got: %s", err)
 		}
@@ -653,7 +654,7 @@ func TestFileReaderFromPath(t *testing.T) {
 		// Replace http:// with HtTp://
 		mixedURL := "HtTp" + server.URL[4:]
 
-		reader, _, err := FileReaderFromPath(mixedURL)
+		reader, _, err := FileReaderFromPath(context.Background(), mixedURL)
 		if err != nil {
 			t.Fatalf("expected nil error for mixed case scheme, got: %s", err)
 		}
@@ -666,7 +667,7 @@ func TestFileReaderFromPath(t *testing.T) {
 
 	t.Run("path_traversal_cleaned", func(t *testing.T) {
 		// Test that filepath.Clean is applied
-		_, _, err := FileReaderFromPath("testdata/../testdata/config.json")
+		_, _, err := FileReaderFromPath(context.Background(), "testdata/../testdata/config.json")
 		if err != nil {
 			t.Fatalf("expected nil error for cleaned path, got: %s", err)
 		}

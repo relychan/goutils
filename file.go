@@ -23,10 +23,10 @@ var (
 
 // ReadJSONOrYAMLFile reads and decodes a JSON or YAML document from the given source,
 // which may be a local file path or an HTTP/HTTPS URL.
-func ReadJSONOrYAMLFile[T any](filePath string) (*T, error) {
+func ReadJSONOrYAMLFile[T any](ctx context.Context, filePath string) (*T, error) {
 	var result T
 
-	file, ext, err := FileReaderFromPath(filePath)
+	file, ext, err := FileReaderFromPath(ctx, filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func ReadJSONOrYAMLFile[T any](filePath string) (*T, error) {
 // is treated as a filesystem path, cleaned with filepath.Clean, and opened via os.Open.
 //
 // The caller is responsible for closing the returned io.ReadCloser when finished with it.
-func FileReaderFromPath(filePath string) (io.ReadCloser, string, error) {
+func FileReaderFromPath(ctx context.Context, filePath string) (io.ReadCloser, string, error) {
 	filePath = strings.TrimSpace(filePath)
 	if filePath == "" {
 		return nil, "", errFilePathRequired
@@ -66,7 +66,7 @@ func FileReaderFromPath(filePath string) (io.ReadCloser, string, error) {
 
 	fileURL, err := url.Parse(filePath)
 	if err == nil && slices.Contains([]string{"http", "https"}, strings.ToLower(fileURL.Scheme)) {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, filePath, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, filePath, nil)
 		if err != nil {
 			return nil, "", err
 		}
