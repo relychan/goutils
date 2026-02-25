@@ -438,6 +438,8 @@ func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~
 }
 
 // DecodeNullableNumber tries to convert an unknown value to a typed number.
+//
+//nolint:modernize
 func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo
 	value any,
 ) (*T, error) {
