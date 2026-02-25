@@ -9,7 +9,9 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-const wildcardSymbol = "*"
+const (
+	wildcardSymbol = "*"
+)
 
 // AllOrListString is a type that represents either a wildcard ("*") meaning "all items",
 // or a specific list of strings. This is useful for configuration fields where you want
@@ -114,14 +116,17 @@ func (j AllOrListString) MarshalJSON() ([]byte, error) {
 // If the YAML value is the string "*", it is treated as a wildcard and sets 'all' to true and 'list' to nil.
 // Otherwise, it expects a list of strings and sets 'list' accordingly, with 'all' set to false.
 func (j *AllOrListString) UnmarshalYAML(value *yaml.Node) error {
-	if value.Value == wildcardSymbol {
+	var strValue string
+
+	err := value.Decode(&strValue)
+	if err == nil && strValue == wildcardSymbol {
 		j.all = true
 		j.list = nil
 
 		return nil
 	}
 
-	err := value.Decode(&j.list)
+	err = value.Decode(&j.list)
 	if err != nil {
 		return err
 	}
