@@ -85,6 +85,7 @@ func ExtractHeaders(headers http.Header) map[string]string {
 
 // ValidateHTTPURLOptions represent URL validation options.
 type ValidateHTTPURLOptions struct {
+	ResolveDNS      bool
 	PublicIPOnly    bool
 	AllowedSchemes  []string
 	AllowedIPRanges []string
@@ -110,7 +111,7 @@ func ValidateURLString(urlStr string, options ValidateHTTPURLOptions) (*url.URL,
 
 // ValidateURL parses and validates URL.
 func ValidateURL(uri *url.URL, options ValidateHTTPURLOptions) error {
-	if len(options.AllowedSchemes) > 0 && slices.Contains(options.AllowedSchemes, uri.Scheme) {
+	if len(options.AllowedSchemes) > 0 && !slices.Contains(options.AllowedSchemes, uri.Scheme) {
 		return fmt.Errorf(
 			"%w. Accept one of %v, got: %s",
 			ErrInvalidURLScheme,
@@ -125,23 +126,9 @@ func ValidateURL(uri *url.URL, options ValidateHTTPURLOptions) error {
 		return ErrInvalidURI
 	}
 
-	isAllowedHost := len(options.AllowedHosts) == 0
-
-	for _, expr := range options.AllowedHosts {
-		re, err := NewRegexpMatcher(expr)
-		if err != nil {
-			return fmt.Errorf("failed to parse allowed host rule: %w", err)
-		}
-
-		if re.MatchString(hostname) || re.MatchString(uri.Host) {
-			isAllowedHost = true
-
-			break
-		}
-	}
-
-	if !isAllowedHost {
-		return fmt.Errorf("%w: host is not allowed", ErrInvalidURI)
+	err := validateHost(uri.Host, hostname, &options)
+	if err != nil {
+		return err
 	}
 
 	for _, expr := range options.BlockedHosts {
@@ -153,6 +140,11 @@ func ValidateURL(uri *url.URL, options ValidateHTTPURLOptions) error {
 		if re.MatchString(hostname) || re.MatchString(uri.Host) {
 			return fmt.Errorf("%w: host is blocked", ErrInvalidURI)
 		}
+	}
+
+	if !options.ResolveDNS && !options.PublicIPOnly &&
+		len(options.AllowedIPRanges) == 0 && len(options.BlockedIPRanges) == 0 {
+		return nil
 	}
 
 	allowedIPRanges, err := parseIPRanges(options.AllowedIPRanges)
@@ -184,7 +176,9 @@ func ValidateIP(
 
 	// Check each IP against blocked ranges
 	for _, ip := range ips {
-		if publicIPOnly && (ip.IsPrivate() || ip.IsLoopback() || ip.IsUnspecified()) {
+		if publicIPOnly && (ip.IsPrivate() || ip.IsLoopback() || ip.IsUnspecified() ||
+			ip.IsLinkLocalUnicast() ||
+			ip.IsLinkLocalMulticast()) {
 			return fmt.Errorf("%w: allow public IP only", ErrBlockedIP)
 		}
 
@@ -193,6 +187,10 @@ func ValidateIP(
 				return ErrBlockedIP
 			}
 		}
+	}
+
+	if len(allowedIPRanges) == 0 {
+		return nil
 	}
 
 	// Check each IP against allowed ranges
@@ -247,4 +245,34 @@ func parseIPRanges(ipRanges []string) ([]*net.IPNet, error) {
 	}
 
 	return results, nil
+}
+
+func validateHost(host, hostname string, options *ValidateHTTPURLOptions) error {
+	for _, expr := range options.BlockedHosts {
+		re, err := NewRegexpMatcher(expr)
+		if err != nil {
+			return fmt.Errorf("failed to parse allowed host rule: %w", err)
+		}
+
+		if re.MatchString(hostname) || re.MatchString(host) {
+			return fmt.Errorf("%w: host is blocked", ErrInvalidURI)
+		}
+	}
+
+	if len(options.AllowedHosts) == 0 {
+		return nil
+	}
+
+	for _, expr := range options.AllowedHosts {
+		re, err := NewRegexpMatcher(expr)
+		if err != nil {
+			return fmt.Errorf("failed to parse allowed host rule: %w", err)
+		}
+
+		if re.MatchString(hostname) || re.MatchString(host) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("%w: host is not allowed", ErrInvalidURI)
 }

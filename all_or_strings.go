@@ -284,7 +284,7 @@ func (j AllOrListWildcardString) Contains(input string) bool {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *AllOrListWildcardString) UnmarshalJSON(data []byte) error {
-	if string(data) == `"*"` {
+	if string(data) == wildcardQuotedSymbol {
 		j.all = true
 		j.list = nil
 		j.wildcards = nil
