@@ -12,8 +12,14 @@ import (
 )
 
 var (
-	// ErrInvalidHTTPScheme represents an invalid http(s) scheme error.
-	ErrInvalidHTTPScheme = errors.New("invalid http(s) scheme")
+	// ErrInvalidURI represents an invalid uri error.
+	ErrInvalidURI = errors.New("invalid URI")
+	// ErrBlockedIP occurs when the IP is blocked.
+	ErrBlockedIP = errors.New("ip is blocked")
+	// ErrInvalidURLScheme represents an invalid URL scheme error.
+	ErrInvalidURLScheme = errors.New("invalid url scheme")
+	// ErrInvalidSubnet occurs when the subnet string is invalid.
+	ErrInvalidSubnet = errors.New("invalid IP or subnet")
 	// ErrInvalidSlug represents an invalid slug error.
 	ErrInvalidSlug = errors.New("invalid slug")
 	// ErrMalformedJSON occurs when the JSON syntax or value is malformed.

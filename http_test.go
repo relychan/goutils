@@ -1,6 +1,7 @@
 package goutils
 
 import (
+	"errors"
 	"net/http"
 	"reflect"
 	"strings"
@@ -56,7 +57,7 @@ func TestParseHttpURL(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.URL, func(t *testing.T) {
-			result, err := ParseHTTPURL(tc.URL)
+			result, err := ParseHTTPURL(tc.URL, ValidateHTTPURLOptions{})
 			if tc.Error == "" {
 				if err != nil {
 					t.Fatalf("expected nil error, got: %s", err)
@@ -68,7 +69,6 @@ func TestParseHttpURL(t *testing.T) {
 			} else if err == nil || !strings.Contains(err.Error(), tc.Error) {
 				t.Fatalf("expected error contains: %s, got: %s", tc.Error, err)
 			}
-
 		})
 	}
 }
@@ -97,4 +97,27 @@ func TestExtractHeaders(t *testing.T) {
 			t.Fatalf("not equal, expected: %v, got: %v", tc.Expected, result)
 		}
 	}
+}
+
+func TestValidateIP(t *testing.T) {
+	t.Run("private_ip", func(t *testing.T) {
+		// Blocked private/internal IP ranges
+		privateIPs := []string{
+			"10.0.0.1",
+			"172.16.0.1",
+			"192.168.0.1",
+			"127.0.0.1",
+			"169.254.0.1",
+			// AWS metadata
+			"::1",
+			"fc00::",
+		}
+
+		for _, ip := range privateIPs {
+			err := ValidateIP(ip, true, nil, nil)
+			if err == nil || !errors.Is(err, ErrBlockedIP) {
+				t.Errorf("expected private ip error, got: %s", err)
+			}
+		}
+	})
 }
