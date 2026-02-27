@@ -71,7 +71,7 @@ func FileReaderFromPath(ctx context.Context, filePath string) (io.ReadCloser, st
 			return nil, "", err
 		}
 
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := http.DefaultClient.Do(req) //nolint:gosec
 		if err != nil {
 			return nil, "", err
 		}

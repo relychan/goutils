@@ -130,7 +130,7 @@ func NewUUIDv7() uuid.UUID {
 }
 
 // ToPtr converts the a typed value to its pointer.
-func ToPtr[T any](value T) *T {
+func ToPtr[T any](value T) *T { //nolint:modernize
 	return &value
 }
 

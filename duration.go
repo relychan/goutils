@@ -123,7 +123,7 @@ func ParseDuration(s string) (Duration, error) {
 		}
 	}
 
-	return Duration(dur), nil //nolint:gosec
+	return Duration(dur), nil
 }
 
 // Abs returns the absolute value of the current duration.

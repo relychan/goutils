@@ -2,6 +2,7 @@ package goutils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -9,7 +10,12 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-const wildcardSymbol = "*"
+const (
+	wildcardSymbol       = "*"
+	wildcardQuotedSymbol = `"*"`
+)
+
+var errInvalidWildcardSymbol = errors.New("invalid wildcard symbol")
 
 // AllOrListString is a type that represents either a wildcard ("*") meaning "all items",
 // or a specific list of strings. This is useful for configuration fields where you want
@@ -84,7 +90,7 @@ func (j AllOrListString) Map(f func(s string) string) AllOrListString {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *AllOrListString) UnmarshalJSON(data []byte) error {
-	if string(data) == `"*"` {
+	if string(data) == wildcardQuotedSymbol {
 		j.all = true
 		j.list = nil
 
@@ -114,14 +120,17 @@ func (j AllOrListString) MarshalJSON() ([]byte, error) {
 // If the YAML value is the string "*", it is treated as a wildcard and sets 'all' to true and 'list' to nil.
 // Otherwise, it expects a list of strings and sets 'list' accordingly, with 'all' set to false.
 func (j *AllOrListString) UnmarshalYAML(value *yaml.Node) error {
-	if value.Value == wildcardSymbol {
+	var strValue string
+
+	err := value.Decode(&strValue)
+	if err == nil && strValue == wildcardSymbol {
 		j.all = true
 		j.list = nil
 
 		return nil
 	}
 
-	err := value.Decode(&j.list)
+	err = value.Decode(&j.list)
 	if err != nil {
 		return err
 	}
@@ -140,6 +149,19 @@ func (j AllOrListString) MarshalYAML() (any, error) {
 	}
 
 	return j.list, nil
+}
+
+// UnmarshalText implements the custom behavior for the encoding.TextUnmarshaler interface.
+func (j *AllOrListString) UnmarshalText(text []byte) error {
+	value := string(text)
+	if value != wildcardSymbol && value != wildcardQuotedSymbol {
+		return errInvalidWildcardSymbol
+	}
+
+	j.all = true
+	j.list = nil
+
+	return nil
 }
 
 // String implements the custom behavior for the fmt.Stringer interface.
@@ -262,7 +284,7 @@ func (j AllOrListWildcardString) Contains(input string) bool {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *AllOrListWildcardString) UnmarshalJSON(data []byte) error {
-	if string(data) == `"*"` {
+	if string(data) == wildcardQuotedSymbol {
 		j.all = true
 		j.list = nil
 		j.wildcards = nil
@@ -299,7 +321,7 @@ func (j AllOrListWildcardString) MarshalJSON() ([]byte, error) {
 // If the YAML value is the string "*", it is treated as a wildcard and sets 'all' to true and 'list' to nil.
 // Otherwise, it expects a list of strings and sets 'list' accordingly, with 'all' set to false.
 func (j *AllOrListWildcardString) UnmarshalYAML(value *yaml.Node) error {
-	if value.Value == wildcardSymbol {
+	if value.Value == wildcardSymbol || value.Value == wildcardQuotedSymbol {
 		j.all = true
 		j.list = nil
 		j.wildcards = nil
