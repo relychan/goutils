@@ -1,6 +1,7 @@
 package goutils
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -85,13 +86,14 @@ func ExtractHeaders(headers http.Header) map[string]string {
 
 // ValidateHTTPURLOptions represent URL validation options.
 type ValidateHTTPURLOptions struct {
-	ResolveDNS      bool
-	PublicIPOnly    bool
 	AllowedSchemes  []string
-	AllowedIPRanges []string
-	BlockedIPRanges []string
 	AllowedHosts    []string
 	BlockedHosts    []string
+	PublicIPOnly    bool
+	AllowedIPRanges []string
+	BlockedIPRanges []string
+	// Custom lookup IP function.
+	LookupIP func(ctx context.Context, host string) ([]net.IP, error)
 }
 
 // ValidateURLString parses and validates URL from a string. Returns the parsed URL and an error.
@@ -142,7 +144,7 @@ func ValidateURL(uri *url.URL, options ValidateHTTPURLOptions) error {
 		}
 	}
 
-	if !options.ResolveDNS && !options.PublicIPOnly &&
+	if !options.PublicIPOnly &&
 		len(options.AllowedIPRanges) == 0 && len(options.BlockedIPRanges) == 0 {
 		return nil
 	}
@@ -157,18 +159,43 @@ func ValidateURL(uri *url.URL, options ValidateHTTPURLOptions) error {
 		return err
 	}
 
-	return ValidateIP(hostname, options.PublicIPOnly, allowedIPRanges, blockedIPRanges)
+	return ValidateIP(context.Background(), hostname, ValidateIPOptions{
+		PublicIPOnly:    options.PublicIPOnly,
+		AllowedIPRanges: allowedIPRanges,
+		BlockedIPRanges: blockedIPRanges,
+		LookupIP:        options.LookupIP,
+	})
+}
+
+// ValidateIPOptions represent URL validation options.
+type ValidateIPOptions struct {
+	// Block all private IPs.
+	PublicIPOnly bool
+	// IP ranges to allow.
+	AllowedIPRanges []*net.IPNet
+	// IP ranges to block.
+	BlockedIPRanges []*net.IPNet
+	// Custom lookup IP function.
+	LookupIP func(ctx context.Context, host string) ([]net.IP, error)
 }
 
 // ValidateIP checks if the IP is valid.
-func ValidateIP(
-	hostname string,
-	publicIPOnly bool,
-	allowedIPRanges []*net.IPNet,
-	blockedIPRanges []*net.IPNet,
+func ValidateIP( //nolint:cyclop
+	ctx context.Context,
+	hostOrIP string,
+	options ValidateIPOptions,
 ) error {
 	// Resolve IP addresses
-	ips, err := net.LookupIP(hostname) //nolint:noctx
+	var ips []net.IP
+
+	var err error
+
+	if options.LookupIP != nil {
+		ips, err = options.LookupIP(ctx, hostOrIP)
+	} else {
+		ips, err = net.DefaultResolver.LookupIP(ctx, "ip", hostOrIP)
+	}
+
 	if err != nil {
 		// Block on DNS resolution failure
 		return err
@@ -176,26 +203,26 @@ func ValidateIP(
 
 	// Check each IP against blocked ranges
 	for _, ip := range ips {
-		if publicIPOnly && (ip.IsPrivate() || ip.IsLoopback() || ip.IsUnspecified() ||
+		if options.PublicIPOnly && (ip.IsPrivate() || ip.IsLoopback() || ip.IsUnspecified() ||
 			ip.IsLinkLocalUnicast() ||
 			ip.IsLinkLocalMulticast()) {
 			return fmt.Errorf("%w: allow public IP only", ErrBlockedIP)
 		}
 
-		for _, subnet := range blockedIPRanges {
+		for _, subnet := range options.BlockedIPRanges {
 			if subnet.Contains(ip) {
 				return ErrBlockedIP
 			}
 		}
 	}
 
-	if len(allowedIPRanges) == 0 {
+	if len(options.AllowedIPRanges) == 0 {
 		return nil
 	}
 
 	// Check each IP against allowed ranges
 	for _, ip := range ips {
-		for _, subnet := range allowedIPRanges {
+		for _, subnet := range options.AllowedIPRanges {
 			if subnet.Contains(ip) {
 				return nil
 			}

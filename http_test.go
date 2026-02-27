@@ -1,6 +1,7 @@
 package goutils
 
 import (
+	"context"
 	"errors"
 	"net"
 	"net/http"
@@ -446,7 +447,9 @@ func TestValidateIP(t *testing.T) {
 		}
 
 		for _, ip := range privateIPs {
-			err := ValidateIP(ip, true, nil, nil)
+			err := ValidateIP(context.Background(), ip, ValidateIPOptions{
+				PublicIPOnly: true,
+			})
 			if err == nil || !errors.Is(err, ErrBlockedIP) {
 				t.Errorf("expected private ip error, got: %s, ip: %s", err, ip)
 			}
@@ -455,7 +458,9 @@ func TestValidateIP(t *testing.T) {
 
 	t.Run("public IP with no restrictions returns ErrBlockedIP (no allowed ranges)", func(t *testing.T) {
 		// No allowedIPRanges means ValidateIP always returns ErrBlockedIP after passing public check
-		err := ValidateIP("8.8.8.8", true, nil, nil)
+		err := ValidateIP(context.Background(), "8.8.8.8", ValidateIPOptions{
+			PublicIPOnly: true,
+		})
 		if err != nil {
 			t.Fatalf("expected nil, got: %v", err)
 		}
@@ -463,7 +468,9 @@ func TestValidateIP(t *testing.T) {
 
 	t.Run("public IP in allowed range passes", func(t *testing.T) {
 		_, subnet, _ := parseNetCIDR("8.8.8.0/24")
-		err := ValidateIP("8.8.8.8", false, []*net.IPNet{subnet}, nil)
+		err := ValidateIP(context.Background(), "8.8.8.8", ValidateIPOptions{
+			AllowedIPRanges: []*net.IPNet{subnet},
+		})
 		if err != nil {
 			t.Fatalf("expected nil error, got: %v", err)
 		}
@@ -472,21 +479,26 @@ func TestValidateIP(t *testing.T) {
 	t.Run("IP in blocked range returns ErrBlockedIP", func(t *testing.T) {
 		_, subnet, _ := parseNetCIDR("8.8.8.0/24")
 		_, allowed, _ := parseNetCIDR("0.0.0.0/0")
-		err := ValidateIP("8.8.8.8", false, []*net.IPNet{allowed}, []*net.IPNet{subnet})
+		err := ValidateIP(context.Background(), "8.8.8.8", ValidateIPOptions{
+			AllowedIPRanges: []*net.IPNet{allowed},
+			BlockedIPRanges: []*net.IPNet{subnet},
+		})
 		if !errors.Is(err, ErrBlockedIP) {
 			t.Fatalf("expected ErrBlockedIP, got: %v", err)
 		}
 	})
 
 	t.Run("loopback blocked when publicIPOnly=true", func(t *testing.T) {
-		err := ValidateIP("127.0.0.1", true, nil, nil)
+		err := ValidateIP(context.Background(), "127.0.0.1", ValidateIPOptions{
+			PublicIPOnly: true,
+		})
 		if !errors.Is(err, ErrBlockedIP) {
 			t.Fatalf("expected ErrBlockedIP, got: %v", err)
 		}
 	})
 
 	t.Run("unresolvable hostname returns error", func(t *testing.T) {
-		err := ValidateIP("this.hostname.does.not.exist.invalid", false, nil, nil)
+		err := ValidateIP(context.Background(), "this.hostname.does.not.exist.invalid", ValidateIPOptions{})
 		if err == nil {
 			t.Fatal("expected DNS resolution error, got nil")
 		}
