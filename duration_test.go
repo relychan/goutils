@@ -92,7 +92,6 @@ func TestParseDuration(t *testing.T) {
 
 	for _, c := range testCases {
 		d, err := ParseDuration(c.in)
-
 		if err != nil {
 			t.Errorf("Unexpected error on input %q", c.in)
 		}

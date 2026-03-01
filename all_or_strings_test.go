@@ -301,7 +301,7 @@ func TestAllOrListString_JSON(t *testing.T) {
 func TestAllOrListString_YAML(t *testing.T) {
 	t.Run("unmarshal all", func(t *testing.T) {
 		var aos AllOrListString
-		err := yaml.Unmarshal([]byte(`"*"`), &aos)
+		err := yaml.Load([]byte(`"*"`), &aos)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -317,7 +317,7 @@ func TestAllOrListString_YAML(t *testing.T) {
 
 	t.Run("marshal all", func(t *testing.T) {
 		aos := NewAll()
-		data, err := yaml.Marshal(aos)
+		data, err := yaml.Dump(aos)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

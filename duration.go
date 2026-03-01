@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
-	"go.yaml.in/yaml/v4"
 )
 
 var (
@@ -263,28 +261,4 @@ func (d *Duration) UnmarshalText(text []byte) error {
 	*d, err = ParseDuration(string(text))
 
 	return err
-}
-
-// MarshalYAML implements the yaml.Marshaler interface.
-func (d Duration) MarshalYAML() (any, error) {
-	return d.String(), nil
-}
-
-// UnmarshalYAML implements the yaml.Unmarshaler interface.
-func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
-	var s string
-
-	err := value.Decode(&s)
-	if err != nil {
-		return err
-	}
-
-	dur, err := ParseDuration(s)
-	if err != nil {
-		return err
-	}
-
-	*d = dur
-
-	return nil
 }

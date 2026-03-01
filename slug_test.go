@@ -50,7 +50,7 @@ func TestSlug(t *testing.T) {
 		}
 
 		err = yaml.Load([]byte(`{}`), &slug)
-		if !strings.Contains(err.Error(), "cannot construct !!map into string") {
+		if !strings.Contains(err.Error(), "cannot construct !!map into goutils.Slug") {
 			t.Fatalf("expected unmarshal error, got: %s", err)
 		}
 	})

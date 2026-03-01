@@ -120,17 +120,14 @@ func (j AllOrListString) MarshalJSON() ([]byte, error) {
 // If the YAML value is the string "*", it is treated as a wildcard and sets 'all' to true and 'list' to nil.
 // Otherwise, it expects a list of strings and sets 'list' accordingly, with 'all' set to false.
 func (j *AllOrListString) UnmarshalYAML(value *yaml.Node) error {
-	var strValue string
-
-	err := value.Decode(&strValue)
-	if err == nil && strValue == wildcardSymbol {
+	if value.Value == wildcardSymbol || value.Value == wildcardQuotedSymbol {
 		j.all = true
 		j.list = nil
 
 		return nil
 	}
 
-	err = value.Decode(&j.list)
+	err := value.Decode(&j.list)
 	if err != nil {
 		return err
 	}

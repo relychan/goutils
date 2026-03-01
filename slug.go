@@ -3,8 +3,6 @@ package goutils
 import (
 	"encoding/json"
 	"fmt"
-
-	"go.yaml.in/yaml/v4"
 )
 
 // Slug represents a url-encoded string that allows alphabet, digits, hyphens and underscores only.
@@ -52,18 +50,12 @@ func (s *Slug) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-// UnmarshalYAML implements the yaml.Unmarshaler interface to decode value.
-func (s *Slug) UnmarshalYAML(value *yaml.Node) error {
-	var rawValue string
+// UnmarshalText implements [encoding.TextUnmarshaler] by compiling the
+// encoded value with [regexp.Compile] when treating it as a regular expression.
+func (s *Slug) UnmarshalText(bs []byte) error {
+	slug := Slug(string(bs))
 
-	err := value.Decode(&rawValue)
-	if err != nil {
-		return fmt.Errorf("invalid slug, %w", err)
-	}
-
-	slug := Slug(value.Value)
-
-	err = slug.Validate()
+	err := slug.Validate()
 	if err != nil {
 		return err
 	}

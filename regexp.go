@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"regexp"
 	"strings"
-
-	"go.yaml.in/yaml/v4"
 )
 
 type matchOp int8
@@ -77,6 +75,11 @@ func (j RegexpMatcher) String() string {
 	default:
 		return *j.text
 	}
+}
+
+// MarshalText implements the encoding.TextMarshaler interface.
+func (j RegexpMatcher) MarshalText() ([]byte, error) {
+	return []byte(j.String()), nil
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler] by compiling the
@@ -158,23 +161,6 @@ func (j *RegexpMatcher) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements json.Marshaler.
 func (j RegexpMatcher) MarshalJSON() ([]byte, error) {
 	return json.Marshal(j.String())
-}
-
-// UnmarshalYAML implements custom deserialization for the yaml.Unmarshaler interface.
-func (j *RegexpMatcher) UnmarshalYAML(value *yaml.Node) error {
-	var raw string
-
-	err := value.Decode(&raw)
-	if err != nil {
-		return err
-	}
-
-	return j.UnmarshalText([]byte(raw))
-}
-
-// MarshalYAML implements the custom behavior for the yaml.Marshaler interface.
-func (j RegexpMatcher) MarshalYAML() (any, error) {
-	return j.String(), nil
 }
 
 // Match reports whether the byte slice b contains any match of the regular expression re.
