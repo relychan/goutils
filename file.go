@@ -39,9 +39,12 @@ func ReadJSONOrYAMLFile[T any](ctx context.Context, filePath string) (*T, error)
 
 		return &result, err
 	case ".yaml", ".yml":
-		err = yaml.NewDecoder(file).Decode(&result)
+		loader, err := yaml.NewLoader(file)
+		if err != nil {
+			return nil, err
+		}
 
-		return &result, err
+		return &result, loader.Load(&result)
 	default:
 		return nil, errUnsupportedFilePathExtension
 	}

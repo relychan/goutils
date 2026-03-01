@@ -434,7 +434,7 @@ func TestRegexpMatcher_JSON(t *testing.T) {
 func TestRegexpMatcher_YAML(t *testing.T) {
 	t.Run("unmarshal text with spaces", func(t *testing.T) {
 		var rm RegexpMatcher
-		err := yaml.Unmarshal([]byte(`"hello world"`), &rm)
+		err := yaml.Load([]byte(`"hello world"`), &rm)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
