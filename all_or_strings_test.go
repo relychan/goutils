@@ -1122,7 +1122,7 @@ func TestAllOrListWildcardString_JSON(t *testing.T) {
 func TestAllOrListWildcardString_YAML(t *testing.T) {
 	t.Run("unmarshal all", func(t *testing.T) {
 		var aos AllOrListWildcardString
-		err := yaml.Unmarshal([]byte(`"*"`), &aos)
+		err := yaml.Load([]byte(`"*"`), &aos)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

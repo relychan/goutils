@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
-	"go.yaml.in/yaml/v4"
 )
 
 var (
@@ -354,25 +352,6 @@ func (t Time) ZoneBounds() (Time, Time) {
 	start, end := time.Time(t).ZoneBounds()
 
 	return Time(start), Time(end)
-}
-
-// MarshalYAML implements the yaml.Marshaler interface.
-func (t Time) MarshalYAML() (any, error) {
-	return time.Time(t), nil
-}
-
-// UnmarshalYAML implements the yaml.Unmarshaler interface.
-func (t *Time) UnmarshalYAML(value *yaml.Node) error {
-	var s string
-
-	err := value.Decode(&s)
-	if err != nil {
-		return err
-	}
-
-	*t, err = ParseDateTime(s)
-
-	return err
 }
 
 // Now returns the current local time.
