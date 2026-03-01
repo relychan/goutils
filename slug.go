@@ -50,8 +50,8 @@ func (s *Slug) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler] by compiling the
-// encoded value with [regexp.Compile] when treating it as a regular expression.
+// UnmarshalText implements [encoding.TextUnmarshaler] by parsing the
+// provided text into a Slug and validating that it contains only allowed characters.
 func (s *Slug) UnmarshalText(bs []byte) error {
 	slug := Slug(string(bs))
 
