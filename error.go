@@ -46,8 +46,10 @@ var (
 	ErrMalformedBooleanSlice = errors.New("malformed boolean slice")
 	// ErrBooleanSliceNull occurs when the boolean slice is nil.
 	ErrBooleanSliceNull = errors.New("boolean slice must not be null")
-	// ErrInvalidYAMLSyntax occurs when the YAML syntax is invalid.
-	ErrInvalidYAMLSyntax = errors.New("invalid YAML syntax")
+	// ErrMalformedYAML occurs when the YAML syntax or structure is malformed.
+	ErrMalformedYAML = errors.New("malformed YAML")
+	// ErrInvalidYAMLSyntax is deprecated; use ErrMalformedYAML instead.
+	ErrInvalidYAMLSyntax = ErrMalformedYAML
 )
 
 // CatchWarnErrorFunc catches the closer function and prints error with the WARN level.

@@ -71,7 +71,7 @@ func GetNodeValueFromYAMLMap(node *yaml.Node, key string) (*yaml.Node, error) {
 		}
 
 		keyNode := node.Content[i]
-		if keyNode.Kind != yaml.ScalarNode || keyNode.Tag != "!!str" {
+		if keyNode.Kind != yaml.ScalarNode || keyNode.Tag != YAMLStrTag {
 			return nil, fmt.Errorf(
 				"%w. Expected a key string, got %s",
 				ErrInvalidYAMLSyntax,
