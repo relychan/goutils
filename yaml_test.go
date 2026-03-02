@@ -40,7 +40,7 @@ func (ysm *yamlStringMap) UnmarshalYAML(value *yaml.Node) error {
 		return err
 	}
 
-	if foo != nil {
+	if baz != nil {
 		ysm.Baz = *baz
 	}
 
@@ -148,7 +148,7 @@ func TestGetStringValueFromYAMLMap(t *testing.T) {
 		}
 	})
 
-	t.Run("returns string value for matching key", func(t *testing.T) {
+	t.Run("YAML unmarshal integration test", func(t *testing.T) {
 		var result yamlStringMap
 		err := yaml.Load([]byte(rawYamlStr), &result)
 		assertNilError(t, err)
