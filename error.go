@@ -46,6 +46,8 @@ var (
 	ErrMalformedBooleanSlice = errors.New("malformed boolean slice")
 	// ErrBooleanSliceNull occurs when the boolean slice is nil.
 	ErrBooleanSliceNull = errors.New("boolean slice must not be null")
+	// ErrMalformedYAML occurs when the YAML syntax or structure is malformed.
+	ErrMalformedYAML = errors.New("malformed YAML")
 )
 
 // CatchWarnErrorFunc catches the closer function and prints error with the WARN level.
