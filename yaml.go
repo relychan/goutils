@@ -44,7 +44,7 @@ func GetStringValueFromYAMLMap(node *yaml.Node, key string) (*string, error) {
 	default:
 		return nil, fmt.Errorf(
 			"%w. Expected value for key %q to be a string, got node kind %d with tag %s",
-			ErrInvalidYAMLSyntax,
+			ErrMalformedYAML,
 			key,
 			valueNode.Kind,
 			valueNode.Tag,
@@ -59,7 +59,7 @@ func GetNodeValueFromYAMLMap(node *yaml.Node, key string) (*yaml.Node, error) {
 	}
 
 	if node.Kind != yaml.MappingNode {
-		return nil, fmt.Errorf("%w. Expected an object, got %s", ErrInvalidYAMLSyntax, node.Tag)
+		return nil, fmt.Errorf("%w. Expected an object, got %s", ErrMalformedYAML, node.Tag)
 	}
 
 	i := 0
@@ -74,7 +74,7 @@ func GetNodeValueFromYAMLMap(node *yaml.Node, key string) (*yaml.Node, error) {
 		if keyNode.Kind != yaml.ScalarNode || keyNode.Tag != YAMLStrTag {
 			return nil, fmt.Errorf(
 				"%w. Expected a key string, got %s",
-				ErrInvalidYAMLSyntax,
+				ErrMalformedYAML,
 				keyNode.Tag,
 			)
 		}

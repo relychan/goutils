@@ -113,7 +113,7 @@ func TestGetStringValueFromYAMLMap(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		if !errors.Is(err, ErrInvalidYAMLSyntax) {
+		if !errors.Is(err, ErrMalformedYAML) {
 			t.Fatalf("expected ErrInvalidYAMLSyntax, got %v", err)
 		}
 	})
@@ -128,7 +128,7 @@ func TestGetStringValueFromYAMLMap(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		if !errors.Is(err, ErrInvalidYAMLSyntax) {
+		if !errors.Is(err, ErrMalformedYAML) {
 			t.Fatalf("expected ErrInvalidYAMLSyntax, got %v", err)
 		}
 	})
@@ -143,7 +143,7 @@ func TestGetStringValueFromYAMLMap(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		if !errors.Is(err, ErrInvalidYAMLSyntax) {
+		if !errors.Is(err, ErrMalformedYAML) {
 			t.Fatalf("expected ErrInvalidYAMLSyntax, got %v", err)
 		}
 	})
