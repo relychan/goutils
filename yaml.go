@@ -29,9 +29,34 @@ const (
 	YAMLMergeTag = "!!merge"
 )
 
-// GetStringValueFromYAMLMapNode gets the string value from a YAML map node.
-func GetStringValueFromYAMLMapNode(node *yaml.Node, key string) (*string, error) {
-	if node == nil || node.Kind != yaml.MappingNode {
+// GetStringValueFromYAMLMap gets the string value from a YAML map node.
+func GetStringValueFromYAMLMap(node *yaml.Node, key string) (*string, error) {
+	valueNode, err := GetNodeValueFromYAMLMap(node, key)
+	if valueNode == nil || err != nil {
+		return nil, err
+	}
+
+	switch valueNode.Tag {
+	case YAMLStrTag:
+		return &valueNode.Value, nil
+	case YAMLNullTag:
+		return nil, nil
+	default:
+		return nil, fmt.Errorf(
+			"%w. Expected ref is a string, got %s",
+			ErrInvalidYAMLSyntax,
+			valueNode.Tag,
+		)
+	}
+}
+
+// GetNodeValueFromYAMLMap gets the node value from a YAML map node.
+func GetNodeValueFromYAMLMap(node *yaml.Node, key string) (*yaml.Node, error) {
+	if node == nil {
+		return nil, nil
+	}
+
+	if node.Kind != yaml.MappingNode {
 		return nil, fmt.Errorf("%w. Expected an object, got %s", ErrInvalidYAMLSyntax, node.Tag)
 	}
 
@@ -58,20 +83,7 @@ func GetStringValueFromYAMLMapNode(node *yaml.Node, key string) (*string, error)
 
 		i++
 
-		valueNode := node.Content[i]
-
-		switch valueNode.Tag {
-		case YAMLStrTag:
-			return &valueNode.Value, nil
-		case YAMLNullTag:
-			return nil, nil
-		default:
-			return nil, fmt.Errorf(
-				"%w. Expected ref is a string, got %s",
-				ErrInvalidYAMLSyntax,
-				valueNode.Tag,
-			)
-		}
+		return node.Content[i], nil
 	}
 
 	return nil, nil
