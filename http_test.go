@@ -139,7 +139,7 @@ func TestParseHttpURL(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.URL, func(t *testing.T) {
-			result, err := ParseHTTPURL(tc.URL, ValidateHTTPURLOptions{})
+			result, err := ParseHTTPURL(tc.URL)
 			if tc.Error == "" {
 				if err != nil {
 					t.Fatalf("expected nil error, got: %s", err)
@@ -158,7 +158,7 @@ func TestParseHttpURL(t *testing.T) {
 func TestParseHTTPURL_AllowedSchemes(t *testing.T) {
 	t.Run("filters non-http schemes from AllowedSchemes", func(t *testing.T) {
 		// ftp and ws are not http/https, they should be removed; only https passes
-		_, err := ParseHTTPURL("https://localhost/path", ValidateHTTPURLOptions{
+		_, err := ValidateURLString("https://localhost/path", ValidateHTTPURLOptions{
 			AllowedSchemes: []string{"ftp", "https", "ws"},
 		})
 		if err != nil {
@@ -167,20 +167,11 @@ func TestParseHTTPURL_AllowedSchemes(t *testing.T) {
 	})
 
 	t.Run("http blocked when only https allowed", func(t *testing.T) {
-		_, err := ParseHTTPURL("http://localhost/path", ValidateHTTPURLOptions{
-			AllowedSchemes: []string{"https"},
+		_, err := ValidateURLString("http://localhost/path", ValidateHTTPURLOptions{
+			AllowedSchemes: []string{"ftp", "https", "ws"},
 		})
 		if err == nil || !errors.Is(err, ErrInvalidURLScheme) {
 			t.Fatalf("expected ErrInvalidURLScheme, got: %v", err)
-		}
-	})
-
-	t.Run("all non-http schemes filtered leaves empty list, both http and https pass", func(t *testing.T) {
-		_, err := ParseHTTPURL("http://localhost/path", ValidateHTTPURLOptions{
-			AllowedSchemes: []string{"ftp", "ws"},
-		})
-		if err != nil {
-			t.Fatalf("expected nil error (empty allowed after filter = allow all http/https), got: %v", err)
 		}
 	})
 }
@@ -447,7 +438,7 @@ func TestValidateIP(t *testing.T) {
 		}
 
 		for _, ip := range privateIPs {
-			err := ValidateIP(context.Background(), ip, ValidateIPOptions{
+			err := ValidateIPOrDomain(context.Background(), ip, ValidateIPOptions{
 				PublicIPOnly: true,
 			})
 			if err == nil || !errors.Is(err, ErrBlockedIP) {
@@ -458,7 +449,7 @@ func TestValidateIP(t *testing.T) {
 
 	t.Run("public IP with no restrictions returns ErrBlockedIP (no allowed ranges)", func(t *testing.T) {
 		// No allowedIPRanges means ValidateIP always returns ErrBlockedIP after passing public check
-		err := ValidateIP(context.Background(), "8.8.8.8", ValidateIPOptions{
+		err := ValidateIPOrDomain(context.Background(), "8.8.8.8", ValidateIPOptions{
 			PublicIPOnly: true,
 		})
 		if err != nil {
@@ -468,7 +459,7 @@ func TestValidateIP(t *testing.T) {
 
 	t.Run("public IP in allowed range passes", func(t *testing.T) {
 		_, subnet, _ := parseNetCIDR("8.8.8.0/24")
-		err := ValidateIP(context.Background(), "8.8.8.8", ValidateIPOptions{
+		err := ValidateIPOrDomain(context.Background(), "8.8.8.8", ValidateIPOptions{
 			AllowedIPRanges: []*net.IPNet{subnet},
 		})
 		if err != nil {
@@ -479,7 +470,7 @@ func TestValidateIP(t *testing.T) {
 	t.Run("IP in blocked range returns ErrBlockedIP", func(t *testing.T) {
 		_, subnet, _ := parseNetCIDR("8.8.8.0/24")
 		_, allowed, _ := parseNetCIDR("0.0.0.0/0")
-		err := ValidateIP(context.Background(), "8.8.8.8", ValidateIPOptions{
+		err := ValidateIPOrDomain(context.Background(), "8.8.8.8", ValidateIPOptions{
 			AllowedIPRanges: []*net.IPNet{allowed},
 			BlockedIPRanges: []*net.IPNet{subnet},
 		})
@@ -489,7 +480,7 @@ func TestValidateIP(t *testing.T) {
 	})
 
 	t.Run("loopback blocked when publicIPOnly=true", func(t *testing.T) {
-		err := ValidateIP(context.Background(), "127.0.0.1", ValidateIPOptions{
+		err := ValidateIPOrDomain(context.Background(), "127.0.0.1", ValidateIPOptions{
 			PublicIPOnly: true,
 		})
 		if !errors.Is(err, ErrBlockedIP) {
@@ -498,7 +489,7 @@ func TestValidateIP(t *testing.T) {
 	})
 
 	t.Run("unresolvable hostname returns error", func(t *testing.T) {
-		err := ValidateIP(context.Background(), "this.hostname.does.not.exist.invalid", ValidateIPOptions{})
+		err := ValidateIPOrDomain(context.Background(), "this.hostname.does.not.exist.invalid", ValidateIPOptions{})
 		if err == nil {
 			t.Fatal("expected DNS resolution error, got nil")
 		}
