@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+var httpSchemes = []string{"http", "https"}
+
 // ParseRelativeOrHTTPURL validates and parses relative or HTTP URL.
 func ParseRelativeOrHTTPURL(input string) (*url.URL, error) {
 	input = strings.TrimSpace(input)
@@ -24,12 +26,7 @@ func ParseRelativeOrHTTPURL(input string) (*url.URL, error) {
 	}
 
 	if schemeIndex > 0 {
-		scheme := input[:schemeIndex]
-		if scheme != "http" && scheme != "https" {
-			return nil, ErrInvalidURLScheme
-		}
-
-		return url.Parse(input)
+		return ParseHTTPURL(input)
 	}
 
 	if !filepath.IsAbs(input) && !filepath.IsLocal(input) {
@@ -50,23 +47,23 @@ func ParseRelativeOrHTTPURL(input string) (*url.URL, error) {
 }
 
 // ParseHTTPURL parses and validate the input string to have http(s) scheme.
-func ParseHTTPURL(input string, options ValidateHTTPURLOptions) (*url.URL, error) {
-	if len(options.AllowedSchemes) == 0 {
-		options.AllowedSchemes = []string{"http", "https"}
-	} else {
-		// remove schemes that are not http(s)
-		schemes := []string{}
-
-		for _, scheme := range options.AllowedSchemes {
-			if scheme == "http" || scheme == "https" {
-				schemes = append(schemes, scheme)
-			}
-		}
-
-		options.AllowedSchemes = schemes
+func ParseHTTPURL(input string) (*url.URL, error) {
+	urlStr := strings.TrimSpace(input)
+	if urlStr == "" {
+		return nil, ErrInvalidURI
 	}
 
-	return ValidateURLString(input, options)
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, err
+	}
+
+	hostname := parsedURL.Hostname()
+	if hostname == "" {
+		return nil, ErrInvalidURI
+	}
+
+	return parsedURL, validateURLScheme(parsedURL, httpSchemes)
 }
 
 // ExtractHeaders converts the http.Header to string map with lowercase header names.
@@ -97,7 +94,11 @@ type ValidateHTTPURLOptions struct {
 }
 
 // ValidateURLString parses and validates URL from a string. Returns the parsed URL and an error.
-func ValidateURLString(urlStr string, options ValidateHTTPURLOptions) (*url.URL, error) {
+func ValidateURLString(
+	ctx context.Context,
+	urlStr string,
+	options ValidateHTTPURLOptions,
+) (*url.URL, error) {
 	urlStr = strings.TrimSpace(urlStr)
 	if urlStr == "" {
 		return nil, ErrInvalidURI
@@ -108,18 +109,14 @@ func ValidateURLString(urlStr string, options ValidateHTTPURLOptions) (*url.URL,
 		return nil, err
 	}
 
-	return parsedURL, ValidateURL(parsedURL, options)
+	return parsedURL, ValidateURL(ctx, parsedURL, options)
 }
 
 // ValidateURL parses and validates URL.
-func ValidateURL(uri *url.URL, options ValidateHTTPURLOptions) error {
-	if len(options.AllowedSchemes) > 0 && !slices.Contains(options.AllowedSchemes, uri.Scheme) {
-		return fmt.Errorf(
-			"%w. Accept one of %v, got: %s",
-			ErrInvalidURLScheme,
-			options.AllowedSchemes,
-			uri.Scheme,
-		)
+func ValidateURL(ctx context.Context, uri *url.URL, options ValidateHTTPURLOptions) error {
+	err := validateURLScheme(uri, options.AllowedSchemes)
+	if err != nil {
+		return err
 	}
 
 	// Extract hostname without port
@@ -128,20 +125,9 @@ func ValidateURL(uri *url.URL, options ValidateHTTPURLOptions) error {
 		return ErrInvalidURI
 	}
 
-	err := validateHost(uri.Host, hostname, &options)
+	err = validateHost(uri.Host, hostname, &options)
 	if err != nil {
 		return err
-	}
-
-	for _, expr := range options.BlockedHosts {
-		re, err := NewRegexpMatcher(expr)
-		if err != nil {
-			return fmt.Errorf("failed to parse allowed host rule: %w", err)
-		}
-
-		if re.MatchString(hostname) || re.MatchString(uri.Host) {
-			return fmt.Errorf("%w: host is blocked", ErrInvalidURI)
-		}
 	}
 
 	if !options.PublicIPOnly &&
@@ -159,7 +145,7 @@ func ValidateURL(uri *url.URL, options ValidateHTTPURLOptions) error {
 		return err
 	}
 
-	return ValidateIP(context.Background(), hostname, ValidateIPOptions{
+	return ValidateIPOrDomain(ctx, hostname, ValidateIPOptions{
 		PublicIPOnly:    options.PublicIPOnly,
 		AllowedIPRanges: allowedIPRanges,
 		BlockedIPRanges: blockedIPRanges,
@@ -179,10 +165,11 @@ type ValidateIPOptions struct {
 	LookupIP func(ctx context.Context, host string) ([]net.IP, error)
 }
 
-// ValidateIP checks if the IP is valid.
-func ValidateIP( //nolint:cyclop
+// ValidateIPOrDomain checks if the IP string or IP of domain is valid.
+// If the input string is a domain, lookup the IP from it before validation.
+func ValidateIPOrDomain(
 	ctx context.Context,
-	hostOrIP string,
+	domainOrIP string,
 	options ValidateIPOptions,
 ) error {
 	// Resolve IP addresses
@@ -191,9 +178,9 @@ func ValidateIP( //nolint:cyclop
 	var err error
 
 	if options.LookupIP != nil {
-		ips, err = options.LookupIP(ctx, hostOrIP)
+		ips, err = options.LookupIP(ctx, domainOrIP)
 	} else {
-		ips, err = net.DefaultResolver.LookupIP(ctx, "ip", hostOrIP)
+		ips, err = net.DefaultResolver.LookupIP(ctx, "ip", domainOrIP)
 	}
 
 	if err != nil {
@@ -203,16 +190,26 @@ func ValidateIP( //nolint:cyclop
 
 	// Check each IP against blocked ranges
 	for _, ip := range ips {
-		if options.PublicIPOnly && (ip.IsPrivate() || ip.IsLoopback() || ip.IsUnspecified() ||
-			ip.IsLinkLocalUnicast() ||
-			ip.IsLinkLocalMulticast()) {
-			return fmt.Errorf("%w: allow public IP only", ErrBlockedIP)
+		err := ValidateIP(ip, options)
+		if err != nil {
+			return err
 		}
+	}
 
-		for _, subnet := range options.BlockedIPRanges {
-			if subnet.Contains(ip) {
-				return ErrBlockedIP
-			}
+	return nil
+}
+
+// ValidateIP checks if the IP is valid.
+func ValidateIP(ip net.IP, options ValidateIPOptions) error {
+	if options.PublicIPOnly && (ip.IsPrivate() || ip.IsLoopback() || ip.IsUnspecified() ||
+		ip.IsLinkLocalUnicast() ||
+		ip.IsLinkLocalMulticast()) {
+		return ErrBlockedIP
+	}
+
+	for _, subnet := range options.BlockedIPRanges {
+		if subnet.Contains(ip) {
+			return ErrBlockedIP
 		}
 	}
 
@@ -221,11 +218,9 @@ func ValidateIP( //nolint:cyclop
 	}
 
 	// Check each IP against allowed ranges
-	for _, ip := range ips {
-		for _, subnet := range options.AllowedIPRanges {
-			if subnet.Contains(ip) {
-				return nil
-			}
+	for _, subnet := range options.AllowedIPRanges {
+		if subnet.Contains(ip) {
+			return nil
 		}
 	}
 
@@ -302,4 +297,17 @@ func validateHost(host, hostname string, options *ValidateHTTPURLOptions) error 
 	}
 
 	return fmt.Errorf("%w: host is not allowed", ErrInvalidURI)
+}
+
+func validateURLScheme(uri *url.URL, allowedSchemes []string) error {
+	if len(allowedSchemes) > 0 && !slices.Contains(allowedSchemes, uri.Scheme) {
+		return fmt.Errorf(
+			"%w. Accept one of %v, got: %s",
+			ErrInvalidURLScheme,
+			allowedSchemes,
+			uri.Scheme,
+		)
+	}
+
+	return nil
 }
