@@ -26,12 +26,7 @@ func ParseRelativeOrHTTPURL(input string) (*url.URL, error) {
 	}
 
 	if schemeIndex > 0 {
-		scheme := input[:schemeIndex]
-		if scheme != "http" && scheme != "https" {
-			return nil, ErrInvalidURLScheme
-		}
-
-		return url.Parse(input)
+		return ParseHTTPURL(input)
 	}
 
 	if !filepath.IsAbs(input) && !filepath.IsLocal(input) {
@@ -61,6 +56,11 @@ func ParseHTTPURL(input string) (*url.URL, error) {
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, err
+	}
+
+	hostname := parsedURL.Hostname()
+	if hostname == "" {
+		return nil, ErrInvalidURI
 	}
 
 	return parsedURL, validateURLScheme(parsedURL, httpSchemes)
