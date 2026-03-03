@@ -94,7 +94,11 @@ type ValidateHTTPURLOptions struct {
 }
 
 // ValidateURLString parses and validates URL from a string. Returns the parsed URL and an error.
-func ValidateURLString(urlStr string, options ValidateHTTPURLOptions) (*url.URL, error) {
+func ValidateURLString(
+	ctx context.Context,
+	urlStr string,
+	options ValidateHTTPURLOptions,
+) (*url.URL, error) {
 	urlStr = strings.TrimSpace(urlStr)
 	if urlStr == "" {
 		return nil, ErrInvalidURI
@@ -105,11 +109,11 @@ func ValidateURLString(urlStr string, options ValidateHTTPURLOptions) (*url.URL,
 		return nil, err
 	}
 
-	return parsedURL, ValidateURL(parsedURL, options)
+	return parsedURL, ValidateURL(ctx, parsedURL, options)
 }
 
 // ValidateURL parses and validates URL.
-func ValidateURL(uri *url.URL, options ValidateHTTPURLOptions) error {
+func ValidateURL(ctx context.Context, uri *url.URL, options ValidateHTTPURLOptions) error {
 	err := validateURLScheme(uri, options.AllowedSchemes)
 	if err != nil {
 		return err
@@ -124,17 +128,6 @@ func ValidateURL(uri *url.URL, options ValidateHTTPURLOptions) error {
 	err = validateHost(uri.Host, hostname, &options)
 	if err != nil {
 		return err
-	}
-
-	for _, expr := range options.BlockedHosts {
-		re, err := NewRegexpMatcher(expr)
-		if err != nil {
-			return fmt.Errorf("failed to parse allowed host rule: %w", err)
-		}
-
-		if re.MatchString(hostname) || re.MatchString(uri.Host) {
-			return fmt.Errorf("%w: host is blocked", ErrInvalidURI)
-		}
 	}
 
 	if !options.PublicIPOnly &&
@@ -152,7 +145,7 @@ func ValidateURL(uri *url.URL, options ValidateHTTPURLOptions) error {
 		return err
 	}
 
-	return ValidateIPOrDomain(context.Background(), hostname, ValidateIPOptions{
+	return ValidateIPOrDomain(ctx, hostname, ValidateIPOptions{
 		PublicIPOnly:    options.PublicIPOnly,
 		AllowedIPRanges: allowedIPRanges,
 		BlockedIPRanges: blockedIPRanges,
@@ -198,12 +191,12 @@ func ValidateIPOrDomain(
 	// Check each IP against blocked ranges
 	for _, ip := range ips {
 		err := ValidateIP(ip, options)
-		if err == nil {
-			return nil
+		if err != nil {
+			return err
 		}
 	}
 
-	return ErrBlockedIP
+	return nil
 }
 
 // ValidateIP checks if the IP is valid.

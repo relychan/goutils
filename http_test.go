@@ -158,7 +158,7 @@ func TestParseHttpURL(t *testing.T) {
 func TestParseHTTPURL_AllowedSchemes(t *testing.T) {
 	t.Run("filters non-http schemes from AllowedSchemes", func(t *testing.T) {
 		// ftp and ws are not http/https, they should be removed; only https passes
-		_, err := ValidateURLString("https://localhost/path", ValidateHTTPURLOptions{
+		_, err := ValidateURLString(context.Background(), "https://localhost/path", ValidateHTTPURLOptions{
 			AllowedSchemes: []string{"ftp", "https", "ws"},
 		})
 		if err != nil {
@@ -167,7 +167,7 @@ func TestParseHTTPURL_AllowedSchemes(t *testing.T) {
 	})
 
 	t.Run("http blocked when only https allowed", func(t *testing.T) {
-		_, err := ValidateURLString("http://localhost/path", ValidateHTTPURLOptions{
+		_, err := ValidateURLString(context.Background(), "http://localhost/path", ValidateHTTPURLOptions{
 			AllowedSchemes: []string{"ftp", "https", "ws"},
 		})
 		if err == nil || !errors.Is(err, ErrInvalidURLScheme) {
@@ -236,21 +236,21 @@ func TestExtractHeaders_EdgeCases(t *testing.T) {
 
 func TestValidateURLString(t *testing.T) {
 	t.Run("empty string returns ErrInvalidURI", func(t *testing.T) {
-		_, err := ValidateURLString("", ValidateHTTPURLOptions{})
+		_, err := ValidateURLString(context.Background(), "", ValidateHTTPURLOptions{})
 		if !errors.Is(err, ErrInvalidURI) {
 			t.Fatalf("expected ErrInvalidURI, got: %v", err)
 		}
 	})
 
 	t.Run("whitespace-only returns ErrInvalidURI", func(t *testing.T) {
-		_, err := ValidateURLString("   ", ValidateHTTPURLOptions{})
+		_, err := ValidateURLString(context.Background(), "   ", ValidateHTTPURLOptions{})
 		if !errors.Is(err, ErrInvalidURI) {
 			t.Fatalf("expected ErrInvalidURI, got: %v", err)
 		}
 	})
 
 	t.Run("valid http URL", func(t *testing.T) {
-		u, err := ValidateURLString("http://127.0.0.1/path", ValidateHTTPURLOptions{})
+		u, err := ValidateURLString(context.Background(), "http://127.0.0.1/path", ValidateHTTPURLOptions{})
 		if err != nil {
 			t.Fatalf("expected nil error, got: %v", err)
 		}
@@ -264,7 +264,7 @@ func TestValidateURLString(t *testing.T) {
 func TestValidateURL_AllowedSchemes(t *testing.T) {
 	t.Run("scheme in allowed list passes", func(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			AllowedSchemes: []string{"http", "https"},
 		})
 		if err != nil {
@@ -274,7 +274,7 @@ func TestValidateURL_AllowedSchemes(t *testing.T) {
 
 	t.Run("scheme not in allowed list returns ErrInvalidURLScheme", func(t *testing.T) {
 		u := &url.URL{Scheme: "ftp", Host: "127.0.0.1"}
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			AllowedSchemes: []string{"http", "https"},
 		})
 		if !errors.Is(err, ErrInvalidURLScheme) {
@@ -285,7 +285,7 @@ func TestValidateURL_AllowedSchemes(t *testing.T) {
 	t.Run("empty AllowedSchemes skips scheme check", func(t *testing.T) {
 		u := &url.URL{Scheme: "ftp", Host: "127.0.0.1"}
 		// No scheme restriction — only IP validation matters; 127.0.0.1 resolves so no DNS error
-		err := ValidateURL(u, ValidateHTTPURLOptions{})
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{})
 		// Should not get ErrInvalidURLScheme (may get ErrBlockedIP or nil depending on IP rules)
 		if errors.Is(err, ErrInvalidURLScheme) {
 			t.Fatalf("did not expect ErrInvalidURLScheme, got: %v", err)
@@ -295,7 +295,7 @@ func TestValidateURL_AllowedSchemes(t *testing.T) {
 
 func TestValidateURL_EmptyHost(t *testing.T) {
 	u := &url.URL{Scheme: "https", Host: ""}
-	err := ValidateURL(u, ValidateHTTPURLOptions{})
+	err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{})
 	if !errors.Is(err, ErrInvalidURI) {
 		t.Fatalf("expected ErrInvalidURI for empty host, got: %v", err)
 	}
@@ -304,7 +304,7 @@ func TestValidateURL_EmptyHost(t *testing.T) {
 func TestValidateURL_AllowedHosts(t *testing.T) {
 	t.Run("host in allowed list passes", func(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			AllowedHosts: []string{"127.0.0.1"},
 		})
 		if err != nil {
@@ -314,7 +314,7 @@ func TestValidateURL_AllowedHosts(t *testing.T) {
 
 	t.Run("host not in allowed list returns ErrInvalidURI", func(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			AllowedHosts: []string{"example.com"},
 		})
 		if !errors.Is(err, ErrInvalidURI) {
@@ -324,7 +324,7 @@ func TestValidateURL_AllowedHosts(t *testing.T) {
 
 	t.Run("host prefix match", func(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "api.example.com"}
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			AllowedHosts: []string{"^api."},
 		})
 		if err != nil {
@@ -336,7 +336,7 @@ func TestValidateURL_AllowedHosts(t *testing.T) {
 func TestValidateURL_BlockedHosts(t *testing.T) {
 	t.Run("blocked host returns ErrInvalidURI", func(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			BlockedHosts: []string{"127.0.0.1"},
 		})
 		if !errors.Is(err, ErrInvalidURI) {
@@ -346,7 +346,7 @@ func TestValidateURL_BlockedHosts(t *testing.T) {
 
 	t.Run("non-blocked host proceeds to IP validation", func(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			BlockedHosts: []string{"evil.com"},
 		})
 		// Not blocked by host rule; result depends on IP validation
@@ -359,7 +359,7 @@ func TestValidateURL_BlockedHosts(t *testing.T) {
 func TestValidateURL_BlockedIPRanges(t *testing.T) {
 	t.Run("IP in blocked range returns ErrBlockedIP", func(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			BlockedIPRanges: []string{"127.0.0.0/8"},
 		})
 		if !errors.Is(err, ErrBlockedIP) {
@@ -369,7 +369,7 @@ func TestValidateURL_BlockedIPRanges(t *testing.T) {
 
 	t.Run("IP not in blocked range and no allowed range", func(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			BlockedIPRanges: []string{"10.0.0.0/8"},
 		})
 		// 127.0.0.1 is not blocked by 10/8, but no allowed ranges means ValidateIP returns ErrBlockedIP
@@ -382,7 +382,7 @@ func TestValidateURL_BlockedIPRanges(t *testing.T) {
 func TestValidateURL_AllowedIPRanges(t *testing.T) {
 	t.Run("IP in allowed range passes", func(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			AllowedIPRanges: []string{"127.0.0.0/8"},
 		})
 		if err != nil {
@@ -392,7 +392,7 @@ func TestValidateURL_AllowedIPRanges(t *testing.T) {
 
 	t.Run("IP not in allowed range returns ErrBlockedIP", func(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			AllowedIPRanges: []string{"10.0.0.0/8"},
 		})
 		if !errors.Is(err, ErrBlockedIP) {
@@ -405,7 +405,7 @@ func TestValidateURL_InvalidIPRange(t *testing.T) {
 	u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
 
 	t.Run("invalid blocked IP range returns error", func(t *testing.T) {
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			BlockedIPRanges: []string{"not-a-cidr"},
 		})
 		if err == nil {
@@ -414,7 +414,7 @@ func TestValidateURL_InvalidIPRange(t *testing.T) {
 	})
 
 	t.Run("invalid allowed IP range returns error", func(t *testing.T) {
-		err := ValidateURL(u, ValidateHTTPURLOptions{
+		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			AllowedIPRanges: []string{"not-a-cidr"},
 		})
 		if err == nil {
