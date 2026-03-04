@@ -11,16 +11,8 @@ import (
 	"strings"
 )
 
-func mustParseCIDR(cidr string) *net.IPNet {
-	_, network, err := net.ParseCIDR(cidr)
-	if err != nil {
-		panic(fmt.Sprintf("invalid CIDR %q: %v", cidr, err))
-	}
-	return network
-}
-
 var (
-	// RFC6598 Carrier-Grade NAT
+	// RFC6598 Carrier-Grade NAT.
 	cgNATSubnet = mustParseCIDR("100.64.0.0/10")
 	httpSchemes = []string{"http", "https"}
 )
@@ -319,4 +311,13 @@ func validateURLScheme(uri *url.URL, allowedSchemes []string) error {
 	}
 
 	return nil
+}
+
+func mustParseCIDR(cidr string) *net.IPNet {
+	_, network, err := net.ParseCIDR(cidr)
+	if err != nil {
+		panic(fmt.Sprintf("invalid CIDR %q: %v", cidr, err))
+	}
+
+	return network
 }
