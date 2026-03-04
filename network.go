@@ -11,10 +11,18 @@ import (
 	"strings"
 )
 
+func mustParseCIDR(cidr string) *net.IPNet {
+	_, network, err := net.ParseCIDR(cidr)
+	if err != nil {
+		panic(fmt.Sprintf("invalid CIDR %q: %v", cidr, err))
+	}
+	return network
+}
+
 var (
 	// RFC6598 Carrier-Grade NAT
-	cgNATSubnet, _ = ParseSubnet("100.64.0.0/10") //nolint:errcheck
-	httpSchemes    = []string{"http", "https"}
+	cgNATSubnet = mustParseCIDR("100.64.0.0/10")
+	httpSchemes = []string{"http", "https"}
 )
 
 // ParseRelativeOrHTTPURL validates and parses relative or HTTP URL.
