@@ -225,7 +225,12 @@ func ValidateIP(ip net.IP, options ValidateIPOptions) error {
 		}
 	}
 
-	return nil
+	// The IP is valid if allowed IP ranges are empty.
+	if len(options.AllowedIPRanges) == 0 {
+		return nil
+	}
+
+	return ErrBlockedIP
 }
 
 // ParseSubnet parses the subnet from a raw string.

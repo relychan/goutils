@@ -395,7 +395,6 @@ func TestValidateURL_AllowedIPRanges(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
 		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			AllowedIPRanges: []string{"10.0.0.0/8"},
-			PublicIPOnly:    true,
 		})
 		if !errors.Is(err, ErrBlockedIP) {
 			t.Fatalf("expected ErrBlockedIP, got: %v", err)
