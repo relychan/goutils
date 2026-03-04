@@ -11,7 +11,11 @@ import (
 	"strings"
 )
 
-var httpSchemes = []string{"http", "https"}
+var (
+	// RFC6598 Carrier-Grade NAT.
+	cgNATSubnet = mustParseCIDR("100.64.0.0/10")
+	httpSchemes = []string{"http", "https"}
+)
 
 // ParseRelativeOrHTTPURL validates and parses relative or HTTP URL.
 func ParseRelativeOrHTTPURL(input string) (*url.URL, error) {
@@ -165,7 +169,7 @@ type ValidateIPOptions struct {
 	LookupIP func(ctx context.Context, host string) ([]net.IP, error)
 }
 
-// ValidateIPOrDomain checks if the IP string or IP of domain is valid.
+// ValidateIPOrDomain checks if the IP string or IP of domain is valid for SSRF protection.
 // If the input string is a domain, lookup the IP from it before validation.
 func ValidateIPOrDomain(
 	ctx context.Context,
@@ -199,11 +203,19 @@ func ValidateIPOrDomain(
 	return nil
 }
 
-// ValidateIP checks if the IP is valid.
+// ValidateIP checks if the IP is valid for SSRF protection.
+// Note: the allowed ranges option is the highest priority to bypass other rules.
 func ValidateIP(ip net.IP, options ValidateIPOptions) error {
-	if options.PublicIPOnly && (ip.IsPrivate() || ip.IsLoopback() || ip.IsUnspecified() ||
-		ip.IsLinkLocalUnicast() ||
-		ip.IsLinkLocalMulticast()) {
+	for _, subnet := range options.AllowedIPRanges {
+		if subnet.Contains(ip) {
+			return nil
+		}
+	}
+
+	if options.PublicIPOnly && (ip.IsPrivate() ||
+		!ip.IsGlobalUnicast() ||
+		ip.IsLinkLocalMulticast() ||
+		cgNATSubnet.Contains(ip)) {
 		return ErrBlockedIP
 	}
 
@@ -213,18 +225,7 @@ func ValidateIP(ip net.IP, options ValidateIPOptions) error {
 		}
 	}
 
-	if len(options.AllowedIPRanges) == 0 {
-		return nil
-	}
-
-	// Check each IP against allowed ranges
-	for _, subnet := range options.AllowedIPRanges {
-		if subnet.Contains(ip) {
-			return nil
-		}
-	}
-
-	return ErrBlockedIP
+	return nil
 }
 
 // ParseSubnet parses the subnet from a raw string.
@@ -310,4 +311,13 @@ func validateURLScheme(uri *url.URL, allowedSchemes []string) error {
 	}
 
 	return nil
+}
+
+func mustParseCIDR(cidr string) *net.IPNet {
+	_, network, err := net.ParseCIDR(cidr)
+	if err != nil {
+		panic(fmt.Sprintf("invalid CIDR %q: %v", cidr, err))
+	}
+
+	return network
 }

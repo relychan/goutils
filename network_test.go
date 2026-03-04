@@ -384,6 +384,7 @@ func TestValidateURL_AllowedIPRanges(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
 		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			AllowedIPRanges: []string{"127.0.0.0/8"},
+			PublicIPOnly:    true,
 		})
 		if err != nil {
 			t.Fatalf("expected nil error, got: %v", err)
@@ -394,6 +395,7 @@ func TestValidateURL_AllowedIPRanges(t *testing.T) {
 		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
 		err := ValidateURL(context.Background(), u, ValidateHTTPURLOptions{
 			AllowedIPRanges: []string{"10.0.0.0/8"},
+			PublicIPOnly:    true,
 		})
 		if !errors.Is(err, ErrBlockedIP) {
 			t.Fatalf("expected ErrBlockedIP, got: %v", err)
@@ -432,6 +434,9 @@ func TestValidateIP(t *testing.T) {
 			"192.168.0.1",
 			"127.0.0.1",
 			"169.254.0.1",
+			"0.0.0.0",
+			"255.255.255.255",
+			"100.64.0.10",
 			// AWS metadata
 			"::1",
 			"fc00::",
@@ -474,8 +479,8 @@ func TestValidateIP(t *testing.T) {
 			AllowedIPRanges: []*net.IPNet{allowed},
 			BlockedIPRanges: []*net.IPNet{subnet},
 		})
-		if !errors.Is(err, ErrBlockedIP) {
-			t.Fatalf("expected ErrBlockedIP, got: %v", err)
+		if err != nil {
+			t.Fatalf("expected nil error, got: %v", err)
 		}
 	})
 
