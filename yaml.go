@@ -1,7 +1,9 @@
 package goutils
 
 import (
+	"errors"
 	"fmt"
+	"io"
 
 	"go.yaml.in/yaml/v4"
 )
@@ -89,4 +91,35 @@ func GetNodeValueFromYAMLMap(node *yaml.Node, key string) (*yaml.Node, error) {
 	}
 
 	return nil, nil
+}
+
+// LoadMultiYAMLDocumentStream loads multi-documents YAML from a reader stream.
+func LoadMultiYAMLDocumentStream[T any](reader io.Reader) ([]T, error) {
+	var results []T
+
+	loader, err := yaml.NewLoader(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		var doc T
+
+		err := loader.Load(&doc)
+		if err == io.EOF || errors.Is(err, io.EOF) { //nolint:errorlint
+			break
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to decode multi-documents from YAML at %d: %w",
+				len(results),
+				err,
+			)
+		}
+
+		results = append(results, doc)
+	}
+
+	return results, nil
 }

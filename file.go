@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -53,7 +52,7 @@ func ReadJSONOrYAMLFile[T any](ctx context.Context, filePath string) (*T, error)
 	}
 }
 
-// ReadMultiFromJSONOrYAMLFile reads and decodes mutiple JSON or YAML documents from the given source,
+// ReadMultiFromJSONOrYAMLFile reads and decodes multiple JSON or YAML documents from the given source,
 // which may be a local file path or an HTTP/HTTPS URL.
 func ReadMultiFromJSONOrYAMLFile[T any](ctx context.Context, filePath string) ([]T, error) {
 	file, ext, err := FileReaderFromPath(ctx, filePath)
@@ -65,53 +64,9 @@ func ReadMultiFromJSONOrYAMLFile[T any](ctx context.Context, filePath string) ([
 
 	switch ext {
 	case ".json":
-		var results []T
-
-		decoder := json.NewDecoder(file)
-		for decoder.More() {
-			var item T
-
-			err := decoder.Decode(&item)
-			if err != nil {
-				return nil, fmt.Errorf(
-					"failed to decode multi-documents from JSON at %d: %w",
-					len(results),
-					err,
-				)
-			}
-
-			results = append(results, item)
-		}
-
-		return results, err
+		return LoadMultiJSONDocumentStream[T](file)
 	case ".yaml", ".yml":
-		var results []T
-
-		loader, err := yaml.NewLoader(file)
-		if err != nil {
-			return nil, err
-		}
-
-		for {
-			var doc T
-
-			err := loader.Load(&doc)
-			if IsError(err, io.EOF) {
-				break
-			}
-
-			if err != nil {
-				return nil, fmt.Errorf(
-					"failed to decode multi-documents from YAML at %d: %w",
-					len(results),
-					err,
-				)
-			}
-
-			results = append(results, doc)
-		}
-
-		return results, nil
+		return LoadMultiYAMLDocumentStream[T](file)
 	default:
 		return nil, errUnsupportedFilePathExtension
 	}
