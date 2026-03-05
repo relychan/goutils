@@ -24,8 +24,6 @@ var (
 // ReadJSONOrYAMLFile reads and decodes a JSON or YAML document from the given source,
 // which may be a local file path or an HTTP/HTTPS URL.
 func ReadJSONOrYAMLFile[T any](ctx context.Context, filePath string) (*T, error) {
-	var result T
-
 	file, ext, err := FileReaderFromPath(ctx, filePath)
 	if err != nil {
 		return nil, err
@@ -35,16 +33,61 @@ func ReadJSONOrYAMLFile[T any](ctx context.Context, filePath string) (*T, error)
 
 	switch ext {
 	case ".json":
+		var result T
+
 		err = json.NewDecoder(file).Decode(&result)
 
 		return &result, err
 	case ".yaml", ".yml":
+		var result T
+
 		loader, err := yaml.NewLoader(file)
 		if err != nil {
 			return nil, err
 		}
 
 		return &result, loader.Load(&result)
+	default:
+		return nil, errUnsupportedFilePathExtension
+	}
+}
+
+// ReadMultiFromJSONOrYAMLFile reads and decodes mutiple JSON or YAML documents from the given source,
+// which may be a local file path or an HTTP/HTTPS URL.
+func ReadMultiFromJSONOrYAMLFile[T any](ctx context.Context, filePath string) ([]T, error) {
+	file, ext, err := FileReaderFromPath(ctx, filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	defer CatchWarnErrorFunc(file.Close)
+
+	switch ext {
+	case ".json":
+		var results []T
+
+		decoder := json.NewDecoder(file)
+		for decoder.More() {
+			var item T
+
+			err := decoder.Decode(&item)
+			if err != nil {
+				return nil, err
+			}
+
+			results = append(results, item)
+		}
+
+		return results, err
+	case ".yaml", ".yml":
+		var results []T
+
+		loader, err := yaml.NewLoader(file, yaml.WithAllDocuments())
+		if err != nil {
+			return nil, err
+		}
+
+		return results, loader.Load(&results)
 	default:
 		return nil, errUnsupportedFilePathExtension
 	}

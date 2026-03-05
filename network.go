@@ -17,8 +17,23 @@ var (
 	httpSchemes = []string{"http", "https"}
 )
 
-// ParseRelativeOrHTTPURL validates and parses relative or HTTP URL.
+// ParseRelativeOrHTTPURL validates and parses a path or HTTP URL.
 func ParseRelativeOrHTTPURL(input string) (*url.URL, error) {
+	parsedURL, err := ParsePathOrURL(input)
+	if err != nil {
+		return nil, err
+	}
+
+	// Returns if the parsedURL is a path.
+	if parsedURL.Scheme == "" {
+		return parsedURL, nil
+	}
+
+	return parsedURL, validateURLScheme(parsedURL, httpSchemes)
+}
+
+// ParsePathOrURL validates and parses a path or URL.
+func ParsePathOrURL(input string) (*url.URL, error) {
 	input = strings.TrimSpace(input)
 	if input == "" {
 		return nil, ErrInvalidURI
@@ -30,7 +45,17 @@ func ParseRelativeOrHTTPURL(input string) (*url.URL, error) {
 	}
 
 	if schemeIndex > 0 {
-		return ParseHTTPURL(input)
+		parsedURL, err := url.Parse(input)
+		if err != nil {
+			return nil, err
+		}
+
+		hostname := parsedURL.Hostname()
+		if hostname == "" {
+			return nil, ErrInvalidURI
+		}
+
+		return parsedURL, nil
 	}
 
 	if !filepath.IsAbs(input) && !filepath.IsLocal(input) {
