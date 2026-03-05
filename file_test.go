@@ -134,6 +134,13 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 		}
 	})
 
+	t.Run("unsupported_extension", func(t *testing.T) {
+		_, err := ReadJSONOrYAMLFile[string](context.Background(), "testdata/config.txt")
+		if !errors.Is(err, errUnsupportedFilePathExtension) {
+			t.Fatalf("expected error: %s, got: %s", errUnsupportedFilePathExtension, err)
+		}
+	})
+
 	t.Run("read_json_from_https_url", func(t *testing.T) {
 		// Create a test HTTPS server
 		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -527,6 +534,152 @@ features:
 
 		if !result.Trimmed {
 			t.Error("expected trimmed to be true")
+		}
+	})
+}
+
+func TestReadMultiFromJSONOrYAMLFile(t *testing.T) {
+	t.Run("read_multi_json", func(t *testing.T) {
+		results, err := ReadMultiFromJSONOrYAMLFile[map[string]string](context.Background(), "testdata/multi_config.json")
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+
+		expected := []map[string]string{{"foo": "bar"}, {"foo": "baz"}, {"foo": "qux"}}
+		if !reflect.DeepEqual(results, expected) {
+			t.Fatalf("expected %v, got: %v", expected, results)
+		}
+	})
+
+	t.Run("read_multi_yaml", func(t *testing.T) {
+		results, err := ReadMultiFromJSONOrYAMLFile[map[string]string](context.Background(), "testdata/multi_config.yaml")
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+
+		expected := []map[string]string{{"foo": "bar"}, {"foo": "baz"}, {"foo": "qux"}}
+		if !reflect.DeepEqual(results, expected) {
+			t.Fatalf("expected %v, got: %v", expected, results)
+		}
+	})
+
+	t.Run("read_single_json_as_multi", func(t *testing.T) {
+		results, err := ReadMultiFromJSONOrYAMLFile[map[string]string](context.Background(), "testdata/config.json")
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+
+		expected := []map[string]string{{"foo": "baz"}}
+		if !reflect.DeepEqual(results, expected) {
+			t.Fatalf("expected %v, got: %v", expected, results)
+		}
+	})
+
+	t.Run("read_single_yaml_as_multi", func(t *testing.T) {
+		results, err := ReadMultiFromJSONOrYAMLFile[map[string]string](context.Background(), "testdata/config.yaml")
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+
+		expected := []map[string]string{{"foo": "bar"}}
+		if !reflect.DeepEqual(results, expected) {
+			t.Fatalf("expected %v, got: %v", expected, results)
+		}
+	})
+
+	t.Run("path_required", func(t *testing.T) {
+		_, err := ReadMultiFromJSONOrYAMLFile[string](context.Background(), "")
+		if !errors.Is(err, errFilePathRequired) {
+			t.Fatalf("expected error: %s, got: %s", errFilePathRequired, err)
+		}
+	})
+
+	t.Run("file_not_found", func(t *testing.T) {
+		_, err := ReadMultiFromJSONOrYAMLFile[string](context.Background(), "testdata/not-found.json")
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("expected error: %s, got: %s", os.ErrNotExist, err)
+		}
+
+		_, err = ReadMultiFromJSONOrYAMLFile[string](context.Background(), "testdata/not-found.yaml")
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("expected error: %s, got: %s", os.ErrNotExist, err)
+		}
+	})
+
+	t.Run("unsupported_extension", func(t *testing.T) {
+		_, err := ReadMultiFromJSONOrYAMLFile[string](context.Background(), "testdata/config.txt")
+		if !errors.Is(err, errUnsupportedFilePathExtension) {
+			t.Fatalf("expected error: %s, got: %s", errUnsupportedFilePathExtension, err)
+		}
+	})
+
+	t.Run("invalid_json", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{invalid}`))
+		}))
+		defer server.Close()
+
+		_, err := ReadMultiFromJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/data.json")
+		if err == nil {
+			t.Fatal("expected error for invalid JSON")
+		}
+	})
+
+	t.Run("read_multi_json_from_url", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("{\"foo\":\"bar\"}\n{\"foo\":\"baz\"}\n"))
+		}))
+		defer server.Close()
+
+		results, err := ReadMultiFromJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/data.json")
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+
+		expected := []map[string]string{{"foo": "bar"}, {"foo": "baz"}}
+		if !reflect.DeepEqual(results, expected) {
+			t.Fatalf("expected %v, got: %v", expected, results)
+		}
+	})
+
+	t.Run("read_multi_yaml_from_url", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("foo: bar\n---\nfoo: baz\n"))
+		}))
+		defer server.Close()
+
+		results, err := ReadMultiFromJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/data.yaml")
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+
+		expected := []map[string]string{{"foo": "bar"}, {"foo": "baz"}}
+		if !reflect.DeepEqual(results, expected) {
+			t.Fatalf("expected %v, got: %v", expected, results)
+		}
+	})
+
+	t.Run("url_returns_error_status", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer server.Close()
+
+		_, err := ReadMultiFromJSONOrYAMLFile[map[string]string](context.Background(), server.URL+"/missing.json")
+		if err == nil {
+			t.Fatal("expected error for non-200 response")
+		}
+
+		var rfc9457Err RFC9457Error
+		if !errors.As(err, &rfc9457Err) {
+			t.Fatalf("expected RFC9457Error, got: %T", err)
+		}
+
+		if rfc9457Err.Status != http.StatusNotFound {
+			t.Errorf("expected status 404, got: %d", rfc9457Err.Status)
 		}
 	})
 }

@@ -50,6 +50,12 @@ var (
 	ErrMalformedYAML = errors.New("malformed YAML")
 )
 
+// IsError reports whether any error in err's tree matches target. The target must be comparable.
+// Use this function to bypass the error comparison linter.
+func IsError(err error, target error) bool {
+	return err == target || errors.Is(err, target) //nolint:err113,errorlint
+}
+
 // CatchWarnErrorFunc catches the closer function and prints error with the WARN level.
 func CatchWarnErrorFunc(fn func() error) {
 	err := fn()

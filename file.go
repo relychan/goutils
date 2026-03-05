@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -72,7 +73,11 @@ func ReadMultiFromJSONOrYAMLFile[T any](ctx context.Context, filePath string) ([
 
 			err := decoder.Decode(&item)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf(
+					"failed to decode multi-documents from JSON at %d: %w",
+					len(results),
+					err,
+				)
 			}
 
 			results = append(results, item)
@@ -82,12 +87,31 @@ func ReadMultiFromJSONOrYAMLFile[T any](ctx context.Context, filePath string) ([
 	case ".yaml", ".yml":
 		var results []T
 
-		loader, err := yaml.NewLoader(file, yaml.WithAllDocuments())
+		loader, err := yaml.NewLoader(file)
 		if err != nil {
 			return nil, err
 		}
 
-		return results, loader.Load(&results)
+		for {
+			var doc T
+
+			err := loader.Load(&doc)
+			if IsError(err, io.EOF) {
+				break
+			}
+
+			if err != nil {
+				return nil, fmt.Errorf(
+					"failed to decode multi-documents from YAML at %d: %w",
+					len(results),
+					err,
+				)
+			}
+
+			results = append(results, doc)
+		}
+
+		return results, nil
 	default:
 		return nil, errUnsupportedFilePathExtension
 	}
