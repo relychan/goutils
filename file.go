@@ -100,6 +100,10 @@ func FileReaderFromPath(
 	}
 
 	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
+
 		opt(defaultOptions)
 	}
 
@@ -142,7 +146,7 @@ func FileReaderFromPath(
 
 	filePath = filepath.Clean(fileURL.Path)
 	ext := filepath.Ext(filePath)
-	reader, err := os.Open(filePath) //nolint:gosec // user knows if the path is safe to read
+	reader, err := os.Open(filePath)
 
 	return reader, ext, err
 }
