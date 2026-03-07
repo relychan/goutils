@@ -25,6 +25,9 @@ func TestParseRelativeOrHttpURL(t *testing.T) {
 			URL: "/healthz",
 		},
 		{
+			URL: "../healthz",
+		},
+		{
 			URL: "https://localhost:8080/hello?foo=bar#about",
 		},
 	}

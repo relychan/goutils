@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -57,7 +56,7 @@ func ParsePathOrURL(input string) (*url.URL, error) {
 		return parsedURL, nil
 	}
 
-	if !filepath.IsAbs(input) && !filepath.IsLocal(input) {
+	if StringContainsCTLByte(input) {
 		return nil, ErrInvalidURI
 	}
 

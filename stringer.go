@@ -267,3 +267,15 @@ func ToStringWithCustomTypeFormatter( //nolint:cyclop,gocognit,gocyclo,funlen,ma
 		return customTypeFormatter(value)
 	}
 }
+
+// StringContainsCTLByte reports whether s contains any ASCII control character.
+func StringContainsCTLByte(s string) bool {
+	for i := range len(s) {
+		b := s[i]
+		if b < ' ' || b == 0x7f {
+			return true
+		}
+	}
+
+	return false
+}
