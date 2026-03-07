@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/http"
 	"net/url"
 	"path/filepath"
 	"slices"
@@ -17,8 +16,8 @@ var (
 	httpSchemes = []string{"http", "https"}
 )
 
-// ParseRelativeOrHTTPURL validates and parses a path or HTTP URL.
-func ParseRelativeOrHTTPURL(input string) (*url.URL, error) {
+// ParsePathOrHTTPURL validates and parses a path or HTTP URL.
+func ParsePathOrHTTPURL(input string) (*url.URL, error) {
 	parsedURL, err := ParsePathOrURL(input)
 	if err != nil {
 		return nil, err
@@ -36,7 +35,7 @@ func ParseRelativeOrHTTPURL(input string) (*url.URL, error) {
 func ParsePathOrURL(input string) (*url.URL, error) {
 	input = strings.TrimSpace(input)
 	if input == "" {
-		return nil, ErrInvalidURI
+		return new(url.URL), nil
 	}
 
 	schemeIndex := strings.Index(input, "://")
@@ -93,21 +92,6 @@ func ParseHTTPURL(input string) (*url.URL, error) {
 	}
 
 	return parsedURL, validateURLScheme(parsedURL, httpSchemes)
-}
-
-// ExtractHeaders converts the http.Header to string map with lowercase header names.
-func ExtractHeaders(headers http.Header) map[string]string {
-	result := make(map[string]string)
-
-	for key, header := range headers {
-		if len(header) == 0 {
-			continue
-		}
-
-		result[strings.ToLower(key)] = header[0]
-	}
-
-	return result
 }
 
 // ValidateHTTPURLOptions represent URL validation options.
@@ -331,7 +315,9 @@ func validateHost(host, hostname string, options *ValidateHTTPURLOptions) error 
 }
 
 func validateURLScheme(uri *url.URL, allowedSchemes []string) error {
-	if len(allowedSchemes) > 0 && !slices.Contains(allowedSchemes, uri.Scheme) {
+	scheme := strings.ToLower(uri.Scheme)
+
+	if len(allowedSchemes) > 0 && !slices.Contains(allowedSchemes, scheme) {
 		return fmt.Errorf(
 			"%w. Accept one of %v, got: %s",
 			ErrInvalidURLScheme,

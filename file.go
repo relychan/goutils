@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -23,8 +22,12 @@ var (
 
 // ReadJSONOrYAMLFile reads and decodes a JSON or YAML document from the given source,
 // which may be a local file path or an HTTP/HTTPS URL.
-func ReadJSONOrYAMLFile[T any](ctx context.Context, filePath string) (*T, error) {
-	file, ext, err := FileReaderFromPath(ctx, filePath)
+func ReadJSONOrYAMLFile[T any](
+	ctx context.Context,
+	filePath string,
+	options ...DownloadFileOption,
+) (*T, error) {
+	file, ext, err := FileReaderFromPath(ctx, filePath, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +57,12 @@ func ReadJSONOrYAMLFile[T any](ctx context.Context, filePath string) (*T, error)
 
 // ReadMultiFromJSONOrYAMLFile reads and decodes multiple JSON or YAML documents from the given source,
 // which may be a local file path or an HTTP/HTTPS URL.
-func ReadMultiFromJSONOrYAMLFile[T any](ctx context.Context, filePath string) ([]T, error) {
-	file, ext, err := FileReaderFromPath(ctx, filePath)
+func ReadMultiFromJSONOrYAMLFile[T any](
+	ctx context.Context,
+	filePath string,
+	options ...DownloadFileOption,
+) ([]T, error) {
+	file, ext, err := FileReaderFromPath(ctx, filePath, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,20 +90,40 @@ func ReadMultiFromJSONOrYAMLFile[T any](ctx context.Context, filePath string) ([
 // is treated as a filesystem path, cleaned with filepath.Clean, and opened via os.Open.
 //
 // The caller is responsible for closing the returned io.ReadCloser when finished with it.
-func FileReaderFromPath(ctx context.Context, filePath string) (io.ReadCloser, string, error) {
+func FileReaderFromPath(
+	ctx context.Context,
+	filePath string,
+	options ...DownloadFileOption,
+) (io.ReadCloser, string, error) {
+	defaultOptions := &downloadFileOptions{
+		HTTPClient: http.DefaultClient,
+	}
+
+	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
+
+		opt(defaultOptions)
+	}
+
 	filePath = strings.TrimSpace(filePath)
 	if filePath == "" {
 		return nil, "", errFilePathRequired
 	}
 
-	fileURL, err := url.Parse(filePath)
-	if err == nil && slices.Contains([]string{"http", "https"}, strings.ToLower(fileURL.Scheme)) {
+	fileURL, err := ParsePathOrURL(filePath)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if slices.Contains(httpSchemes, strings.ToLower(fileURL.Scheme)) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, filePath, nil)
 		if err != nil {
 			return nil, "", err
 		}
 
-		resp, err := http.DefaultClient.Do(req) //nolint:gosec
+		resp, err := defaultOptions.HTTPClient.Do(req)
 		if err != nil {
 			return nil, "", err
 		}
@@ -117,9 +144,29 @@ func FileReaderFromPath(ctx context.Context, filePath string) (io.ReadCloser, st
 		return resp.Body, ext, nil
 	}
 
-	filePath = filepath.Clean(filePath)
+	filePath = filepath.Clean(fileURL.Path)
 	ext := filepath.Ext(filePath)
 	reader, err := os.Open(filePath)
 
 	return reader, ext, err
+}
+
+type downloadFileOptions struct {
+	HTTPClient   Doer
+	IncludePaths []string
+	ExcludePaths []string
+}
+
+// DownloadFileOption abstracts a function to configure options for loading files.
+type DownloadFileOption func(opts *downloadFileOptions)
+
+// DownloadFileWithHTTPClient creates an option to set a custom HTTP client to load file.
+func DownloadFileWithHTTPClient(client Doer) DownloadFileOption {
+	return func(opts *downloadFileOptions) {
+		if client == nil {
+			opts.HTTPClient = http.DefaultClient
+		} else {
+			opts.HTTPClient = client
+		}
+	}
 }
