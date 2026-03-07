@@ -16,6 +16,12 @@ func TestParseRelativeOrHttpURL(t *testing.T) {
 		URL string
 	}{
 		{
+			URL: "",
+		},
+		{
+			URL: "/",
+		},
+		{
 			URL: "/healthz",
 		},
 		{
@@ -25,7 +31,7 @@ func TestParseRelativeOrHttpURL(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.URL, func(t *testing.T) {
-			result, err := ParseRelativeOrHTTPURL(tc.URL)
+			result, err := ParsePathOrHTTPURL(tc.URL)
 			if err != nil {
 				t.Fatalf("expected nil error, got: %s", err)
 			}
@@ -43,16 +49,6 @@ func TestParseRelativeOrHttpURL_Errors(t *testing.T) {
 		input string
 		err   error
 	}{
-		{
-			name:  "empty string",
-			input: "",
-			err:   ErrInvalidURI,
-		},
-		{
-			name:  "whitespace only",
-			input: "   ",
-			err:   ErrInvalidURI,
-		},
 		{
 			name:  "invalid scheme",
 			input: "ftp://example.com",
@@ -72,7 +68,7 @@ func TestParseRelativeOrHttpURL_Errors(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := ParseRelativeOrHTTPURL(tc.input)
+			_, err := ParsePathOrHTTPURL(tc.input)
 			if err == nil {
 				t.Fatalf("expected error, got nil")
 			}
@@ -104,7 +100,7 @@ func TestParseRelativeOrHTTPURL_RelativePaths(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := ParseRelativeOrHTTPURL(tc.input)
+			result, err := ParsePathOrHTTPURL(tc.input)
 			if err != nil {
 				t.Fatalf("expected nil error, got: %s", err)
 			}
