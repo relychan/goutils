@@ -1,3 +1,17 @@
+// Copyright 2026 RelyChan Pte. Ltd
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package goutils
 
 import (
@@ -11,7 +25,7 @@ import (
 
 func TestUUIDv7(t *testing.T) {
 	value := NewUUIDv7()
-	ptr := ToPtr(value)
+	ptr := new(value)
 
 	if value.String() != ptr.String() {
 		t.Error("expected equal")
@@ -31,7 +45,7 @@ func TestIsNil(t *testing.T) {
 		t.Errorf("expected nil, got: %v", jsonValue)
 	}
 
-	if IsNil(any((*int)(ToPtr(1)))) {
+	if IsNil(any((*int)(new(1)))) {
 		t.Error("expected not nil, got: nil")
 	}
 }
@@ -541,67 +555,6 @@ func TestIsZeroPtr(t *testing.T) {
 		slice := []int{1, 2, 3}
 		if IsZeroPtr(&slice) {
 			t.Error("expected non-zero for pointer to non-empty slice")
-		}
-	})
-}
-
-func TestToPtr(t *testing.T) {
-	t.Run("int value", func(t *testing.T) {
-		val := 42
-		ptr := ToPtr(val)
-		if ptr == nil {
-			t.Error("expected non-nil pointer")
-		}
-		if *ptr != val {
-			t.Errorf("expected %d, got %d", val, *ptr)
-		}
-	})
-
-	t.Run("string value", func(t *testing.T) {
-		val := "hello"
-		ptr := ToPtr(val)
-		if ptr == nil {
-			t.Error("expected non-nil pointer")
-		}
-		if *ptr != val {
-			t.Errorf("expected %s, got %s", val, *ptr)
-		}
-	})
-
-	t.Run("struct value", func(t *testing.T) {
-		type testStruct struct {
-			Field1 string
-			Field2 int
-		}
-		val := testStruct{Field1: "test", Field2: 42}
-		ptr := ToPtr(val)
-		if ptr == nil {
-			t.Error("expected non-nil pointer")
-		}
-		if ptr.Field1 != val.Field1 || ptr.Field2 != val.Field2 {
-			t.Error("expected equal struct values")
-		}
-	})
-
-	t.Run("slice value", func(t *testing.T) {
-		val := []int{1, 2, 3}
-		ptr := ToPtr(val)
-		if ptr == nil {
-			t.Error("expected non-nil pointer")
-		}
-		if len(*ptr) != len(val) {
-			t.Error("expected equal slice lengths")
-		}
-	})
-
-	t.Run("zero value", func(t *testing.T) {
-		val := 0
-		ptr := ToPtr(val)
-		if ptr == nil {
-			t.Error("expected non-nil pointer even for zero value")
-		}
-		if *ptr != 0 {
-			t.Error("expected zero value")
 		}
 	})
 }

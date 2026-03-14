@@ -1,3 +1,17 @@
+// Copyright 2026 RelyChan Pte. Ltd
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package goutils
 
 import (
@@ -61,11 +75,11 @@ func TestDecodeNullableBooleanSlice(t *testing.T) {
 	assertNilError(t, err)
 	assertDeepEqual(t, []bool{true, false}, *value)
 
-	value, err = DecodeNullableBooleanSlice([]*bool{ToPtr(true), ToPtr(false)})
+	value, err = DecodeNullableBooleanSlice([]*bool{new(true), new(false)})
 	assertNilError(t, err)
 	assertDeepEqual(t, []bool{true, false}, *value)
 
-	value, err = DecodeNullableBooleanSlice(&[]*bool{ToPtr(true), ToPtr(false)})
+	value, err = DecodeNullableBooleanSlice(&[]*bool{new(true), new(false)})
 	assertNilError(t, err)
 	assertDeepEqual(t, []bool{true, false}, *value)
 
@@ -127,11 +141,11 @@ func TestDecodeStringSlice(t *testing.T) {
 	assertNilError(t, err)
 	assertDeepEqual(t, []string{"foo", "bar"}, value)
 
-	value, err = DecodeStringSlice([]*string{ToPtr("foo"), ToPtr("bar")})
+	value, err = DecodeStringSlice([]*string{new("foo"), new("bar")})
 	assertNilError(t, err)
 	assertDeepEqual(t, []string{"foo", "bar"}, value)
 
-	value, err = DecodeStringSlice(&[]*string{ToPtr("foo")})
+	value, err = DecodeStringSlice(&[]*string{new("foo")})
 	assertNilError(t, err)
 	assertDeepEqual(t, []string{"foo"}, value)
 
