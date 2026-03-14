@@ -1,3 +1,17 @@
+// Copyright 2026 RelyChan Pte. Ltd
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package goutils
 
 import (
@@ -11,7 +25,7 @@ import (
 
 func TestUUIDv7(t *testing.T) {
 	value := NewUUIDv7()
-	ptr := ToPtr(value)
+	ptr := new(value)
 
 	if value.String() != ptr.String() {
 		t.Error("expected equal")
@@ -31,7 +45,7 @@ func TestIsNil(t *testing.T) {
 		t.Errorf("expected nil, got: %v", jsonValue)
 	}
 
-	if IsNil(any((*int)(ToPtr(1)))) {
+	if IsNil(any((*int)(new(1)))) {
 		t.Error("expected not nil, got: nil")
 	}
 }
@@ -545,10 +559,10 @@ func TestIsZeroPtr(t *testing.T) {
 	})
 }
 
-func TestToPtr(t *testing.T) {
+func Testnew(t *testing.T) {
 	t.Run("int value", func(t *testing.T) {
 		val := 42
-		ptr := ToPtr(val)
+		ptr := new(val)
 		if ptr == nil {
 			t.Error("expected non-nil pointer")
 		}
@@ -559,7 +573,7 @@ func TestToPtr(t *testing.T) {
 
 	t.Run("string value", func(t *testing.T) {
 		val := "hello"
-		ptr := ToPtr(val)
+		ptr := new(val)
 		if ptr == nil {
 			t.Error("expected non-nil pointer")
 		}
@@ -574,7 +588,7 @@ func TestToPtr(t *testing.T) {
 			Field2 int
 		}
 		val := testStruct{Field1: "test", Field2: 42}
-		ptr := ToPtr(val)
+		ptr := new(val)
 		if ptr == nil {
 			t.Error("expected non-nil pointer")
 		}
@@ -585,7 +599,7 @@ func TestToPtr(t *testing.T) {
 
 	t.Run("slice value", func(t *testing.T) {
 		val := []int{1, 2, 3}
-		ptr := ToPtr(val)
+		ptr := new(val)
 		if ptr == nil {
 			t.Error("expected non-nil pointer")
 		}
@@ -596,7 +610,7 @@ func TestToPtr(t *testing.T) {
 
 	t.Run("zero value", func(t *testing.T) {
 		val := 0
-		ptr := ToPtr(val)
+		ptr := new(val)
 		if ptr == nil {
 			t.Error("expected non-nil pointer even for zero value")
 		}

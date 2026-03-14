@@ -1,3 +1,17 @@
+// Copyright 2026 RelyChan Pte. Ltd
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package goutils
 
 import (
@@ -438,8 +452,6 @@ func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~
 }
 
 // DecodeNullableNumber tries to convert an unknown value to a typed number.
-//
-//nolint:modernize
 func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo
 	value any,
 ) (*T, error) {
@@ -449,101 +461,101 @@ func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~u
 
 	switch v := value.(type) {
 	case int:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case int8:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case int16:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case int32:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case int64:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case uint:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case uint8:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case uint16:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case uint32:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case uint64:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case float32:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case float64:
-		return ToPtr(T(v)), nil
+		return new(T(v)), nil
 	case *int:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case *int8:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case *int16:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case *int32:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case *int64:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case *uint:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case *uint8:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case *uint16:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case *uint32:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case *uint64:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case *float32:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case *float64:
 		if v == nil {
 			return nil, nil
 		}
 
-		return ToPtr(T(*v)), nil
+		return new(T(*v)), nil
 	case bool,
 		string,
 		complex64,
