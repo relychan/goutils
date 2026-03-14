@@ -559,67 +559,6 @@ func TestIsZeroPtr(t *testing.T) {
 	})
 }
 
-func Testnew(t *testing.T) {
-	t.Run("int value", func(t *testing.T) {
-		val := 42
-		ptr := new(val)
-		if ptr == nil {
-			t.Error("expected non-nil pointer")
-		}
-		if *ptr != val {
-			t.Errorf("expected %d, got %d", val, *ptr)
-		}
-	})
-
-	t.Run("string value", func(t *testing.T) {
-		val := "hello"
-		ptr := new(val)
-		if ptr == nil {
-			t.Error("expected non-nil pointer")
-		}
-		if *ptr != val {
-			t.Errorf("expected %s, got %s", val, *ptr)
-		}
-	})
-
-	t.Run("struct value", func(t *testing.T) {
-		type testStruct struct {
-			Field1 string
-			Field2 int
-		}
-		val := testStruct{Field1: "test", Field2: 42}
-		ptr := new(val)
-		if ptr == nil {
-			t.Error("expected non-nil pointer")
-		}
-		if ptr.Field1 != val.Field1 || ptr.Field2 != val.Field2 {
-			t.Error("expected equal struct values")
-		}
-	})
-
-	t.Run("slice value", func(t *testing.T) {
-		val := []int{1, 2, 3}
-		ptr := new(val)
-		if ptr == nil {
-			t.Error("expected non-nil pointer")
-		}
-		if len(*ptr) != len(val) {
-			t.Error("expected equal slice lengths")
-		}
-	})
-
-	t.Run("zero value", func(t *testing.T) {
-		val := 0
-		ptr := new(val)
-		if ptr == nil {
-			t.Error("expected non-nil pointer even for zero value")
-		}
-		if *ptr != 0 {
-			t.Error("expected zero value")
-		}
-	})
-}
-
 func TestIsNil_Extended(t *testing.T) {
 	t.Run("nil interface", func(t *testing.T) {
 		var i interface{}
