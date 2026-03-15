@@ -311,7 +311,7 @@ func (t *Time) UnmarshalBinary(data []byte) error {
 // UnmarshalJSON implements the encoding/json.Unmarshaler interface.
 // The time must be a quoted string in the RFC 3339 or ISO 8601 format.
 func (t *Time) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" {
+	if string(data) == NullStr {
 		return nil
 	}
 

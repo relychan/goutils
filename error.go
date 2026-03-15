@@ -18,11 +18,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"maps"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -115,7 +116,7 @@ func NewRFC9457Error(httpStatus int, detail string) RFC9457Error {
 }
 
 // ErrorDetail is an object to provide explicit details on a problem towards an API consumer.
-type ErrorDetail struct {
+type ErrorDetail struct { //nolint:errname
 	// A granular description on the specific error related to a body property, query parameter, path parameters, and/or header.
 	Detail string `json:"detail"`
 	// A JSON Pointer to a specific request body property that is the source of error.
@@ -126,6 +127,15 @@ type ErrorDetail struct {
 	Header string `json:"header,omitempty"`
 	// A string containing additional provider specific codes to identify the error context.
 	Code string `json:"code,omitempty"`
+}
+
+// Error implements the error interface for ErrorDetail.
+func (ed ErrorDetail) Error() string {
+	var sb strings.Builder
+
+	buildErrorDetailToString(&sb, ed, "")
+
+	return sb.String()
 }
 
 // NewAlreadyExistsError creates an error that occurs when the resource being created is found to already exist on the server.
@@ -423,8 +433,11 @@ func NewRFC9457ErrorFromResponse(resp *http.Response) RFC9457Error {
 
 // Error implements the error interface for RFC9457Error.
 func (e RFC9457Error) Error() string {
-	return fmt.Sprintf("%s, type=%s, detail=%s, status=%d, instance=%s, errors=%v",
-		e.Title, e.Type, e.Detail, e.Status, e.Instance, e.Errors)
+	var sb strings.Builder
+
+	buildRFC9457ErrorToString(&sb, e)
+
+	return sb.String()
 }
 
 // RFC9457ErrorWithExtensions is the data structure of an HTTP error with extensions.
@@ -449,6 +462,19 @@ func NewRFC9457ErrorWithExtensions(
 		RFC9457Error: err,
 		Extensions:   extensions,
 	}
+}
+
+// Error implements the error interface for RFC9457ErrorWithExtensions.
+func (e RFC9457ErrorWithExtensions) Error() string {
+	var sb strings.Builder
+
+	buildRFC9457ErrorToString(&sb, e.RFC9457Error)
+
+	if len(e.Extensions) > 0 {
+		buildMapToString(&sb, e.Extensions, 0)
+	}
+
+	return sb.String()
 }
 
 // MarshalJSON implements the json.Marshaler interface.
@@ -529,4 +555,82 @@ func (e *RFC9457ErrorWithExtensions) UnmarshalJSON(
 	e.Extensions = extensions
 
 	return nil
+}
+
+// build the error to debug string with indent format.
+func buildErrorDetailToString(
+	sb *strings.Builder,
+	ed ErrorDetail,
+	prefix string,
+) {
+	if ed.Detail != "" {
+		sb.WriteString(ed.Detail)
+	}
+
+	if ed.Code != "" {
+		sb.WriteByte('\n')
+		sb.WriteString(prefix)
+		sb.WriteString("code: ")
+		sb.WriteString(ed.Code)
+	}
+
+	if ed.Pointer != "" {
+		sb.WriteByte('\n')
+		sb.WriteString(prefix)
+		sb.WriteString("pointer: ")
+		sb.WriteString(ed.Pointer)
+	}
+
+	if ed.Parameter != "" {
+		sb.WriteByte('\n')
+		sb.WriteString(prefix)
+		sb.WriteString("parameter: ")
+		sb.WriteString(ed.Parameter)
+	}
+
+	if ed.Header != "" {
+		sb.WriteByte('\n')
+		sb.WriteString(prefix)
+		sb.WriteString("header: ")
+		sb.WriteString(ed.Header)
+	}
+}
+
+func buildRFC9457ErrorToString(sb *strings.Builder, e RFC9457Error) {
+	if e.Title != "" {
+		sb.WriteString(e.Title)
+	}
+
+	if e.Type != "" {
+		sb.WriteByte('\n')
+		sb.WriteString("type: ")
+		sb.WriteString(e.Type)
+	}
+
+	if e.Status != 0 {
+		sb.WriteByte('\n')
+		sb.WriteString("status: ")
+		sb.WriteString(strconv.Itoa(e.Status))
+	}
+
+	if e.Instance != "" {
+		sb.WriteByte('\n')
+		sb.WriteString("instance: ")
+		sb.WriteString(e.Instance)
+	}
+
+	if e.Detail != "" {
+		sb.WriteByte('\n')
+		sb.WriteString("detail: ")
+		sb.WriteString(e.Detail)
+	}
+
+	if len(e.Errors) > 0 {
+		sb.WriteString("\nerrors:")
+
+		for _, ed := range e.Errors {
+			sb.WriteString("\n  - ")
+			buildErrorDetailToString(sb, ed, "    ")
+		}
+	}
 }

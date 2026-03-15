@@ -242,7 +242,7 @@ func (d Duration) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (d *Duration) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" {
+	if string(data) == NullStr {
 		return nil
 	}
 
