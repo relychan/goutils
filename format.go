@@ -41,9 +41,11 @@ const nullStr = "null"
 //
 // The emptyValue parameter specifies the string to return for nil values or nil pointers.
 func ToString(value any, emptyValue string) string {
-	result, _ := toStringIndent(value, emptyValue, 0)
+	var sb strings.Builder
 
-	return result
+	buildStringIndent(&sb, value, emptyValue, 0)
+
+	return sb.String()
 }
 
 // PrintMap prints a map value to a human-readable format.
@@ -352,10 +354,39 @@ func buildStringIndentRefection( //nolint:cyclop,funlen
 			mapValue := reflectValue.MapIndex(key)
 			buildStringIndentRefection(sb, mapValue, indent+2)
 		}
+	case reflect.Struct:
+		prefix := strings.Repeat(" ", indent)
+
+		for field, itemValue := range reflectValue.Fields() {
+			if !field.IsExported() {
+				continue
+			}
+
+			tag, ok := field.Tag.Lookup("yaml")
+			if !ok || tag == "" {
+				tag, _ = field.Tag.Lookup("json")
+			}
+
+			key := field.Name
+
+			if tag != "" {
+				parts := strings.Split(tag, ",")
+				if len(parts) > 0 {
+					key = parts[0]
+				}
+			}
+
+			sb.WriteByte('\n')
+			sb.WriteString(prefix)
+			sb.WriteString(key)
+			sb.WriteString(": ")
+
+			buildStringIndentRefection(sb, itemValue, indent+2)
+		}
 	case reflect.Func, reflect.Chan, reflect.Invalid:
 		return false
 	default:
-		rawBytes, err := yaml.Dump(value.Interface(), yaml.WithIndent(indent))
+		rawBytes, err := yaml.Dump(value.Interface())
 		if err != nil {
 			return false
 		}
@@ -364,14 +395,6 @@ func buildStringIndentRefection( //nolint:cyclop,funlen
 	}
 
 	return true
-}
-
-func toStringIndent(value any, emptyValue string, indent int) (string, bool) {
-	var sb strings.Builder
-
-	ok := buildStringIndent(&sb, value, emptyValue, indent)
-
-	return sb.String(), ok
 }
 
 func buildStringIndent( //nolint:cyclop,funlen

@@ -114,8 +114,8 @@ func TestToString_StringerAndFallback(t *testing.T) {
 	cs := customStringer{"custom"}
 	var nilStringer fmt.Stringer
 	type testStruct struct {
-		A int
-		B string
+		A int    `yaml:"a"`
+		B string `yaml:"b,omitempty"`
 	}
 	ts := testStruct{A: 1, B: "b"}
 
@@ -128,7 +128,7 @@ func TestToString_StringerAndFallback(t *testing.T) {
 		{"fmt.Stringer", cs, "empty", "custom"},
 		{"fmt.Stringer nil", nilStringer, "empty", "empty"},
 		{"customStringer nil", any((*customStringer)(nil)), "empty", "empty"},
-		{"struct fallback", ts, "empty", `{"A":1,"B":"b"}`},
+		{"struct fallback", ts, "empty", "\na: 1\nb: b"},
 		{"slice fallback", []int{1, 2, 3}, "empty", "- 1\n- 2\n- 3"},
 		{"map fallback", map[string]int{"a": 1}, "empty", "\na: 1"},
 	}
@@ -140,14 +140,6 @@ func TestToString_StringerAndFallback(t *testing.T) {
 				t.Errorf("ToString() = %v, want %v", got, tt.want)
 			}
 		})
-	}
-}
-
-func TestToString_JSONMarshalError(t *testing.T) {
-	ch := make(chan int)
-	_, ok := toStringIndent(ch, "empty", 0)
-	if ok {
-		t.Error("ToString() expected false for unmarshalable type, got nil")
 	}
 }
 
