@@ -311,16 +311,15 @@ func buildStringIndentRefection( //nolint:cyclop,funlen,gocognit
 			key := field.Name
 
 			if tag != "" {
+				// A tag value of "-" means the field should be skipped entirely.
+				if tag == "-" {
+					continue
+				}
+
 				parts := strings.Split(tag, ",")
-				if len(parts) > 0 {
-					// A tag value of "-" means the field should be skipped entirely.
-					if parts[0] == "-" {
-						continue
-					}
-					// Only override the key when the first part is non-empty.
-					if parts[0] != "" {
-						key = parts[0]
-					}
+				// Only override the key when the first part is non-empty.
+				if parts[0] != "" {
+					key = parts[0]
 				}
 			}
 
