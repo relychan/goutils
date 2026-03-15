@@ -25,111 +25,46 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-const nullStr = "null"
+// NullStr represents an enum for a null value.
+const NullStr = "null"
 
 // ToString converts an arbitrary value to its string representation.
 //
 // It handles the following cases:
-//   - For nil values, it returns the provided emptyValue.
+//   - For nil values, it returns the provided NullStr.
 //   - For primitive types (bool, string, integers, floats, complex), it uses the appropriate formatting.
 //   - For time.Time, time.Duration, and their pointer types, it uses the standard time formatting.
 //   - For types implementing fmt.Stringer, it uses their String() method.
-//   - For pointers, it dereferences and formats the underlying value, or returns emptyValue if nil.
+//   - For pointers, it dereferences and formats the underlying value, or returns NullStr if nil.
 //   - For unsupported types, it attempts to marshal the value to JSON.
 //
 // If JSON marshaling fails, it returns an error.
 //
-// The emptyValue parameter specifies the string to return for nil values or nil pointers.
-func ToString(value any, emptyValue string) string {
+// The NullStr parameter specifies the string to return for nil values or nil pointers.
+func ToString(value any) string {
 	var sb strings.Builder
 
-	buildStringIndent(&sb, value, emptyValue, 0)
+	buildStringIndent(&sb, value, 0)
 
 	return sb.String()
-}
-
-// PrintMap prints a map value to a human-readable format.
-func PrintMap[K cmp.Ordered, V any](values map[K]V, indent int) string {
-	if len(values) == 0 {
-		return ""
-	}
-
-	var sb strings.Builder
-
-	BuildMapToString(&sb, values, indent)
-
-	return sb.String()
-}
-
-// BuildMapToString builds a map value to a human-readable format.
-func BuildMapToString[K cmp.Ordered, V any](sb *strings.Builder, values map[K]V, indent int) {
-	first := true
-	prefix := strings.Repeat(" ", indent)
-
-	for key, value := range values {
-		strKey, ok := FormatScalar(key, "")
-		if !ok || strKey == "" {
-			continue
-		}
-
-		if !first {
-			sb.WriteByte('\n')
-			sb.WriteString(prefix)
-		} else {
-			first = false
-		}
-
-		sb.WriteString(strKey)
-		sb.WriteString(": ")
-		sb.WriteString(ToString(value, nullStr))
-	}
-}
-
-// PrintSlice prints a slice value to a human-readable format.
-func PrintSlice[V any](values []V, indent int) string {
-	if len(values) == 0 {
-		return ""
-	}
-
-	var sb strings.Builder
-
-	BuildSliceToString(&sb, values, indent)
-
-	return sb.String()
-}
-
-// BuildSliceToString builds a slice value to a human-readable format.
-func BuildSliceToString[V any](sb *strings.Builder, values []V, indent int) {
-	prefix := strings.Repeat(" ", indent)
-
-	for i, value := range values {
-		if i > 0 {
-			sb.WriteByte('\n')
-			sb.WriteString(prefix)
-		}
-
-		sb.WriteString("- ")
-		sb.WriteString(ToString(value, nullStr))
-	}
 }
 
 // FormatScalar converts an arbitrary value to its string representation.
 //
 // It handles the following cases:
-//   - For nil values, it returns the provided emptyValue.
+//   - For nil values, it returns the provided NullStr.
 //   - For primitive types (bool, string, integers, floats, complex), it uses the appropriate formatting.
 //   - For time.Time and *time.Time, it uses the standard time formatting.
 //   - For types implementing fmt.Stringer, it uses their String() method.
-//   - For pointers, it dereferences and formats the underlying value, or returns emptyValue if nil.
+//   - For pointers, it dereferences and formats the underlying value, or returns NullStr if nil.
 //   - For unsupported types, return an empty string and a false value.
 //
-// The emptyValue parameter specifies the string to return for nil values or nil pointers.
+// The NullStr parameter specifies the string to return for nil values or nil pointers.
 func FormatScalar( //nolint:cyclop,gocognit,gocyclo,funlen,maintidx
 	value any,
-	emptyValue string,
 ) (string, bool) {
 	if value == nil {
-		return emptyValue, true
+		return NullStr, true
 	}
 
 	switch typedValue := value.(type) {
@@ -171,115 +106,115 @@ func FormatScalar( //nolint:cyclop,gocognit,gocyclo,funlen,maintidx
 		return typedValue.String(), true
 	case *bool:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatBool(*typedValue), true
 	case *string:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return *typedValue, true
 	case *int:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatInt(int64(*typedValue), 10), true
 	case *int8:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatInt(int64(*typedValue), 10), true
 	case *int16:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatInt(int64(*typedValue), 10), true
 	case *int32:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatInt(int64(*typedValue), 10), true
 	case *int64:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatInt(*typedValue, 10), true
 	case *uint:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatUint(uint64(*typedValue), 10), true
 	case *uint8:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatUint(uint64(*typedValue), 10), true
 	case *uint16:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatUint(uint64(*typedValue), 10), true
 	case *uint32:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatUint(uint64(*typedValue), 10), true
 	case *uint64:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatUint(*typedValue, 10), true
 	case *float32:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatFloat(float64(*typedValue), 'f', -1, 32), true
 	case *float64:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatFloat(*typedValue, 'f', -1, 64), true
 	case *complex64:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatComplex(complex128(*typedValue), 'f', -1, 64), true
 	case *complex128:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return strconv.FormatComplex(*typedValue, 'f', -1, 128), true
 	case *time.Time:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return typedValue.Format(time.RFC3339), true
 	case *time.Duration:
 		if typedValue == nil {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return typedValue.String(), true
 	case fmt.Stringer:
 		if IsNil(typedValue) {
-			return emptyValue, true
+			return NullStr, true
 		}
 
 		return typedValue.String(), true
@@ -300,16 +235,16 @@ func StringContainsCTLByte(s string) bool {
 	return false
 }
 
-func buildStringIndentRefection( //nolint:cyclop,funlen
+func buildStringIndentRefection( //nolint:cyclop,funlen,gocognit
 	sb *strings.Builder,
 	value reflect.Value,
 	indent int,
-) bool {
+) {
 	reflectValue, notNull := UnwrapPointerFromReflectValue(value)
 	if !notNull {
-		sb.WriteString(nullStr)
+		sb.WriteString(NullStr)
 
-		return true
+		return
 	}
 
 	switch reflectValue.Kind() {
@@ -362,6 +297,12 @@ func buildStringIndentRefection( //nolint:cyclop,funlen
 				continue
 			}
 
+			itemKind := itemValue.Kind()
+
+			if itemKind == reflect.Chan || itemKind == reflect.Func || itemKind == reflect.Invalid {
+				continue
+			}
+
 			tag, ok := field.Tag.Lookup("yaml")
 			if !ok || tag == "" {
 				tag, _ = field.Tag.Lookup("json")
@@ -384,118 +325,284 @@ func buildStringIndentRefection( //nolint:cyclop,funlen
 			buildStringIndentRefection(sb, itemValue, indent+2)
 		}
 	case reflect.Func, reflect.Chan, reflect.Invalid:
-		return false
+		// Skip unserializable fields.
 	default:
 		rawBytes, err := yaml.Dump(value.Interface())
-		if err != nil {
-			return false
+		if err == nil {
+			sb.Write(rawBytes)
 		}
-
-		sb.Write(rawBytes)
 	}
-
-	return true
 }
 
-func buildStringIndent( //nolint:cyclop,funlen
+func buildStringIndent( //nolint:cyclop,funlen,gocyclo
 	sb *strings.Builder,
 	value any,
-	emptyValue string,
 	indent int,
-) bool {
-	result, ok := FormatScalar(value, emptyValue)
+) {
+	result, ok := FormatScalar(value)
 	if ok {
 		sb.WriteString(result)
 
-		return true
+		return
 	}
 
 	switch typedValue := value.(type) {
-	case []any:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
 	case []bool:
-		sb.WriteString(PrintSlice(typedValue, indent))
+		prefix := strings.Repeat(" ", indent)
 
-		return true
+		for i, value := range typedValue {
+			if i > 0 {
+				sb.WriteByte('\n')
+				sb.WriteString(prefix)
+			}
+
+			sb.WriteString("- ")
+			sb.WriteString(strconv.FormatBool(value))
+		}
 	case []string:
-		sb.WriteString(PrintSlice(typedValue, indent))
+		prefix := strings.Repeat(" ", indent)
 
-		return true
+		for i, value := range typedValue {
+			if i > 0 {
+				sb.WriteByte('\n')
+				sb.WriteString(prefix)
+			}
+
+			sb.WriteString("- ")
+			sb.WriteString(value)
+		}
 	case []int:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildIntSliceToString(sb, typedValue, indent)
 	case []int8:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildIntSliceToString(sb, typedValue, indent)
 	case []int16:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildIntSliceToString(sb, typedValue, indent)
 	case []int32:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildIntSliceToString(sb, typedValue, indent)
 	case []int64:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildIntSliceToString(sb, typedValue, indent)
 	case []uint:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildUintSliceToString(sb, typedValue, indent)
 	case []uint8:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildUintSliceToString(sb, typedValue, indent)
 	case []uint16:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildUintSliceToString(sb, typedValue, indent)
 	case []uint32:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildUintSliceToString(sb, typedValue, indent)
 	case []uint64:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildUintSliceToString(sb, typedValue, indent)
 	case []float32:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildFloatSliceToString(sb, typedValue, indent, 32)
 	case []float64:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildFloatSliceToString(sb, typedValue, indent, 64)
 	case []complex64:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildComplexSliceToString(sb, typedValue, indent, 64)
 	case []complex128:
-		sb.WriteString(PrintSlice(typedValue, indent))
-
-		return true
+		buildComplexSliceToString(sb, typedValue, indent, 128)
 	case []time.Time:
-		sb.WriteString(PrintSlice(typedValue, indent))
+		prefix := strings.Repeat(" ", indent)
 
-		return true
+		for i, value := range typedValue {
+			if i > 0 {
+				sb.WriteByte('\n')
+				sb.WriteString(prefix)
+			}
+
+			sb.WriteString("- ")
+			sb.WriteString(value.Format(time.RFC3339))
+		}
 	case []fmt.Stringer:
-		sb.WriteString(PrintSlice(typedValue, indent))
+		prefix := strings.Repeat(" ", indent)
 
-		return true
+		for i, value := range typedValue {
+			if i > 0 {
+				sb.WriteByte('\n')
+				sb.WriteString(prefix)
+			}
+
+			sb.WriteString("- ")
+
+			if value == nil {
+				sb.WriteString(NullStr)
+			} else {
+				sb.WriteString(value.String())
+			}
+		}
+	case []any:
+		buildSliceToString(sb, typedValue, indent)
 	case map[string]string:
-		sb.WriteString(PrintMap(typedValue, indent))
-
-		return true
+		buildStringMapToString(sb, typedValue, indent)
 	case map[string]any:
-		sb.WriteString(PrintMap(typedValue, indent))
-
-		return true
+		buildMapToString(sb, typedValue, indent)
 	default:
-		return buildStringIndentRefection(sb, reflect.ValueOf(value), indent)
+		buildStringIndentRefection(sb, reflect.ValueOf(value), indent)
+	}
+}
+
+// builds an integer slice value to a human-readable format.
+func buildIntSliceToString[T int | int8 | int16 | int32 | int64](
+	sb *strings.Builder,
+	values []T,
+	indent int,
+) {
+	if len(values) == 0 {
+		return
+	}
+
+	prefix := strings.Repeat(" ", indent)
+
+	for i, value := range values {
+		if i > 0 {
+			sb.WriteByte('\n')
+			sb.WriteString(prefix)
+		}
+
+		sb.WriteString("- ")
+		sb.WriteString(strconv.FormatInt(int64(value), 10))
+	}
+}
+
+// builds an unsigned integer slice value to a human-readable format.
+func buildUintSliceToString[T uint | uint8 | uint16 | uint32 | uint64](
+	sb *strings.Builder,
+	values []T,
+	indent int,
+) {
+	if len(values) == 0 {
+		return
+	}
+
+	prefix := strings.Repeat(" ", indent)
+
+	for i, value := range values {
+		if i > 0 {
+			sb.WriteByte('\n')
+			sb.WriteString(prefix)
+		}
+
+		sb.WriteString("- ")
+		sb.WriteString(strconv.FormatUint(uint64(value), 10))
+	}
+}
+
+// builds a float slice value to a human-readable format.
+func buildFloatSliceToString[T float32 | float64](
+	sb *strings.Builder,
+	values []T,
+	indent int,
+	bitSize int,
+) {
+	if len(values) == 0 {
+		return
+	}
+
+	prefix := strings.Repeat(" ", indent)
+
+	for i, value := range values {
+		if i > 0 {
+			sb.WriteByte('\n')
+			sb.WriteString(prefix)
+		}
+
+		sb.WriteString("- ")
+		sb.WriteString(strconv.FormatFloat(float64(value), 'f', -1, bitSize))
+	}
+}
+
+// builds a complex slice value to a human-readable format.
+func buildComplexSliceToString[T complex64 | complex128](
+	sb *strings.Builder,
+	values []T,
+	indent int,
+	bitSize int,
+) {
+	if len(values) == 0 {
+		return
+	}
+
+	prefix := strings.Repeat(" ", indent)
+
+	for i, value := range values {
+		if i > 0 {
+			sb.WriteByte('\n')
+			sb.WriteString(prefix)
+		}
+
+		sb.WriteString("- ")
+		sb.WriteString(strconv.FormatComplex(complex128(value), 'f', -1, bitSize))
+	}
+}
+
+// builds a slice value to a human-readable format.
+func buildSliceToString[V any](sb *strings.Builder, values []V, indent int) {
+	if len(values) == 0 {
+		return
+	}
+
+	prefix := strings.Repeat(" ", indent)
+
+	for i, value := range values {
+		if i > 0 {
+			sb.WriteByte('\n')
+			sb.WriteString(prefix)
+		}
+
+		sb.WriteString("- ")
+		buildStringIndent(sb, value, indent+2)
+	}
+}
+
+// buildMapToString builds a map value to a human-readable format.
+func buildMapToString[K cmp.Ordered, V any](sb *strings.Builder, values map[K]V, indent int) {
+	if len(values) == 0 {
+		return
+	}
+
+	first := true
+	prefix := strings.Repeat(" ", indent)
+
+	for key, value := range values {
+		strKey, ok := FormatScalar(key)
+		if !ok || strKey == "" {
+			continue
+		}
+
+		if !first {
+			sb.WriteByte('\n')
+			sb.WriteString(prefix)
+		} else {
+			first = false
+		}
+
+		sb.WriteString(strKey)
+		sb.WriteString(": ")
+		buildStringIndent(sb, value, indent+2)
+	}
+}
+
+func buildStringMapToString(sb *strings.Builder, values map[string]string, indent int) {
+	if len(values) == 0 {
+		return
+	}
+
+	first := true
+	prefix := strings.Repeat(" ", indent)
+
+	for key, value := range values {
+		strKey, ok := FormatScalar(key)
+		if !ok || strKey == "" {
+			continue
+		}
+
+		if !first {
+			sb.WriteByte('\n')
+			sb.WriteString(prefix)
+		} else {
+			first = false
+		}
+
+		sb.WriteString(strKey)
+		sb.WriteString(": ")
+		sb.WriteString(value)
 	}
 }
