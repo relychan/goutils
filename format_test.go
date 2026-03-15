@@ -15,7 +15,6 @@
 package goutils
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"testing"
@@ -65,11 +64,7 @@ func TestToString_Primitives(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ToString(tt.value, tt.emptyValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ToString() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := ToString(tt.value, tt.emptyValue)
 			if got != tt.want {
 				t.Errorf("ToString() = %v, want %v", got, tt.want)
 			}
@@ -107,11 +102,7 @@ func TestToString_Pointers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ToString(tt.value, tt.emptyValue)
-			if err != nil {
-				t.Errorf("ToString() error = %v", err)
-				return
-			}
+			got := ToString(tt.value, tt.emptyValue)
 			if got != tt.want {
 				t.Errorf("ToString() = %v, want %v", got, tt.want)
 			}
@@ -138,17 +129,13 @@ func TestToString_StringerAndFallback(t *testing.T) {
 		{"fmt.Stringer nil", nilStringer, "empty", "empty"},
 		{"customStringer nil", any((*customStringer)(nil)), "empty", "empty"},
 		{"struct fallback", ts, "empty", `{"A":1,"B":"b"}`},
-		{"slice fallback", []int{1, 2, 3}, "empty", `[1,2,3]`},
-		{"map fallback", map[string]int{"a": 1}, "empty", `{"a":1}`},
+		{"slice fallback", []int{1, 2, 3}, "empty", "- 1\n- 2\n- 3"},
+		{"map fallback", map[string]int{"a": 1}, "empty", "\na: 1"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ToString(tt.value, tt.emptyValue)
-			if err != nil {
-				t.Errorf("ToString() error = %v", err)
-				return
-			}
+			got := ToString(tt.value, tt.emptyValue)
 			if got != tt.want {
 				t.Errorf("ToString() = %v, want %v", got, tt.want)
 			}
@@ -158,33 +145,9 @@ func TestToString_StringerAndFallback(t *testing.T) {
 
 func TestToString_JSONMarshalError(t *testing.T) {
 	ch := make(chan int)
-	_, err := ToString(ch, "empty")
-	if err == nil {
-		t.Error("ToString() expected error for unmarshalable type, got nil")
-	}
-}
-
-func TestToDebugString(t *testing.T) {
-	ch := make(chan int)
-	tests := []struct {
-		name       string
-		value      any
-		emptyValue string
-		want       string
-	}{
-		{"nil", nil, "empty", "empty"},
-		{"string", "abc", "empty", "abc"},
-		{"struct fallback", struct{ X int }{X: 1}, "empty", `{"X":1}`},
-		{"unmarshalable fallback", ch, "empty", fmt.Sprint(ch)},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ToDebugString(tt.value, tt.emptyValue)
-			if got != tt.want {
-				t.Errorf("ToDebugString() = %v, want %v", got, tt.want)
-			}
-		})
+	_, ok := toStringIndent(ch, "empty", 0)
+	if ok {
+		t.Error("ToString() expected false for unmarshalable type, got nil")
 	}
 }
 
@@ -202,24 +165,10 @@ func TestToString_SpecialCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ToString(tt.value, "")
-			if err != nil {
-				t.Errorf("ToString() error = %v", err)
-			}
+			got := ToString(tt.value, "")
 			if got != tt.want {
 				t.Errorf("ToString() = %v, want %v", got, tt.want)
 			}
 		})
-	}
-}
-
-func TestToString_ErrorType(t *testing.T) {
-	errVal := errors.New("err")
-	got, err := ToString(errVal, "empty")
-	if err != nil {
-		t.Errorf("ToString() error = %v", err)
-	}
-	if got != "{}" {
-		t.Errorf("ToString() = %v, want {}", got)
 	}
 }
