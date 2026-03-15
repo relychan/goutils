@@ -235,7 +235,7 @@ func StringContainsCTLByte(s string) bool {
 	return false
 }
 
-func buildStringIndentRefection( //nolint:cyclop,funlen,gocognit
+func buildStringIndentReflection( //nolint:cyclop,funlen,gocognit
 	sb *strings.Builder,
 	value reflect.Value,
 	indent int,
@@ -274,7 +274,7 @@ func buildStringIndentRefection( //nolint:cyclop,funlen,gocognit
 			sb.WriteByte('\n')
 			sb.WriteString(prefix)
 			sb.WriteString("- ")
-			buildStringIndentRefection(sb, elem, indent+2)
+			buildStringIndentReflection(sb, elem, indent+2)
 		}
 	case reflect.Map:
 		prefix := strings.Repeat(" ", indent)
@@ -283,11 +283,11 @@ func buildStringIndentRefection( //nolint:cyclop,funlen,gocognit
 		for _, key := range keys {
 			sb.WriteByte('\n')
 			sb.WriteString(prefix)
-			buildStringIndentRefection(sb, key, 0)
+			buildStringIndentReflection(sb, key, 0)
 			sb.WriteString(": ")
 
 			mapValue := reflectValue.MapIndex(key)
-			buildStringIndentRefection(sb, mapValue, indent+2)
+			buildStringIndentReflection(sb, mapValue, indent+2)
 		}
 	case reflect.Struct:
 		prefix := strings.Repeat(" ", indent)
@@ -328,7 +328,7 @@ func buildStringIndentRefection( //nolint:cyclop,funlen,gocognit
 			sb.WriteString(key)
 			sb.WriteString(": ")
 
-			buildStringIndentRefection(sb, itemValue, indent+2)
+			buildStringIndentReflection(sb, itemValue, indent+2)
 		}
 	case reflect.Func, reflect.Chan, reflect.Invalid:
 		// Skip unserializable fields.
@@ -441,7 +441,7 @@ func buildStringIndent( //nolint:cyclop,funlen,gocyclo
 	case map[string]any:
 		buildMapToString(sb, typedValue, indent)
 	default:
-		buildStringIndentRefection(sb, reflect.ValueOf(value), indent)
+		buildStringIndentReflection(sb, reflect.ValueOf(value), indent)
 	}
 }
 
