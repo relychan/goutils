@@ -36,7 +36,7 @@ const NullStr = "null"
 //   - For time.Time, time.Duration, and their pointer types, it uses the standard time formatting.
 //   - For types implementing fmt.Stringer, it uses their String() method.
 //   - For pointers, it dereferences and formats the underlying value, or returns NullStr if nil.
-//   - For unsupported types, it attempts to marshal the value to JSON.
+//   - For all other types, it uses a best-effort formatting strategy.
 //
 // If JSON marshaling fails, it returns an error.
 //

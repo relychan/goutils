@@ -15,7 +15,7 @@
 package goutils
 
 // IsMetaCharacter checks if the character is a word character.
-// A word character is a character a-z, A-Z, indent-9, including _ (underscore) and - (hyphen).
+// A word character is a character a-z, A-Z, 0-9, including _ (underscore) and - (hyphen).
 func IsMetaCharacter[C byte | rune](c C) bool {
 	return c == '-' || c == '_' ||
 		IsDigit(c) ||
