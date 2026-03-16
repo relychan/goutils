@@ -195,7 +195,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 			t.Fatal("expected error for 404 response")
 		}
 
-		var rfc9457Err RFC9457Error
+		var rfc9457Err *RFC9457Error
 		if !errors.As(err, &rfc9457Err) {
 			t.Fatalf("expected RFC9457Error, got: %T", err)
 		}
@@ -217,7 +217,7 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 			t.Fatal("expected error for 500 response")
 		}
 
-		var rfc9457Err RFC9457Error
+		var rfc9457Err *RFC9457Error
 		if !errors.As(err, &rfc9457Err) {
 			t.Fatalf("expected RFC9457Error, got: %T", err)
 		}
@@ -438,7 +438,7 @@ features:
 			t.Fatal("expected error for 401 response")
 		}
 
-		var rfc9457Err RFC9457Error
+		var rfc9457Err *RFC9457Error
 		if !errors.As(err, &rfc9457Err) {
 			t.Fatalf("expected RFC9457Error, got: %T", err)
 		}
@@ -460,7 +460,7 @@ features:
 			t.Fatal("expected error for 403 response")
 		}
 
-		var rfc9457Err RFC9457Error
+		var rfc9457Err *RFC9457Error
 		if !errors.As(err, &rfc9457Err) {
 			t.Fatalf("expected RFC9457Error, got: %T", err)
 		}
@@ -482,7 +482,7 @@ features:
 			t.Fatal("expected error for 503 response")
 		}
 
-		var rfc9457Err RFC9457Error
+		var rfc9457Err *RFC9457Error
 		if !errors.As(err, &rfc9457Err) {
 			t.Fatalf("expected RFC9457Error, got: %T", err)
 		}
@@ -687,7 +687,7 @@ func TestReadMultiFromJSONOrYAMLFile(t *testing.T) {
 			t.Fatal("expected error for non-200 response")
 		}
 
-		var rfc9457Err RFC9457Error
+		var rfc9457Err *RFC9457Error
 		if !errors.As(err, &rfc9457Err) {
 			t.Fatalf("expected RFC9457Error, got: %T", err)
 		}
@@ -784,7 +784,7 @@ func TestFileReaderFromPath(t *testing.T) {
 			t.Fatal("expected error for 404 response")
 		}
 
-		var rfc9457Err RFC9457Error
+		var rfc9457Err *RFC9457Error
 		if !errors.As(err, &rfc9457Err) {
 			t.Fatalf("expected RFC9457Error, got: %T", err)
 		}
