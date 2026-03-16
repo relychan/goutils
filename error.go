@@ -106,8 +106,8 @@ type RFC9457Error struct {
 }
 
 // NewRFC9457Error creates an RFC9457Error instance with status.
-func NewRFC9457Error(httpStatus int, detail string) RFC9457Error {
-	return RFC9457Error{
+func NewRFC9457Error(httpStatus int, detail string) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "about:blank",
 		Status: httpStatus,
 		Title:  http.StatusText(httpStatus),
@@ -139,8 +139,8 @@ func (ed ErrorDetail) Error() string {
 }
 
 // NewAlreadyExistsError creates an error that occurs when the resource being created is found to already exist on the server.
-func NewAlreadyExistsError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewAlreadyExistsError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/already-exists",
 		Title:  "Already exists",
 		Detail: "The resource being created already exists.",
@@ -152,8 +152,8 @@ func NewAlreadyExistsError(errors ...ErrorDetail) RFC9457Error {
 
 // NewServiceUnavailableError creates an error that occurs when the service requested is currently unavailable and the server is not ready to handle the request.
 // Your client application did everything correct. Unfortunately our API is currently unavailable.
-func NewServiceUnavailableError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewServiceUnavailableError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "about:blank",
 		Title:  "Service Unavailable",
 		Detail: "The service is currently unavailable.",
@@ -164,8 +164,8 @@ func NewServiceUnavailableError(errors ...ErrorDetail) RFC9457Error {
 }
 
 // NewLicenseCancelledError creates an error that occurs when the license associated with the client has been cancelled thus rendering the service unavailable.
-func NewLicenseCancelledError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewLicenseCancelledError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/license-cancelled",
 		Title:  "License Cancelled",
 		Detail: "The service is unavailable as the license associated with your client or organization has been cancelled. Please contact your account manager or representative.",
@@ -176,8 +176,8 @@ func NewLicenseCancelledError(errors ...ErrorDetail) RFC9457Error {
 }
 
 // NewLicenseExpiredError creates an error that occurs when the license associated with the client has expired thus rendering the service unavailable.
-func NewLicenseExpiredError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewLicenseExpiredError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/license-expired",
 		Title:  "License Expired",
 		Detail: "The service is unavailable as the license associated with your client or organization has expired. Please contact your account manager or representative.",
@@ -190,8 +190,8 @@ func NewLicenseExpiredError(errors ...ErrorDetail) RFC9457Error {
 // NewNotFoundError creates an error that occurs when the requested resource could not be found.
 // Your client application tried to access a resource that does not exist (or could not be found).
 // Please review how your users initiated such a request.
-func NewNotFoundError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewNotFoundError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "about:blank",
 		Title:  "Not Found",
 		Detail: "The requested resource was not found.",
@@ -204,8 +204,8 @@ func NewNotFoundError(errors ...ErrorDetail) RFC9457Error {
 // NewUnauthorizedError creates an error that occurs when the request lacks valid authentication credentials.
 // Your client application tried to access a resource without providing a valid access token or authentication information.
 // Please ensure that your requests include the necessary authentication credentials.
-func NewUnauthorizedError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewUnauthorizedError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "about:blank",
 		Title:  "Unauthorized",
 		Detail: "Access token not set or invalid, and the requested resource could not be returned.",
@@ -219,8 +219,8 @@ func NewUnauthorizedError(errors ...ErrorDetail) RFC9457Error {
 // (and/or operation combination) is not authorized for the requesting client (and or authorization context).
 // Your client application tried to perform an operation on a resource that
 // it’s not authorized to perform in the given context.
-func NewForbiddenError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewForbiddenError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "about:blank",
 		Title:  "Forbidden",
 		Detail: "The resource could not be returned as the requestor is not authorized.",
@@ -235,8 +235,8 @@ func NewForbiddenError(errors ...ErrorDetail) RFC9457Error {
 // (for example, malformed request syntax, invalid request message framing, or deceptive request routing).
 // Your client application initiated a request that is malformed.
 // Please review your client request against the defined semantics for the API.
-func NewBadRequestError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewBadRequestError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "about:blank",
 		Title:  "Bad Request",
 		Detail: "The request is invalid or malformed.",
@@ -248,8 +248,8 @@ func NewBadRequestError(errors ...ErrorDetail) RFC9457Error {
 
 // NewServerError creates an error that occurs when the server encounters an unexpected condition that prevents it from fulfilling the request.
 // Your client application did everything correct. Unfortunately our API encountered a condition that resulted in this problem.
-func NewServerError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewServerError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "about:blank",
 		Title:  "Server Error",
 		Detail: "The server encountered an unexpected error.",
@@ -260,8 +260,8 @@ func NewServerError(errors ...ErrorDetail) RFC9457Error {
 }
 
 // NewMissingRequestHeaderError occurs when the request sent to the API is missing an expected request header.
-func NewMissingRequestHeaderError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewMissingRequestHeaderError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/missing-request-header",
 		Title:  "Missing request header",
 		Detail: "The request is missing an expected HTTP request header.",
@@ -272,8 +272,8 @@ func NewMissingRequestHeaderError(errors ...ErrorDetail) RFC9457Error {
 }
 
 // NewMissingRequestParameterError occurs when the request sent to the API is missing a query or path parameter.
-func NewMissingRequestParameterError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewMissingRequestParameterError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/missing-request-parameter",
 		Title:  "Missing request parameter",
 		Detail: "The request is missing an expected query or path parameter.",
@@ -284,8 +284,8 @@ func NewMissingRequestParameterError(errors ...ErrorDetail) RFC9457Error {
 }
 
 // NewInvalidBodyPropertyFormatError occurs when the request body contains a malformed property.
-func NewInvalidBodyPropertyFormatError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewInvalidBodyPropertyFormatError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/invalid-body-property-format",
 		Title:  "Invalid Body Property Format",
 		Detail: "The request body contains a malformed property.",
@@ -299,8 +299,8 @@ func NewInvalidBodyPropertyFormatError(errors ...ErrorDetail) RFC9457Error {
 // Your client issued a request that contained a malformed query or path parameter.
 // Please review your request parameters and compare against the shared API definition.
 // Consider validating your parameters published schema prior to sending to the server.
-func NewInvalidRequestParameterFormatError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewInvalidRequestParameterFormatError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/invalid-request-parameter-format",
 		Title:  "Invalid Request Parameter Format",
 		Detail: "The request contains a malformed query parameter.",
@@ -314,8 +314,8 @@ func NewInvalidRequestParameterFormatError(errors ...ErrorDetail) RFC9457Error {
 // Your client issued a request that contained a malformed request header.
 // Please review your request parameters and compare against the shared API definition when applicable.
 // Consider validating your headers against the published schema or API definition metadata prior to sending to the server.
-func NewInvalidRequestHeaderFormatError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewInvalidRequestHeaderFormatError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/invalid-request-header-format",
 		Title:  "Invalid Request Header Format",
 		Detail: "The request contains a malformed request header parameter.",
@@ -326,8 +326,8 @@ func NewInvalidRequestHeaderFormatError(errors ...ErrorDetail) RFC9457Error {
 }
 
 // NewInvalidBodyPropertyValueError occurs when the request body contains an invalid property value.
-func NewInvalidBodyPropertyValueError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewInvalidBodyPropertyValueError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/invalid-body-property-value",
 		Title:  "Invalid Body Property Value",
 		Detail: "The request body contains an invalid body property value.",
@@ -338,8 +338,8 @@ func NewInvalidBodyPropertyValueError(errors ...ErrorDetail) RFC9457Error {
 }
 
 // NewInvalidRequestParameterValueError occurs when the request contains an invalid query or path parameter value.
-func NewInvalidRequestParameterValueError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewInvalidRequestParameterValueError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/invalid-request-parameter-value",
 		Title:  "Invalid Request Parameter Value",
 		Detail: "The request contains an invalid request parameter value.",
@@ -351,8 +351,8 @@ func NewInvalidRequestParameterValueError(errors ...ErrorDetail) RFC9457Error {
 
 // NewMissingBodyPropertyError creates a missing body property error.
 // This problem occurs when the request sent to the API is missing an expected body property.
-func NewMissingBodyPropertyError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewMissingBodyPropertyError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/missing-body-property",
 		Title:  "Missing body property",
 		Detail: "The request is missing an expected body property.",
@@ -366,8 +366,8 @@ func NewMissingBodyPropertyError(errors ...ErrorDetail) RFC9457Error {
 // Your client issued a request that failed business rule validation.
 // Please review your request to determine if you can remain within appropriate business rules.
 // Consider validating your request against available metadata (e.g. schemas) prior to sending to the server.
-func NewBusinessRuleViolationError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewBusinessRuleViolationError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/business-rule-violation",
 		Title:  "Business Rule Violation",
 		Detail: "The request body is invalid and not meeting business rules.",
@@ -378,8 +378,8 @@ func NewBusinessRuleViolationError(errors ...ErrorDetail) RFC9457Error {
 }
 
 // NewValidationError occurs when the request is deemed unprocessable.
-func NewValidationError(errors ...ErrorDetail) RFC9457Error {
-	return RFC9457Error{
+func NewValidationError(errors ...ErrorDetail) *RFC9457Error {
+	return &RFC9457Error{
 		Type:   "https://problems-registry.smartbear.com/validation-error",
 		Title:  "Validation Error",
 		Detail: "The request is not valid.",
@@ -390,7 +390,7 @@ func NewValidationError(errors ...ErrorDetail) RFC9457Error {
 }
 
 // NewRFC9457ErrorFromResponse creates an [RFC9457Error] from an HTTP response.
-func NewRFC9457ErrorFromResponse(resp *http.Response) RFC9457Error {
+func NewRFC9457ErrorFromResponse(resp *http.Response) *RFC9457Error {
 	if resp == nil {
 		return NewServerError()
 	}
@@ -457,8 +457,8 @@ type RFC9457ErrorWithExtensions struct { //nolint:errname
 func NewRFC9457ErrorWithExtensions(
 	err RFC9457Error,
 	extensions map[string]any,
-) RFC9457ErrorWithExtensions {
-	return RFC9457ErrorWithExtensions{
+) *RFC9457ErrorWithExtensions {
+	return &RFC9457ErrorWithExtensions{
 		RFC9457Error: err,
 		Extensions:   extensions,
 	}
