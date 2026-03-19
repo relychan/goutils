@@ -235,6 +235,30 @@ func StringContainsCTLByte(s string) bool {
 	return false
 }
 
+// FormatScalarReflection converts a reflection value to its string representation.
+func FormatScalarReflection(reflectValue reflect.Value) (string, bool) {
+	switch reflectValue.Kind() {
+	case reflect.Bool:
+		return strconv.FormatBool(reflectValue.Bool()), true
+	case reflect.String:
+		return reflectValue.String(), true
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(reflectValue.Int(), 10), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return strconv.FormatUint(reflectValue.Uint(), 10), true
+	case reflect.Float32:
+		return strconv.FormatFloat(reflectValue.Float(), 'f', -1, 32), true
+	case reflect.Float64:
+		return strconv.FormatFloat(reflectValue.Float(), 'f', -1, 64), true
+	case reflect.Complex64:
+		return strconv.FormatComplex(reflectValue.Complex(), 'f', -1, 64), true
+	case reflect.Complex128:
+		return strconv.FormatComplex(reflectValue.Complex(), 'f', -1, 128), true
+	default:
+		return "", false
+	}
+}
+
 func buildStringIndentReflection( //nolint:cyclop,funlen,gocognit
 	sb *strings.Builder,
 	value reflect.Value,
@@ -247,23 +271,14 @@ func buildStringIndentReflection( //nolint:cyclop,funlen,gocognit
 		return
 	}
 
+	scalarValue, ok := FormatScalarReflection(value)
+	if ok {
+		sb.WriteString(scalarValue)
+
+		return
+	}
+
 	switch reflectValue.Kind() {
-	case reflect.Bool:
-		sb.WriteString(strconv.FormatBool(reflectValue.Bool()))
-	case reflect.String:
-		sb.WriteString(reflectValue.String())
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		sb.WriteString(strconv.FormatInt(reflectValue.Int(), 10))
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		sb.WriteString(strconv.FormatUint(reflectValue.Uint(), 10))
-	case reflect.Float32:
-		sb.WriteString(strconv.FormatFloat(reflectValue.Float(), 'f', -1, 32))
-	case reflect.Float64:
-		sb.WriteString(strconv.FormatFloat(reflectValue.Float(), 'f', -1, 64))
-	case reflect.Complex64:
-		sb.WriteString(strconv.FormatComplex(reflectValue.Complex(), 'f', -1, 64))
-	case reflect.Complex128:
-		sb.WriteString(strconv.FormatComplex(reflectValue.Complex(), 'f', -1, 128))
 	case reflect.Slice, reflect.Array:
 		valueLength := reflectValue.Len()
 		prefix := strings.Repeat(" ", indent)
