@@ -59,3 +59,13 @@ func ParseIntInRange[B []byte | string](s B, minValue int, maxValue int) (int, b
 
 	return x, true
 }
+
+// QuoteBytes add double quotes surround the string and convert it to bytes.
+func QuoteBytes[T string | []byte](input T) []byte {
+	result := make([]byte, 0, len(input)+2)
+	result = append(result, '"')
+	result = append(result, input...)
+	result = append(result, '"')
+
+	return result
+}
