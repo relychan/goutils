@@ -1,6 +1,10 @@
 // Package httpheader defines HTTP header constants.
 package httpheader
 
+import (
+	"strings"
+)
+
 const (
 	// Accept is the constant of the Accept header name.
 	Accept = "Accept"
@@ -204,4 +208,29 @@ const (
 	ContentTypeTextXML = "text/xml"
 	// ContentTypeOctetStream is the constant for the application/octet-stream content type.
 	ContentTypeOctetStream = "application/octet-stream"
+	// ContentTypeGraphQLResponseJSON is the constant for the application/graphql-response+json content type.
+	ContentTypeGraphQLResponseJSON = "application/graphql-response+json"
 )
+
+// IsContentTypeXML checks if the content type is XML.
+func IsContentTypeXML(contentType string) bool {
+	return strings.HasPrefix(contentType, ContentTypeXML) ||
+		strings.HasPrefix(contentType, ContentTypeTextXML) ||
+		strings.HasSuffix(contentType, "+xml")
+}
+
+// IsContentTypeJSON checks if the content type is JSON.
+func IsContentTypeJSON(contentType string) bool {
+	return strings.HasPrefix(contentType, ContentTypeJSON) ||
+		strings.HasSuffix(contentType, "+json")
+}
+
+// IsContentTypeText checks if the content type relates to text.
+func IsContentTypeText(contentType string) bool {
+	return strings.HasPrefix(contentType, "text/")
+}
+
+// IsContentTypeMultipartForm checks the content type relates to multipart form.
+func IsContentTypeMultipartForm(contentType string) bool {
+	return strings.HasPrefix(contentType, "multipart/")
+}
