@@ -471,6 +471,10 @@ func (e RFC9457ErrorWithExtensions) Error() string {
 	buildRFC9457ErrorToString(&sb, e.RFC9457Error)
 
 	if len(e.Extensions) > 0 {
+		if sb.Len() > 0 {
+			sb.WriteByte('\n')
+		}
+
 		buildMapToString(&sb, e.Extensions, 0)
 	}
 
@@ -598,6 +602,10 @@ func buildErrorDetailToString(
 
 func buildRFC9457ErrorToString(sb *strings.Builder, e RFC9457Error) {
 	if e.Title != "" {
+		if sb.Len() > 0 {
+			sb.WriteByte('\n')
+		}
+
 		sb.WriteString(e.Title)
 	}
 
