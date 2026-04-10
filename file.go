@@ -20,7 +20,9 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -30,6 +32,7 @@ import (
 
 var (
 	errFilePathRequired             = errors.New("file path is required")
+	errDisallowedFilePath           = errors.New("file path is not allowed to read")
 	errFileNoContent                = errors.New("file has no content")
 	errUnsupportedFilePathExtension = errors.New("only {json,yaml,yml} extension is supported")
 )
@@ -53,6 +56,8 @@ func ReadJSONOrYAMLFile[T any](
 		var result T
 
 		err = json.NewDecoder(file).Decode(&result)
+		// Ensure the reader read all data.
+		_, _ = io.Copy(io.Discard, file) //nolint:errcheck
 
 		return &result, err
 	case ".yaml", ".yml":
@@ -63,7 +68,15 @@ func ReadJSONOrYAMLFile[T any](
 			return nil, err
 		}
 
-		return &result, loader.Load(&result)
+		err = loader.Load(&result)
+		if err != nil {
+			return nil, err
+		}
+
+		// Ensure the reader read all data.
+		_, _ = io.Copy(io.Discard, file) //nolint:errcheck
+
+		return &result, nil
 	default:
 		return nil, errUnsupportedFilePathExtension
 	}
@@ -131,44 +144,120 @@ func FileReaderFromPath(
 		return nil, "", err
 	}
 
-	if slices.Contains(httpSchemes, strings.ToLower(fileURL.Scheme)) {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, filePath, nil)
-		if err != nil {
-			return nil, "", err
-		}
-
-		resp, err := defaultOptions.HTTPClient.Do(req)
-		if err != nil {
-			return nil, "", err
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			respError := NewRFC9457ErrorFromResponse(resp)
-			respError.Title = "Read File Failure"
-
-			return nil, "", respError
-		}
-
-		if resp.Body == nil {
-			return nil, "", errFileNoContent
-		}
-
-		ext := filepath.Ext(filePath)
-
-		return resp.Body, ext, nil
+	if slices.ContainsFunc(httpSchemes, func(scheme string) bool {
+		return strings.EqualFold(fileURL.Scheme, scheme)
+	}) {
+		return fileReaderFromURL(ctx, fileURL, filePath, defaultOptions)
 	}
 
-	filePath = filepath.Clean(fileURL.Path)
+	filePath = filepath.Clean(filePath)
+
+	err = validateFilePath(filePath, filepath.Match, defaultOptions)
+	if err != nil {
+		return nil, "", err
+	}
+
 	ext := filepath.Ext(filePath)
 	reader, err := os.Open(filePath)
 
-	return reader, ext, err
+	return reader, strings.ToLower(ext), err
+}
+
+func fileReaderFromURL(
+	ctx context.Context,
+	fileURL *url.URL,
+	filePath string,
+	options *downloadFileOptions,
+) (io.ReadCloser, string, error) {
+	if len(options.AllowedHosts) > 0 || len(options.BlockedHosts) > 0 {
+		err := validateHost(fileURL.Host, fileURL.Hostname(), &ValidateHTTPURLOptions{
+			AllowedHosts: options.AllowedHosts,
+			BlockedHosts: options.BlockedHosts,
+		})
+		if err != nil {
+			return nil, "", err
+		}
+	}
+
+	if fileURL.Path != "" && fileURL.Path[0] != '/' {
+		fileURL.Path = "/" + fileURL.Path
+	}
+
+	err := validateFilePath(fileURL.Path, path.Match, options)
+	if err != nil {
+		return nil, "", err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, filePath, nil)
+	if err != nil {
+		return nil, "", err
+	}
+
+	resp, err := options.HTTPClient.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		respError := NewRFC9457ErrorFromResponse(resp)
+		respError.Title = "Read File Failure"
+
+		return nil, "", respError
+	}
+
+	if resp.Body == nil || resp.Body == http.NoBody {
+		return nil, "", errFileNoContent
+	}
+
+	ext := strings.ToLower(filepath.Ext(filePath))
+
+	return resp.Body, ext, nil
+}
+
+func validateFilePath(
+	filePath string,
+	matchFunc func(pattern string, name string) (matched bool, err error),
+	options *downloadFileOptions,
+) error {
+	isMatched := len(options.IncludePaths) == 0
+
+	for _, includedPath := range options.IncludePaths {
+		matched, err := matchFunc(includedPath, filePath)
+		if err != nil {
+			return err
+		}
+
+		if matched {
+			isMatched = true
+
+			break
+		}
+	}
+
+	if !isMatched {
+		return errDisallowedFilePath
+	}
+
+	for _, excludedPath := range options.ExcludePaths {
+		matched, err := filepath.Match(excludedPath, filePath)
+		if err != nil {
+			return err
+		}
+
+		if matched {
+			return errDisallowedFilePath
+		}
+	}
+
+	return nil
 }
 
 type downloadFileOptions struct {
 	HTTPClient   Doer
 	IncludePaths []string
 	ExcludePaths []string
+	AllowedHosts []string
+	BlockedHosts []string
 }
 
 // DownloadFileOption abstracts a function to configure options for loading files.
@@ -182,5 +271,33 @@ func DownloadFileWithHTTPClient(client Doer) DownloadFileOption {
 		} else {
 			opts.HTTPClient = client
 		}
+	}
+}
+
+// DownloadFileIncludingPaths creates an option to set a list of paths to be included.
+func DownloadFileIncludingPaths(paths []string) DownloadFileOption {
+	return func(opts *downloadFileOptions) {
+		opts.IncludePaths = paths
+	}
+}
+
+// DownloadFileExcludingPaths creates an option to set a list of paths to be excluded.
+func DownloadFileExcludingPaths(paths []string) DownloadFileOption {
+	return func(opts *downloadFileOptions) {
+		opts.ExcludePaths = paths
+	}
+}
+
+// DownloadFileWithAllowedHosts creates an option to set a list of allowed hosts for URL.
+func DownloadFileWithAllowedHosts(hosts []string) DownloadFileOption {
+	return func(opts *downloadFileOptions) {
+		opts.AllowedHosts = hosts
+	}
+}
+
+// DownloadFileWithBlockedHosts creates an option to set a list of blocked hosts for URL.
+func DownloadFileWithBlockedHosts(hosts []string) DownloadFileOption {
+	return func(opts *downloadFileOptions) {
+		opts.BlockedHosts = hosts
 	}
 }

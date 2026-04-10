@@ -840,3 +840,223 @@ func TestFileReaderFromPath(t *testing.T) {
 		}
 	})
 }
+
+func TestFileReaderFromPath_IncludeExcludePaths(t *testing.T) {
+	t.Run("local_include_path_allowed", func(t *testing.T) {
+		reader, _, err := FileReaderFromPath(
+			context.Background(),
+			"testdata/config.json",
+			DownloadFileIncludingPaths([]string{"testdata/*.json"}),
+		)
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+		defer reader.Close()
+	})
+
+	t.Run("local_include_path_blocked", func(t *testing.T) {
+		_, _, err := FileReaderFromPath(
+			context.Background(),
+			"testdata/config.json",
+			DownloadFileIncludingPaths([]string{"testdata/*.yaml"}),
+		)
+		if !errors.Is(err, errDisallowedFilePath) {
+			t.Fatalf("expected errDisallowedFilePath, got: %v", err)
+		}
+	})
+
+	t.Run("local_exclude_path_blocked", func(t *testing.T) {
+		_, _, err := FileReaderFromPath(
+			context.Background(),
+			"testdata/config.json",
+			DownloadFileExcludingPaths([]string{"testdata/*.json"}),
+		)
+		if !errors.Is(err, errDisallowedFilePath) {
+			t.Fatalf("expected errDisallowedFilePath, got: %v", err)
+		}
+	})
+
+	t.Run("local_exclude_path_allowed", func(t *testing.T) {
+		reader, _, err := FileReaderFromPath(
+			context.Background(),
+			"testdata/config.json",
+			DownloadFileExcludingPaths([]string{"testdata/*.yaml"}),
+		)
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+		defer reader.Close()
+	})
+
+	t.Run("local_include_and_exclude_combined", func(t *testing.T) {
+		// included by pattern, but also excluded — exclude wins
+		_, _, err := FileReaderFromPath(
+			context.Background(),
+			"testdata/config.json",
+			DownloadFileIncludingPaths([]string{"testdata/*"}),
+			DownloadFileExcludingPaths([]string{"testdata/*.json"}),
+		)
+		if !errors.Is(err, errDisallowedFilePath) {
+			t.Fatalf("expected errDisallowedFilePath, got: %v", err)
+		}
+	})
+
+	t.Run("local_no_include_no_exclude_allows_all", func(t *testing.T) {
+		reader, _, err := FileReaderFromPath(context.Background(), "testdata/config.yaml")
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+		defer reader.Close()
+	})
+
+	t.Run("url_include_path_allowed", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"ok": true}`))
+		}))
+		defer server.Close()
+
+		reader, _, err := FileReaderFromPath(
+			context.Background(),
+			server.URL+"/data/config.json",
+			DownloadFileIncludingPaths([]string{"/data/*.json"}),
+		)
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+		defer reader.Close()
+	})
+
+	t.Run("url_include_path_blocked", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"ok": true}`))
+		}))
+		defer server.Close()
+
+		_, _, err := FileReaderFromPath(
+			context.Background(),
+			server.URL+"/data/config.json",
+			DownloadFileIncludingPaths([]string{"/other/*.json"}),
+		)
+		if !errors.Is(err, errDisallowedFilePath) {
+			t.Fatalf("expected errDisallowedFilePath, got: %v", err)
+		}
+	})
+
+	t.Run("url_exclude_path_blocked", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"ok": true}`))
+		}))
+		defer server.Close()
+
+		_, _, err := FileReaderFromPath(
+			context.Background(),
+			server.URL+"/data/config.json",
+			DownloadFileExcludingPaths([]string{"/data/*.json"}),
+		)
+		if !errors.Is(err, errDisallowedFilePath) {
+			t.Fatalf("expected errDisallowedFilePath, got: %v", err)
+		}
+	})
+}
+
+func TestFileReaderFromPath_AllowedBlockedHosts(t *testing.T) {
+	t.Run("allowed_host_passes", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("content"))
+		}))
+		defer server.Close()
+
+		reader, _, err := FileReaderFromPath(
+			context.Background(),
+			server.URL+"/test.txt",
+			DownloadFileWithAllowedHosts([]string{"127.0.0.1"}),
+		)
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+		defer reader.Close()
+	})
+
+	t.Run("allowed_host_blocked_when_not_matching", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("content"))
+		}))
+		defer server.Close()
+
+		_, _, err := FileReaderFromPath(
+			context.Background(),
+			server.URL+"/test.txt",
+			DownloadFileWithAllowedHosts([]string{"example.com"}),
+		)
+		if err == nil {
+			t.Fatal("expected error when host not in allowed list")
+		}
+	})
+
+	t.Run("blocked_host_rejected", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("content"))
+		}))
+		defer server.Close()
+
+		_, _, err := FileReaderFromPath(
+			context.Background(),
+			server.URL+"/test.txt",
+			DownloadFileWithBlockedHosts([]string{"127.0.0.1"}),
+		)
+		if err == nil {
+			t.Fatal("expected error when host is blocked")
+		}
+	})
+
+	t.Run("no_host_filter_allows_all", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("content"))
+		}))
+		defer server.Close()
+
+		reader, _, err := FileReaderFromPath(context.Background(), server.URL+"/test.txt")
+		if err != nil {
+			t.Fatalf("expected nil error, got: %s", err)
+		}
+		defer reader.Close()
+	})
+
+	t.Run("blocked_host_takes_precedence_over_allowed", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("content"))
+		}))
+		defer server.Close()
+
+		_, _, err := FileReaderFromPath(
+			context.Background(),
+			server.URL+"/test.txt",
+			DownloadFileWithAllowedHosts([]string{"127.0.0.1"}),
+			DownloadFileWithBlockedHosts([]string{"127.0.0.1"}),
+		)
+		if err == nil {
+			t.Fatal("expected error: blocked host should take precedence")
+		}
+	})
+
+	t.Run("host_filter_only_applies_to_urls_not_local_paths", func(t *testing.T) {
+		// AllowedHosts / BlockedHosts should not affect local file reads
+		reader, _, err := FileReaderFromPath(
+			context.Background(),
+			"testdata/config.json",
+			DownloadFileWithAllowedHosts([]string{"example.com"}),
+		)
+		if err != nil {
+			t.Fatalf("expected nil error for local file, got: %s", err)
+		}
+		defer reader.Close()
+	})
+}

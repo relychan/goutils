@@ -328,9 +328,9 @@ func validateHost(host, hostname string, options *ValidateHTTPURLOptions) error 
 }
 
 func validateURLScheme(uri *url.URL, allowedSchemes []string) error {
-	scheme := strings.ToLower(uri.Scheme)
-
-	if len(allowedSchemes) > 0 && !slices.Contains(allowedSchemes, scheme) {
+	if len(allowedSchemes) > 0 && !slices.ContainsFunc(allowedSchemes, func(item string) bool {
+		return strings.EqualFold(item, uri.Scheme)
+	}) {
 		return fmt.Errorf(
 			"%w. Accept one of %v, got: %s",
 			ErrInvalidURLScheme,

@@ -17,7 +17,6 @@ package goutils
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"slices"
 	"strings"
 
@@ -141,7 +140,7 @@ func (j *AllOrListString) UnmarshalYAML(value *yaml.Node) error {
 		return nil
 	}
 
-	err := value.Decode(&j.list)
+	err := value.Load(&j.list)
 	if err != nil {
 		return err
 	}
@@ -181,7 +180,29 @@ func (j AllOrListString) String() string {
 		return wildcardSymbol
 	}
 
-	return fmt.Sprintf("%v", j.list)
+	var (
+		sb       strings.Builder
+		capacity = 2 + (len(j.list)-1)*2
+	)
+
+	for _, str := range j.list {
+		capacity += len(str)
+	}
+
+	sb.Grow(capacity)
+	sb.WriteByte('[')
+
+	for i, str := range j.list {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+
+		sb.WriteString(str)
+	}
+
+	sb.WriteByte(']')
+
+	return sb.String()
 }
 
 // Wildcard represents a string with a wildcard pattern.
@@ -342,7 +363,7 @@ func (j *AllOrListWildcardString) UnmarshalYAML(value *yaml.Node) error {
 
 	var list []string
 
-	err := value.Decode(&list)
+	err := value.Load(&list)
 	if err != nil {
 		return err
 	}
