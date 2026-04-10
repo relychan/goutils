@@ -14,6 +14,8 @@
 
 package goutils
 
+import "strings"
+
 // IsMetaCharacter checks if the character is a word character.
 // A word character is a character a-z, A-Z, 0-9, including _ (underscore) and - (hyphen).
 func IsMetaCharacter[C byte | rune](c C) bool {
@@ -68,4 +70,22 @@ func QuoteBytes[T string | []byte](input T) []byte {
 	result = append(result, '"')
 
 	return result
+}
+
+// HasStringPrefixFold check if a string has a case-insensitivity prefix.
+func HasStringPrefixFold(input string, prefix string) bool {
+	if len(input) < len(prefix) {
+		return false
+	}
+
+	return strings.EqualFold(input[:len(prefix)], prefix)
+}
+
+// HasStringSuffixFold check if a string has a case-insensitivity suffix.
+func HasStringSuffixFold(input string, suffix string) bool {
+	if len(input) < len(suffix) {
+		return false
+	}
+
+	return strings.EqualFold(input[len(input)-len(suffix):], suffix)
 }

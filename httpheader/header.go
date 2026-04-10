@@ -1,8 +1,24 @@
+// Copyright 2026 RelyChan Pte. Ltd
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package httpheader defines HTTP header constants.
 package httpheader
 
 import (
 	"strings"
+
+	"github.com/relychan/goutils"
 )
 
 const (
@@ -214,23 +230,45 @@ const (
 
 // IsContentTypeXML checks if the content type is XML.
 func IsContentTypeXML(contentType string) bool {
-	return strings.HasPrefix(contentType, ContentTypeXML) ||
-		strings.HasPrefix(contentType, ContentTypeTextXML) ||
-		strings.HasSuffix(contentType, "+xml")
+	if contentType == ContentTypeXML || contentType == ContentTypeTextXML {
+		return true
+	}
+
+	mediaType := ExtractBaseMediaType(contentType)
+
+	return strings.EqualFold(mediaType, ContentTypeXML) ||
+		strings.EqualFold(mediaType, ContentTypeTextXML) ||
+		goutils.HasStringSuffixFold(mediaType, "+xml")
 }
 
 // IsContentTypeJSON checks if the content type is JSON.
 func IsContentTypeJSON(contentType string) bool {
-	return strings.HasPrefix(contentType, ContentTypeJSON) ||
-		strings.HasSuffix(contentType, "+json")
+	if contentType == ContentTypeJSON || contentType == ContentTypeGraphQLResponseJSON {
+		return true
+	}
+
+	mediaType := ExtractBaseMediaType(contentType)
+
+	return strings.EqualFold(mediaType, ContentTypeJSON) ||
+		goutils.HasStringSuffixFold(mediaType, "+json")
 }
 
 // IsContentTypeText checks if the content type relates to text.
 func IsContentTypeText(contentType string) bool {
-	return strings.HasPrefix(contentType, "text/")
+	return goutils.HasStringPrefixFold(contentType, "text/")
 }
 
 // IsContentTypeMultipartForm checks the content type relates to multipart form.
 func IsContentTypeMultipartForm(contentType string) bool {
-	return strings.HasPrefix(contentType, "multipart/")
+	return goutils.HasStringPrefixFold(contentType, "multipart/")
+}
+
+// ExtractBaseMediaType extracts the media type from the content type with parameters removed.
+func ExtractBaseMediaType(value string) string {
+	mediaType, _, present := strings.Cut(value, ";")
+	if !present {
+		return value
+	}
+
+	return strings.TrimSpace(mediaType)
 }

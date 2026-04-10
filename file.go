@@ -55,6 +55,8 @@ func ReadJSONOrYAMLFile[T any](
 		var result T
 
 		err = json.NewDecoder(file).Decode(&result)
+		// Ensure the reader read all data.
+		_, _ = io.Copy(io.Discard, file) //nolint:errcheck
 
 		return &result, err
 	case ".yaml", ".yml":
@@ -65,7 +67,15 @@ func ReadJSONOrYAMLFile[T any](
 			return nil, err
 		}
 
-		return &result, loader.Load(&result)
+		err = loader.Load(&result)
+		if err != nil {
+			return nil, err
+		}
+
+		// Ensure the reader read all data.
+		_, _ = io.Copy(io.Discard, file) //nolint:errcheck
+
+		return &result, nil
 	default:
 		return nil, errUnsupportedFilePathExtension
 	}
@@ -133,7 +143,9 @@ func FileReaderFromPath(
 		return nil, "", err
 	}
 
-	if slices.Contains(httpSchemes, strings.ToLower(fileURL.Scheme)) {
+	if slices.ContainsFunc(httpSchemes, func(scheme string) bool {
+		return strings.EqualFold(fileURL.Scheme, scheme)
+	}) {
 		return fileReaderFromURL(ctx, fileURL, filePath, defaultOptions)
 	}
 
@@ -147,7 +159,7 @@ func FileReaderFromPath(
 	ext := filepath.Ext(filePath)
 	reader, err := os.Open(filePath)
 
-	return reader, ext, err
+	return reader, strings.ToLower(ext), err
 }
 
 func fileReaderFromURL(
@@ -188,7 +200,7 @@ func fileReaderFromURL(
 		return nil, "", respError
 	}
 
-	if resp.Body == nil {
+	if resp.Body == nil || resp.Body == http.NoBody {
 		return nil, "", errFileNoContent
 	}
 
