@@ -265,10 +265,7 @@ func IsContentTypeMultipartForm(contentType string) bool {
 
 // ExtractBaseMediaType extracts the media type from the content type with parameters removed.
 func ExtractBaseMediaType(value string) string {
-	mediaType, _, present := strings.Cut(value, ";")
-	if !present {
-		return value
-	}
+	mediaType, _, _ := strings.Cut(value, ";")
 
 	return strings.TrimSpace(mediaType)
 }

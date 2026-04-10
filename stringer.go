@@ -72,7 +72,7 @@ func QuoteBytes[T string | []byte](input T) []byte {
 	return result
 }
 
-// HasStringPrefixFold check if a string has a case-insensitivity prefix.
+// HasStringPrefixFold check if a string has a case-insensitive prefix.
 func HasStringPrefixFold(input string, prefix string) bool {
 	if len(input) < len(prefix) {
 		return false
@@ -81,7 +81,7 @@ func HasStringPrefixFold(input string, prefix string) bool {
 	return strings.EqualFold(input[:len(prefix)], prefix)
 }
 
-// HasStringSuffixFold check if a string has a case-insensitivity suffix.
+// HasStringSuffixFold checks if a string has a case-insensitive suffix.
 func HasStringSuffixFold(input string, suffix string) bool {
 	if len(input) < len(suffix) {
 		return false

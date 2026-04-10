@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -151,7 +152,7 @@ func FileReaderFromPath(
 
 	filePath = filepath.Clean(filePath)
 
-	err = validateFilePath(filePath, defaultOptions)
+	err = validateFilePath(filePath, filepath.Match, defaultOptions)
 	if err != nil {
 		return nil, "", err
 	}
@@ -178,7 +179,11 @@ func fileReaderFromURL(
 		}
 	}
 
-	err := validateFilePath(fileURL.Path, options)
+	if fileURL.Path != "" && fileURL.Path[0] != '/' {
+		fileURL.Path = "/" + fileURL.Path
+	}
+
+	err := validateFilePath(fileURL.Path, path.Match, options)
 	if err != nil {
 		return nil, "", err
 	}
@@ -204,19 +209,20 @@ func fileReaderFromURL(
 		return nil, "", errFileNoContent
 	}
 
-	ext := filepath.Ext(filePath)
+	ext := strings.ToLower(filepath.Ext(filePath))
 
 	return resp.Body, ext, nil
 }
 
 func validateFilePath(
 	filePath string,
+	matchFunc func(pattern string, name string) (matched bool, err error),
 	options *downloadFileOptions,
 ) error {
 	isMatched := len(options.IncludePaths) == 0
 
 	for _, includedPath := range options.IncludePaths {
-		matched, err := filepath.Match(includedPath, filePath)
+		matched, err := matchFunc(includedPath, filePath)
 		if err != nil {
 			return err
 		}
