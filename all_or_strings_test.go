@@ -436,8 +436,8 @@ func TestAllOrListString_String(t *testing.T) {
 
 	t.Run("multiple items", func(t *testing.T) {
 		aos := NewStringList([]string{"foo", "bar"})
-		if aos.String() != "[foo bar]" {
-			t.Errorf("expected '[foo bar]', got: %s", aos.String())
+		if aos.String() != "[foo, bar]" {
+			t.Errorf("expected '[foo, bar]', got: %s", aos.String())
 		}
 	})
 }
