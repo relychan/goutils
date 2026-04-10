@@ -31,7 +31,7 @@ import (
 
 var (
 	errFilePathRequired             = errors.New("file path is required")
-	errDisallowedFilePath           = errors.New("file path is allowed to read")
+	errDisallowedFilePath           = errors.New("file path is not allowed to read")
 	errFileNoContent                = errors.New("file has no content")
 	errUnsupportedFilePathExtension = errors.New("only {json,yaml,yml} extension is supported")
 )
