@@ -357,14 +357,6 @@ func EqualComparablePtr[T comparable](x, y *T) bool {
 
 // EqualMap checks if both maps' elements are matched.
 func EqualMap[K comparable, V any](mapA, mapB map[K]V, omitZero bool) bool {
-	if mapA == nil || mapB == nil {
-		if omitZero {
-			return len(mapA) == len(mapB)
-		}
-
-		return mapA == nil && mapB == nil
-	}
-
 	// the both maps have the same pointer, they should equal.
 	if reflect.ValueOf(mapA).UnsafePointer() == reflect.ValueOf(mapB).UnsafePointer() {
 		return true
@@ -396,16 +388,12 @@ func EqualMap[K comparable, V any](mapA, mapB map[K]V, omitZero bool) bool {
 }
 
 // EqualMapPointer checks if both maps' pointer elements are matched.
-func EqualMapPointer[K comparable, V Equaler[V]]( //nolint:cyclop
+func EqualMapPointer[K comparable, V Equaler[V]](
 	mapA, mapB map[K]*V,
 	omitZero bool,
 ) bool {
 	if len(mapA) != len(mapB) {
 		return false
-	}
-
-	if (mapA == nil && mapB == nil) || len(mapA) == 0 {
-		return true
 	}
 
 	for key, valueA := range mapA {

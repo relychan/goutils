@@ -16,6 +16,7 @@
 package httpheader
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/relychan/goutils"
@@ -268,4 +269,22 @@ func ExtractBaseMediaType(value string) string {
 	mediaType, _, _ := strings.Cut(value, ";")
 
 	return strings.TrimSpace(mediaType)
+}
+
+// GetHeaderValue gets the first non-empty value for a canonical header key.
+// Make sure that the lookup key is in canonical form.
+// If you are not sure about the key format, use header.Get(key) instead.
+func GetHeaderValue(header http.Header, key string) string {
+	values, ok := header[key]
+	if !ok || len(values) == 0 {
+		return ""
+	}
+
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+
+	return ""
 }
