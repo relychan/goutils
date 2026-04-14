@@ -14,7 +14,10 @@
 
 package httpheader
 
-import "testing"
+import (
+	"net/http"
+	"testing"
+)
 
 func TestExtractBaseMediaType(t *testing.T) {
 	tests := []struct {
@@ -145,6 +148,79 @@ func TestIsContentTypeMultipartForm(t *testing.T) {
 			got := IsContentTypeMultipartForm(tc.contentType)
 			if got != tc.expected {
 				t.Errorf("IsContentTypeMultipartForm(%q) = %v, want %v", tc.contentType, got, tc.expected)
+			}
+		})
+	}
+}
+
+func TestGetHeaderValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		header   http.Header
+		key      string
+		expected string
+	}{
+		{
+			name:     "nil header",
+			header:   nil,
+			key:      ContentType,
+			expected: "",
+		},
+		{
+			name:     "key not present",
+			header:   http.Header{},
+			key:      ContentType,
+			expected: "",
+		},
+		{
+			name:     "single value",
+			header:   http.Header{ContentType: {"application/json"}},
+			key:      ContentType,
+			expected: "application/json",
+		},
+		{
+			name:     "multiple values returns first non-empty",
+			header:   http.Header{ContentType: {"application/json", "text/plain"}},
+			key:      ContentType,
+			expected: "application/json",
+		},
+		{
+			name:     "empty string values only",
+			header:   http.Header{ContentType: {"", ""}},
+			key:      ContentType,
+			expected: "",
+		},
+		{
+			name:     "leading empty values skipped",
+			header:   http.Header{ContentType: {"", "text/plain"}},
+			key:      ContentType,
+			expected: "text/plain",
+		},
+		{
+			name:     "empty slice",
+			header:   http.Header{ContentType: {}},
+			key:      ContentType,
+			expected: "",
+		},
+		{
+			name:     "canonical key required - non-canonical key misses",
+			header:   http.Header{ContentType: {"application/json"}},
+			key:      "content-type",
+			expected: "",
+		},
+		{
+			name:     "different header key",
+			header:   http.Header{Authorization: {"Bearer token"}, ContentType: {"application/json"}},
+			key:      Authorization,
+			expected: "Bearer token",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := GetHeaderValue(tc.header, tc.key)
+			if got != tc.expected {
+				t.Errorf("GetHeaderValue(%v, %q) = %q, want %q", tc.header, tc.key, got, tc.expected)
 			}
 		})
 	}
