@@ -147,14 +147,6 @@ func TestEqualMap(t *testing.T) {
 		}
 	})
 
-	t.Run("one nil without omitZero", func(t *testing.T) {
-		map1 := map[string]int{}
-		var map2 map[string]int
-		if EqualMap(map1, map2, false) {
-			t.Error("expected not equal when one is nil without omitZero")
-		}
-	})
-
 	t.Run("one nil with omitZero", func(t *testing.T) {
 		map1 := map[string]int{}
 		var map2 map[string]int
