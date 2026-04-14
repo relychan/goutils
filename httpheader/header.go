@@ -271,9 +271,9 @@ func ExtractBaseMediaType(value string) string {
 	return strings.TrimSpace(mediaType)
 }
 
-// GetHeaderValue gets the value of a header object.
-// Make sure that the lookup key is in the canonical form.
-// If you are not sure about the format of the key, use header.Get() instead.
+// GetHeaderValue gets the first non-empty value for a canonical header key.
+// Make sure that the lookup key is in canonical form.
+// If you are not sure about the key format, use header.Get(key) instead.
 func GetHeaderValue(header http.Header, key string) string {
 	if header == nil {
 		return ""
