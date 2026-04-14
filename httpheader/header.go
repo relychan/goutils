@@ -275,10 +275,6 @@ func ExtractBaseMediaType(value string) string {
 // Make sure that the lookup key is in canonical form.
 // If you are not sure about the key format, use header.Get(key) instead.
 func GetHeaderValue(header http.Header, key string) string {
-	if header == nil {
-		return ""
-	}
-
 	values, ok := header[key]
 	if !ok || len(values) == 0 {
 		return ""
