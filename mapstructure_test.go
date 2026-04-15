@@ -37,8 +37,70 @@ func TestDecodeBool(t *testing.T) {
 	_, err = DecodeBoolean(nil)
 	assertError(t, err, "boolean value must not be null")
 
-	_, err = DecodeBoolean("failure")
-	assertError(t, err, "malformed boolean")
+	t.Run("decode_string", func(t *testing.T) {
+		for _, tc := range []struct {
+			input    string
+			expected bool
+		}{
+			{"true", true},
+			{"false", false},
+			{"1", true},
+			{"0", false},
+			{"TRUE", true},
+			{"FALSE", false},
+		} {
+			v, err := DecodeBoolean(tc.input)
+			assertNilError(t, err)
+			assertEqual(t, tc.expected, v)
+		}
+
+		_, err := DecodeBoolean("failure")
+		assertError(t, err, "malformed boolean")
+	})
+
+	t.Run("decode_string_pointer", func(t *testing.T) {
+		s := "true"
+		v, err := DecodeBoolean(&s)
+		assertNilError(t, err)
+		assertEqual(t, true, v)
+
+		var nilStr *string
+		_, err = DecodeBoolean(nilStr)
+		assertError(t, err, "boolean value must not be null")
+
+		bad := "bad"
+		_, err = DecodeBoolean(&bad)
+		assertError(t, err, "malformed boolean")
+	})
+
+	t.Run("decode_nullable_string", func(t *testing.T) {
+		ptr, err := DecodeNullableBoolean("true")
+		assertNilError(t, err)
+		assertEqual(t, true, *ptr)
+
+		ptr, err = DecodeNullableBoolean("false")
+		assertNilError(t, err)
+		assertEqual(t, false, *ptr)
+
+		_, err = DecodeNullableBoolean("oops")
+		assertError(t, err, "malformed boolean")
+	})
+
+	t.Run("decode_nullable_string_pointer", func(t *testing.T) {
+		s := "1"
+		ptr, err := DecodeNullableBoolean(&s)
+		assertNilError(t, err)
+		assertEqual(t, true, *ptr)
+
+		var nilStr *string
+		ptr, err = DecodeNullableBoolean(nilStr)
+		assertNilError(t, err)
+		assertEqual(t, (*bool)(nil), ptr)
+
+		bad := "bad"
+		_, err = DecodeNullableBoolean(&bad)
+		assertError(t, err, "malformed boolean")
+	})
 }
 
 func TestDecodeBooleanSlice(t *testing.T) {
@@ -313,7 +375,68 @@ func TestDecodeNumber(t *testing.T) {
 	})
 
 	t.Run("decode_invalid_type", func(t *testing.T) {
-		_, err := DecodeNumber[float64]("failure")
+		_, err := DecodeNumber[float64](true)
+		assertError(t, err, "malformed number")
+	})
+
+	t.Run("decode_string", func(t *testing.T) {
+		value, err := DecodeNumber[int]("42")
+		assertNilError(t, err)
+		assertEqual(t, 42, value)
+
+		value64, err := DecodeNumber[int64]("100")
+		assertNilError(t, err)
+		assertEqual(t, int64(100), value64)
+
+		u64, err := DecodeNumber[uint64]("18446744073709551615")
+		assertNilError(t, err)
+		assertEqual(t, uint64(18446744073709551615), u64)
+
+		fv, err := DecodeNumber[float64]("3.14")
+		assertNilError(t, err)
+		assertEqual(t, "3.14", fmt.Sprintf("%.2f", fv))
+
+		_, err = DecodeNumber[int]("not-a-number")
+		assertError(t, err, "malformed number")
+	})
+
+	t.Run("decode_string_pointer", func(t *testing.T) {
+		s := "99"
+		value, err := DecodeNumber[int](&s)
+		assertNilError(t, err)
+		assertEqual(t, 99, value)
+
+		var nilStr *string
+		_, err = DecodeNumber[int](nilStr)
+		assertError(t, err, "number value must not be null")
+
+		bad := "bad"
+		_, err = DecodeNumber[int](&bad)
+		assertError(t, err, "malformed number")
+	})
+
+	t.Run("decode_nullable_string", func(t *testing.T) {
+		ptr, err := DecodeNullableNumber[int]("7")
+		assertNilError(t, err)
+		assertEqual(t, 7, *ptr)
+
+		_, err = DecodeNullableNumber[int]("oops")
+		assertError(t, err, "malformed number")
+	})
+
+	t.Run("decode_nullable_string_pointer", func(t *testing.T) {
+		s := "55"
+		ptr, err := DecodeNullableNumber[int](&s)
+		assertNilError(t, err)
+		assertEqual(t, 55, *ptr)
+
+		var nilStr *string
+		ptr, err = DecodeNullableNumber[int](nilStr)
+		assertNilError(t, err)
+		assertEqual(t, (*int)(nil), ptr)
+
+		bad := "bad"
+		_, err = DecodeNullableNumber[int](&bad)
 		assertError(t, err, "malformed number")
 	})
 }
@@ -323,4 +446,19 @@ func TestDecodeNumberSlice(t *testing.T) {
 	result, err := DecodeNumberSlice[int](testNumbers)
 	assertNilError(t, err)
 	assertDeepEqual(t, []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, result)
+
+	t.Run("string_slice", func(t *testing.T) {
+		strNums := []string{"1", "2", "3"}
+		res, err := DecodeNumberSlice[int](strNums)
+		assertNilError(t, err)
+		assertDeepEqual(t, []int{1, 2, 3}, res)
+
+		floats, err := DecodeNumberSlice[float64]([]string{"1.1", "2.2"})
+		assertNilError(t, err)
+		assertEqual(t, "1.10", fmt.Sprintf("%.2f", floats[0]))
+		assertEqual(t, "2.20", fmt.Sprintf("%.2f", floats[1]))
+
+		_, err = DecodeNumberSlice[int]([]string{"a", "b"})
+		assertError(t, err, "malformed number")
+	})
 }
