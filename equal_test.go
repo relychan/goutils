@@ -1202,21 +1202,19 @@ func createBenchmarkObject() map[string]any {
 	}
 }
 
-// BenchmarkDeepEqualReflection-11    	  296131	      4009 ns/op	    5848 B/op	      70 allocs/op
-func BenchmarkDeepEqualReflection(b *testing.B) {
-	obj1 := createBenchmarkObject()
-	obj2 := createBenchmarkObject()
-
-	for b.Loop() {
-		reflect.DeepEqual(obj1, obj2)
-	}
-}
-
-// BenchmarkDeepEqual-11    	 1904056	       636.6 ns/op	       0 B/op	       0 allocs/op
 func BenchmarkDeepEqual(b *testing.B) {
 	obj1 := createBenchmarkObject()
 	obj2 := createBenchmarkObject()
-	for b.Loop() {
-		DeepEqual(obj1, obj2, false)
-	}
+
+	b.Run("reflection", func(b *testing.B) {
+		for b.Loop() {
+			reflect.DeepEqual(obj1, obj2)
+		}
+	})
+
+	b.Run("assert", func(b *testing.B) {
+		for b.Loop() {
+			DeepEqual(obj1, obj2, false)
+		}
+	})
 }
