@@ -825,7 +825,11 @@ func decodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint
 		return results, nil
 	case []string:
 		if strict {
-			return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumberSlice, reflect.TypeOf(vs))
+			return nil, fmt.Errorf(
+				"%w; got: %s",
+				ErrMalformedNumberSlice,
+				reflect.TypeFor[[]string](),
+			)
 		}
 
 		results := make([]T, len(vs))
