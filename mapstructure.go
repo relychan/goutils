@@ -721,7 +721,7 @@ func DecodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint
 		for i, v := range vs {
 			num, err := parseNumber[T](v)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to decode number at %d: %w", i, err)
 			}
 
 			results[i] = num
