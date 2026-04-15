@@ -462,3 +462,264 @@ func TestDecodeNumberSlice(t *testing.T) {
 		assertError(t, err, "malformed number")
 	})
 }
+
+func TestAsBoolean(t *testing.T) {
+	// Direct bool values work in both strict and non-strict
+	value, err := AsBoolean(true)
+	assertNilError(t, err)
+	assertEqual(t, true, value)
+
+	value, err = AsBoolean(false)
+	assertNilError(t, err)
+	assertEqual(t, false, value)
+
+	boolPtr := true
+	value, err = AsBoolean(&boolPtr)
+	assertNilError(t, err)
+	assertEqual(t, true, value)
+
+	// nil returns error
+	_, err = AsBoolean(nil)
+	assertError(t, err, "boolean value must not be null")
+
+	// nil *bool returns error
+	var nilBool *bool
+	_, err = AsBoolean(nilBool)
+	assertError(t, err, "boolean value must not be null")
+
+	// strings are rejected in strict mode
+	_, err = AsBoolean("true")
+	assertError(t, err, "malformed boolean")
+
+	_, err = AsBoolean("false")
+	assertError(t, err, "malformed boolean")
+
+	s := "true"
+	_, err = AsBoolean(&s)
+	assertError(t, err, "malformed boolean")
+
+	// invalid type
+	_, err = AsBoolean(42)
+	assertError(t, err, "malformed boolean")
+}
+
+func TestAsNullableBoolean(t *testing.T) {
+	// Direct bool values work
+	ptr, err := AsNullableBoolean(true)
+	assertNilError(t, err)
+	assertEqual(t, true, *ptr)
+
+	boolPtr := false
+	ptr, err = AsNullableBoolean(&boolPtr)
+	assertNilError(t, err)
+	assertEqual(t, false, *ptr)
+
+	// nil returns nil pointer, no error
+	ptr, err = AsNullableBoolean(nil)
+	assertNilError(t, err)
+	assertEqual(t, (*bool)(nil), ptr)
+
+	var nilBool *bool
+	ptr, err = AsNullableBoolean(nilBool)
+	assertNilError(t, err)
+	assertEqual(t, (*bool)(nil), ptr)
+
+	// strings are rejected
+	_, err = AsNullableBoolean("true")
+	assertError(t, err, "malformed boolean")
+
+	s := "true"
+	_, err = AsNullableBoolean(&s)
+	assertError(t, err, "malformed boolean")
+}
+
+func TestAsBooleanReflection(t *testing.T) {
+	// Bool kind works
+	value, err := AsBooleanReflection(reflect.ValueOf(true))
+	assertNilError(t, err)
+	assertEqual(t, true, value)
+
+	// String kind is rejected in strict mode
+	_, err = AsBooleanReflection(reflect.ValueOf("true"))
+	assertError(t, err, "malformed boolean")
+
+	// Invalid kind rejected
+	_, err = AsBooleanReflection(reflect.ValueOf(42))
+	assertError(t, err, "malformed boolean")
+}
+
+func TestAsNullableBooleanReflection(t *testing.T) {
+	value, err := AsNullableBooleanReflection(reflect.ValueOf(true))
+	assertNilError(t, err)
+	assertEqual(t, true, *value)
+
+	_, err = AsNullableBooleanReflection(reflect.ValueOf("true"))
+	assertError(t, err, "malformed boolean")
+}
+
+func TestAsBooleanSlice(t *testing.T) {
+	// Direct bool slices work
+	value, err := AsBooleanSlice([]bool{true, false})
+	assertNilError(t, err)
+	assertDeepEqual(t, []bool{true, false}, value)
+
+	// []any with actual bools works
+	value, err = AsBooleanSlice([]any{true, false})
+	assertNilError(t, err)
+	assertDeepEqual(t, []bool{true, false}, value)
+
+	// nil returns error (slice must not be null)
+	_, err = AsBooleanSlice(nil)
+	assertError(t, err, "boolean slice must not be null")
+
+	// non-slice type rejected
+	_, err = AsBooleanSlice("true")
+	assertError(t, err, "malformed boolean slice; got: string")
+
+	// []any with strings rejected in strict mode
+	_, err = AsBooleanSlice([]any{"true"})
+	assertError(t, err, "malformed boolean")
+
+	// nil element in slice rejected
+	_, err = AsBooleanSlice([]any{nil})
+	assertError(t, err, "element 0: boolean value must not be null")
+}
+
+func TestAsNullableBooleanSlice(t *testing.T) {
+	value, err := AsNullableBooleanSlice([]bool{true, false})
+	assertNilError(t, err)
+	assertDeepEqual(t, []bool{true, false}, *value)
+
+	// nil returns nil pointer, no error
+	value, err = AsNullableBooleanSlice(nil)
+	assertNilError(t, err)
+	assertEqual(t, (*[]bool)(nil), value)
+
+	// []any with actual bools works
+	value, err = AsNullableBooleanSlice([]any{true, false})
+	assertNilError(t, err)
+	assertDeepEqual(t, []bool{true, false}, *value)
+
+	// []any with strings rejected
+	_, err = AsNullableBooleanSlice([]any{"true"})
+	assertError(t, err, "malformed boolean")
+
+	// non-slice rejected
+	_, err = AsNullableBooleanSlice("true")
+	assertError(t, err, "malformed boolean slice; got: string")
+}
+
+func TestAsNumber(t *testing.T) {
+	// Direct numeric types work
+	value, err := AsNumber[int](42)
+	assertNilError(t, err)
+	assertEqual(t, 42, value)
+
+	value64, err := AsNumber[int64](int64(100))
+	assertNilError(t, err)
+	assertEqual(t, int64(100), value64)
+
+	fv, err := AsNumber[float64](3.14)
+	assertNilError(t, err)
+	assertEqual(t, "3.14", fmt.Sprintf("%.2f", fv))
+
+	// nil rejected
+	_, err = AsNumber[int](nil)
+	assertError(t, err, "number value must not be null")
+
+	// strings are rejected in strict mode
+	_, err = AsNumber[int]("42")
+	assertError(t, err, "malformed number")
+
+	s := "42"
+	_, err = AsNumber[int](&s)
+	assertError(t, err, "malformed number")
+
+	// invalid type rejected
+	_, err = AsNumber[int](true)
+	assertError(t, err, "malformed number")
+}
+
+func TestAsNullableNumber(t *testing.T) {
+	// Direct numeric types work
+	ptr, err := AsNullableNumber[int](42)
+	assertNilError(t, err)
+	assertEqual(t, 42, *ptr)
+
+	// nil returns nil, no error
+	ptr, err = AsNullableNumber[int](nil)
+	assertNilError(t, err)
+	assertEqual(t, (*int)(nil), ptr)
+
+	// strings rejected
+	_, err = AsNullableNumber[int]("42")
+	assertError(t, err, "malformed number")
+
+	s := "42"
+	_, err = AsNullableNumber[int](&s)
+	assertError(t, err, "malformed number")
+}
+
+func TestAsNumberReflection(t *testing.T) {
+	// Numeric kinds work
+	value, err := AsNumberReflection[int](reflect.ValueOf(42))
+	assertNilError(t, err)
+	assertEqual(t, 42, value)
+
+	value64, err := AsNumberReflection[float64](reflect.ValueOf(3.14))
+	assertNilError(t, err)
+	assertEqual(t, "3.14", fmt.Sprintf("%.2f", value64))
+
+	// String kind rejected in strict mode
+	_, err = AsNumberReflection[int](reflect.ValueOf("42"))
+	assertError(t, err, "malformed number")
+
+	// Invalid kind rejected
+	_, err = AsNumberReflection[int](reflect.ValueOf(true))
+	assertError(t, err, "malformed number")
+}
+
+func TestAsNullableNumberReflection(t *testing.T) {
+	ptr, err := AsNullableNumberReflection[int](reflect.ValueOf(42))
+	assertNilError(t, err)
+	assertEqual(t, 42, *ptr)
+
+	// String kind rejected
+	_, err = AsNullableNumberReflection[int](reflect.ValueOf("42"))
+	assertError(t, err, "malformed number")
+}
+
+func TestAsNumberSlice(t *testing.T) {
+	// Direct int slices work
+	result, err := AsNumberSlice[int]([]int{1, 2, 3})
+	assertNilError(t, err)
+	assertDeepEqual(t, []int{1, 2, 3}, result)
+
+	// []any with numeric values works
+	result, err = AsNumberSlice[int]([]any{int(1), int64(2), float64(3)})
+	assertNilError(t, err)
+	assertDeepEqual(t, []int{1, 2, 3}, result)
+
+	// nil returns nil, no error
+	result, err = AsNumberSlice[int](nil)
+	assertNilError(t, err)
+	assertDeepEqual(t, ([]int)(nil), result)
+
+	// []string rejected in strict mode
+	_, err = AsNumberSlice[int]([]string{"1", "2", "3"})
+	assertError(t, err, "malformed number slice")
+
+	// invalid type rejected
+	_, err = AsNumberSlice[int](true)
+	assertError(t, err, "malformed number slice")
+}
+
+func TestAsNumberSliceReflection(t *testing.T) {
+	result, err := AsNumberSliceReflection[int](reflect.ValueOf([]int{1, 2, 3}))
+	assertNilError(t, err)
+	assertDeepEqual(t, []int{1, 2, 3}, result)
+
+	// []string rejected
+	_, err = AsNumberSliceReflection[int](reflect.ValueOf([]string{"1", "2"}))
+	assertError(t, err, "malformed number")
+}
