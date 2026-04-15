@@ -434,12 +434,18 @@ func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~
 		}
 
 		return T(*v), nil
+	case string:
+		return parseNumber[T](v)
+	case *string:
+		if v == nil {
+			return 0, ErrNumberNull
+		}
+
+		return parseNumber[T](*v)
 	case bool,
-		string,
 		complex64,
 		complex128,
 		*bool,
-		*string,
 		*complex64,
 		*complex128,
 		map[string]any,
@@ -452,7 +458,7 @@ func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~
 }
 
 // DecodeNullableNumber tries to convert an unknown value to a typed number.
-func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo
+func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo,gocognit
 	value any,
 ) (*T, error) {
 	if value == nil {
@@ -556,12 +562,28 @@ func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~u
 		}
 
 		return new(T(*v)), nil
+	case string:
+		result, err := parseNumber[T](v)
+		if err != nil {
+			return nil, err
+		}
+
+		return &result, nil
+	case *string:
+		if v == nil {
+			return nil, nil
+		}
+
+		result, err := parseNumber[T](*v)
+		if err != nil {
+			return nil, err
+		}
+
+		return &result, nil
 	case bool,
-		string,
 		complex64,
 		complex128,
 		*bool,
-		*string,
 		*complex64,
 		*complex128,
 		map[string]any,
@@ -606,14 +628,7 @@ func DecodeNumberReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | 
 	case reflect.Float32, reflect.Float64:
 		result = T(value.Float())
 	case reflect.String:
-		v := value.String()
-
-		newVal, parseErr := strconv.ParseFloat(v, 64)
-		if parseErr != nil {
-			return T(0), fmt.Errorf("failed to convert number: %w", parseErr)
-		}
-
-		result = T(newVal)
+		return parseNumber[T](value.String())
 	case reflect.Interface:
 		v := fmt.Sprint(value.Interface())
 
@@ -700,6 +715,19 @@ func DecodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint
 		}
 
 		return results, nil
+	case []string:
+		results := make([]T, len(vs))
+
+		for i, v := range vs {
+			num, err := parseNumber[T](v)
+			if err != nil {
+				return nil, err
+			}
+
+			results[i] = num
+		}
+
+		return results, nil
 	case bool,
 		string,
 		int,
@@ -733,7 +761,7 @@ func DecodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint
 		*complex64,
 		*complex128:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumberSlice, reflect.TypeOf(vs))
-	case []bool, []string, []complex64, []complex128, map[string]any:
+	case []bool, []complex64, []complex128, map[string]any:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumberSlice, reflect.TypeOf(vs))
 	default:
 		return DecodeNumberSliceReflection[T](reflect.ValueOf(value))
@@ -784,6 +812,24 @@ func DecodeNullableBoolean(value any) (*bool, error) {
 		return &v, nil
 	case *bool:
 		return v, nil
+	case string:
+		result, err := parseBool(v)
+		if err != nil {
+			return nil, err
+		}
+
+		return &result, nil
+	case *string:
+		if v == nil {
+			return nil, nil
+		}
+
+		result, err := parseBool(*v)
+		if err != nil {
+			return nil, err
+		}
+
+		return &result, nil
 	default:
 		return DecodeNullableBooleanReflection(reflect.ValueOf(value))
 	}
@@ -804,6 +850,14 @@ func DecodeBoolean(value any) (bool, error) {
 		}
 
 		return *v, nil
+	case string:
+		return parseBool(v)
+	case *string:
+		if v == nil {
+			return false, ErrBooleanNull
+		}
+
+		return parseBool(*v)
 	default:
 		return DecodeBooleanReflection(reflect.ValueOf(value))
 	}
@@ -833,6 +887,8 @@ func DecodeBooleanReflection(value reflect.Value) (bool, error) {
 		result := value.Bool()
 
 		return result, nil
+	case reflect.String:
+		return parseBool(value.String())
 	case reflect.Interface:
 		if value.Equal(trueValue) {
 			return true, nil
@@ -847,13 +903,41 @@ func DecodeBooleanReflection(value reflect.Value) (bool, error) {
 	return false, fmt.Errorf("%w; got: %v", ErrMalformedBoolean, kind)
 }
 
-// GetAny get an unknown value from object by key.
-func GetAny(object map[string]any, key string) (any, bool) {
-	if object == nil {
-		return nil, false
+func parseNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	rawValue string,
+) (T, error) {
+	var empty T
+
+	switch any(empty).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32:
+		result, err := strconv.ParseInt(rawValue, 10, 64)
+		if err != nil {
+			return 0, ErrMalformedNumber
+		}
+
+		return T(result), nil
+	case uint64:
+		result, err := strconv.ParseUint(rawValue, 10, 64)
+		if err != nil {
+			return 0, ErrMalformedNumber
+		}
+
+		return T(result), nil
+	default:
+		fResult, err := strconv.ParseFloat(rawValue, 64)
+		if err != nil {
+			return 0, ErrMalformedNumber
+		}
+
+		return T(fResult), nil
+	}
+}
+
+func parseBool(value string) (bool, error) {
+	result, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, ErrMalformedBoolean
 	}
 
-	value, ok := object[key]
-
-	return value, ok
+	return result, nil
 }
