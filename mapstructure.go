@@ -94,7 +94,7 @@ func DecodeNullableStringReflection(value reflect.Value) (*string, error) {
 	default:
 	}
 
-	return nil, fmt.Errorf("%w, got: %s", ErrMalformedString, value.Kind())
+	return nil, fmt.Errorf("%w, got: %s", ErrMalformedString, inferredValue.Kind())
 }
 
 // DecodeStringReflection decodes a string from reflection value.
@@ -1055,6 +1055,18 @@ func decodeNullableBooleanReflection(reflectValue reflect.Value, strict bool) (*
 
 		if value.Equal(falseValue) {
 			return new(false), nil
+		}
+
+		if !strict {
+			strValue, ok := value.Interface().(string)
+			if ok {
+				result, err := parseBool(strValue)
+				if err != nil {
+					return nil, err
+				}
+
+				return &result, nil
+			}
 		}
 	default:
 	}
