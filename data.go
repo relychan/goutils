@@ -164,7 +164,7 @@ func IsNil(value any) bool {
 // or false if the value is nil or invalid.
 func UnwrapPointerFromReflectValue(reflectValue reflect.Value) (reflect.Value, bool) {
 	switch reflectValue.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Invalid:
+	case reflect.Invalid:
 		return reflectValue, false
 	case reflect.Pointer:
 		if reflectValue.IsNil() {

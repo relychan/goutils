@@ -83,73 +83,32 @@ func DecodeNullableStringReflection(value reflect.Value) (*string, error) {
 		return nil, nil
 	}
 
-	result, err := DecodeStringReflection(inferredValue)
-	if err != nil {
-		return nil, err
-	}
-
-	return &result, nil
-}
-
-// DecodeNullableBooleanSlice decodes a nullable boolean slice from an unknown value.
-func DecodeNullableBooleanSlice(value any) (*[]bool, error) {
-	if value == nil {
-		return nil, nil
-	}
-
-	reflectValue, ok := UnwrapPointerFromReflectValue(reflect.ValueOf(value))
-	if !ok {
-		return nil, nil
-	}
-
-	valueKind := reflectValue.Kind()
-	if valueKind != reflect.Slice {
-		return nil, fmt.Errorf("%w; got: %s", ErrMalformedBooleanSlice, valueKind)
-	}
-
-	valueLen := reflectValue.Len()
-	results := make([]bool, valueLen)
-
-	for i := range valueLen {
-		elem, err := DecodeNullableBooleanReflection(reflectValue.Index(i))
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode boolean element at %d: %w", i, err)
+	switch inferredValue.Kind() {
+	case reflect.String:
+		return new(inferredValue.String()), nil
+	case reflect.Interface:
+		str, ok := inferredValue.Interface().(string)
+		if ok {
+			return &str, nil
 		}
-
-		if elem == nil {
-			return nil, fmt.Errorf("element %d: %w", i, ErrBooleanNull)
-		}
-
-		results[i] = *elem
+	default:
 	}
 
-	return &results, nil
-}
-
-// DecodeBooleanSlice decodes a boolean slice from an unknown value.
-func DecodeBooleanSlice(value any) ([]bool, error) {
-	results, err := DecodeNullableBooleanSlice(value)
-	if err != nil {
-		return nil, err
-	}
-
-	if results == nil {
-		return nil, ErrBooleanSliceNull
-	}
-
-	return *results, nil
+	return nil, fmt.Errorf("%w, got: %s", ErrMalformedString, inferredValue.Kind())
 }
 
 // DecodeStringReflection decodes a string from reflection value.
 func DecodeStringReflection(value reflect.Value) (string, error) {
-	switch value.Kind() {
-	case reflect.String:
-		return value.String(), nil
-	case reflect.Interface:
-		return fmt.Sprint(value.Interface()), nil
-	default:
-		return "", fmt.Errorf("%w, got: %v", ErrMalformedString, value)
+	result, err := DecodeNullableStringReflection(value)
+	if err != nil {
+		return "", err
 	}
+
+	if result == nil {
+		return "", ErrStringNull
+	}
+
+	return *result, nil
 }
 
 // DecodeString tries to convert an unknown value to a string value.
@@ -329,9 +288,197 @@ func DecodeStringSliceReflection(reflectValue reflect.Value) ([]string, error) {
 	return results, nil
 }
 
+// DecodeNullableBooleanSlice decodes a nullable boolean slice from an unknown value.
+func DecodeNullableBooleanSlice(value any) (*[]bool, error) {
+	return decodeNullableBooleanSlice(value, false)
+}
+
+// AsNullableBooleanSlice tries to cast a nullable boolean slice from an unknown value.
+func AsNullableBooleanSlice(value any) (*[]bool, error) {
+	return decodeNullableBooleanSlice(value, true)
+}
+
+// DecodeBooleanSlice decodes a boolean slice from an unknown value.
+func DecodeBooleanSlice(value any) ([]bool, error) {
+	return decodeBooleanSlice(value, false)
+}
+
+// AsBooleanSlice tries to cast a boolean slice from an unknown value.
+func AsBooleanSlice(value any) ([]bool, error) {
+	return decodeBooleanSlice(value, true)
+}
+
 // DecodeNumber tries to convert an unknown value to a typed number.
-func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo
+func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
 	value any,
+) (T, error) {
+	return decodeNumber[T](value, false, false)
+}
+
+// AsNumber tries to cast an unknown value to a typed number.
+func AsNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	value any,
+) (T, error) {
+	return decodeNumber[T](value, true, false)
+}
+
+// DecodeNullableNumber tries to convert an unknown value to a typed number.
+func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	value any,
+) (*T, error) {
+	return decodeNullableNumber[T](value, false, false)
+}
+
+// AsNullableNumber tries to cast an unknown value to a typed number.
+func AsNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	value any,
+) (*T, error) {
+	return decodeNullableNumber[T](value, true, false)
+}
+
+// DecodeNullableNumberReflection decodes a nullable numeric value (int, uint, or float) using reflection.
+func DecodeNullableNumberReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	value reflect.Value,
+) (*T, error) {
+	return decodeNullableNumberReflection[T](value, false, false)
+}
+
+// AsNullableNumberReflection tries to cast a nullable numeric value (int, uint, or float) using reflection.
+func AsNullableNumberReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	value reflect.Value,
+) (*T, error) {
+	return decodeNullableNumberReflection[T](value, true, false)
+}
+
+// DecodeNumberReflection decodes the number value using reflection.
+func DecodeNumberReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	value reflect.Value,
+) (T, error) {
+	return decodeNumberReflection[T](value, false, false)
+}
+
+// AsNumberReflection tries to cast the number value using reflection.
+func AsNumberReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	value reflect.Value,
+) (T, error) {
+	return decodeNumberReflection[T](value, true, false)
+}
+
+// DecodeNumberSlice decodes a number slice from an unknown value.
+func DecodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	value any,
+) ([]T, error) {
+	return decodeNumberSlice[T](value, false)
+}
+
+// AsNumberSlice tries to cast a number slice from an unknown value.
+func AsNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	value any,
+) ([]T, error) {
+	return decodeNumberSlice[T](value, true)
+}
+
+// DecodeNumberSliceReflection decodes a number slice from a reflection value.
+func DecodeNumberSliceReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	reflectValue reflect.Value,
+) ([]T, error) {
+	return decodeNumberSliceReflection[T](reflectValue, false)
+}
+
+// AsNumberSliceReflection tries to cast a number slice from a reflection value.
+func AsNumberSliceReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	reflectValue reflect.Value,
+) ([]T, error) {
+	return decodeNumberSliceReflection[T](reflectValue, true)
+}
+
+// DecodeNullableBoolean tries to convert an unknown value to a bool pointer.
+func DecodeNullableBoolean(value any) (*bool, error) {
+	return decodeNullableBoolean(value, false)
+}
+
+// AsNullableBoolean tries to cast an unknown value to a bool pointer.
+func AsNullableBoolean(value any) (*bool, error) {
+	return decodeNullableBoolean(value, true)
+}
+
+// DecodeBoolean tries to convert an unknown value to a bool value.
+func DecodeBoolean(value any) (bool, error) {
+	return decodeBoolean(value, false)
+}
+
+// AsBoolean tries to cast an unknown value to a bool value.
+func AsBoolean(value any) (bool, error) {
+	return decodeBoolean(value, true)
+}
+
+// DecodeNullableBooleanReflection decodes a nullable boolean value from reflection.
+func DecodeNullableBooleanReflection(value reflect.Value) (*bool, error) {
+	return decodeNullableBooleanReflection(value, false)
+}
+
+// AsNullableBooleanReflection tries to cast a nullable boolean value from reflection.
+func AsNullableBooleanReflection(value reflect.Value) (*bool, error) {
+	return decodeNullableBooleanReflection(value, true)
+}
+
+// DecodeBooleanReflection decodes a boolean value from reflection.
+func DecodeBooleanReflection(value reflect.Value) (bool, error) {
+	return decodeBooleanReflection(value, false)
+}
+
+// AsBooleanReflection tries to cast a boolean value from reflection.
+func AsBooleanReflection(value reflect.Value) (bool, error) {
+	return decodeBooleanReflection(value, true)
+}
+
+func decodeBooleanSlice(value any, strict bool) ([]bool, error) {
+	results, err := decodeNullableBooleanSlice(value, strict)
+	if err != nil {
+		return nil, err
+	}
+
+	if results == nil {
+		return nil, ErrBooleanSliceNull
+	}
+
+	return *results, nil
+}
+
+func decodeNullableBooleanSliceReflection(value reflect.Value, strict bool) (*[]bool, error) {
+	reflectValue, ok := UnwrapPointerFromReflectValue(value)
+	if !ok {
+		return nil, nil
+	}
+
+	valueKind := reflectValue.Kind()
+	if valueKind != reflect.Slice {
+		return nil, fmt.Errorf("%w; got: %s", ErrMalformedBooleanSlice, valueKind)
+	}
+
+	valueLen := reflectValue.Len()
+	results := make([]bool, valueLen)
+
+	for i := range valueLen {
+		elem, err := decodeNullableBooleanReflection(reflectValue.Index(i), strict)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode boolean element at %d: %w", i, err)
+		}
+
+		if elem == nil {
+			return nil, fmt.Errorf("failed to decode boolean element at %d: %w", i, ErrBooleanNull)
+		}
+
+		results[i] = *elem
+	}
+
+	return &results, nil
+}
+
+func decodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo,gocognit
+	value any,
+	strict bool,
+	isRecursive bool,
 ) (T, error) {
 	if value == nil {
 		return 0, ErrNumberNull
@@ -435,8 +582,16 @@ func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~
 
 		return T(*v), nil
 	case string:
+		if strict {
+			return 0, fmt.Errorf("%w; got: %s", ErrMalformedNumber, reflect.TypeOf(value))
+		}
+
 		return parseNumber[T](v)
 	case *string:
+		if strict {
+			return 0, fmt.Errorf("%w; got: %s", ErrMalformedNumber, reflect.TypeOf(value))
+		}
+
 		if v == nil {
 			return 0, ErrNumberNull
 		}
@@ -453,13 +608,14 @@ func DecodeNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~
 		[]float64:
 		return 0, fmt.Errorf("%w; got: %s", ErrMalformedNumber, reflect.TypeOf(value))
 	default:
-		return DecodeNumberReflection[T](reflect.ValueOf(value))
+		return decodeNumberReflection[T](reflect.ValueOf(value), strict, isRecursive)
 	}
 }
 
-// DecodeNullableNumber tries to convert an unknown value to a typed number.
-func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo,gocognit
+func decodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo,gocognit
 	value any,
+	strict bool,
+	isRecursive bool,
 ) (*T, error) {
 	if value == nil {
 		return nil, nil
@@ -563,6 +719,10 @@ func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~u
 
 		return new(T(*v)), nil
 	case string:
+		if strict {
+			return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumber, reflect.TypeOf(value))
+		}
+
 		result, err := parseNumber[T](v)
 		if err != nil {
 			return nil, err
@@ -570,6 +730,10 @@ func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~u
 
 		return &result, nil
 	case *string:
+		if strict {
+			return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumber, reflect.TypeOf(value))
+		}
+
 		if v == nil {
 			return nil, nil
 		}
@@ -591,63 +755,13 @@ func DecodeNullableNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~u
 		[]float64:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumber, reflect.TypeOf(value))
 	default:
-		return DecodeNullableNumberReflection[T](reflect.ValueOf(value))
+		return decodeNullableNumberReflection[T](reflect.ValueOf(value), strict, isRecursive)
 	}
 }
 
-// DecodeNullableNumberReflection decodes a nullable numeric value (int, uint, or float) using reflection.
-func DecodeNullableNumberReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
-	value reflect.Value,
-) (*T, error) {
-	inferredValue, ok := UnwrapPointerFromReflectValue(value)
-	if !ok {
-		return nil, nil
-	}
-
-	result, err := DecodeNumberReflection[T](inferredValue)
-	if err != nil {
-		return nil, err
-	}
-
-	return &result, nil
-}
-
-// DecodeNumberReflection decodes the number value using reflection.
-func DecodeNumberReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
-	value reflect.Value,
-) (T, error) {
-	kind := value.Kind()
-
-	var result T
-
-	switch kind {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		result = T(value.Int())
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		result = T(value.Uint())
-	case reflect.Float32, reflect.Float64:
-		result = T(value.Float())
-	case reflect.String:
-		return parseNumber[T](value.String())
-	case reflect.Interface:
-		v := fmt.Sprint(value.Interface())
-
-		newVal, parseErr := strconv.ParseFloat(v, 64)
-		if parseErr != nil {
-			return T(0), fmt.Errorf("failed to convert number, got: %w", parseErr)
-		}
-
-		result = T(newVal)
-	default:
-		return T(0), fmt.Errorf("%w, got: %s <%s>", ErrMalformedNumber, value.Type(), kind)
-	}
-
-	return result, nil
-}
-
-// DecodeNumberSlice decodes a number slice from an unknown value.
-func DecodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo
+func decodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64]( //nolint:cyclop,funlen,gocyclo
 	value any,
+	strict bool,
 ) ([]T, error) {
 	if value == nil {
 		return nil, nil
@@ -706,7 +820,7 @@ func DecodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint
 		results := make([]T, len(vs))
 
 		for i, v := range vs {
-			n, err := DecodeNumber[T](v)
+			n, err := decodeNumber[T](v, strict, false)
 			if err != nil {
 				return nil, fmt.Errorf("failed to decode number at %d: %w", i, err)
 			}
@@ -716,6 +830,14 @@ func DecodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint
 
 		return results, nil
 	case []string:
+		if strict {
+			return nil, fmt.Errorf(
+				"%w; got: %s",
+				ErrMalformedNumberSlice,
+				reflect.TypeOf(value),
+			)
+		}
+
 		results := make([]T, len(vs))
 
 		for i, v := range vs {
@@ -764,13 +886,13 @@ func DecodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint
 	case []bool, []complex64, []complex128, map[string]any:
 		return nil, fmt.Errorf("%w; got: %s", ErrMalformedNumberSlice, reflect.TypeOf(vs))
 	default:
-		return DecodeNumberSliceReflection[T](reflect.ValueOf(value))
+		return decodeNumberSliceReflection[T](reflect.ValueOf(value), strict)
 	}
 }
 
-// DecodeNumberSliceReflection decodes a number slice from a reflection value.
-func DecodeNumberSliceReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+func decodeNumberSliceReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
 	reflectValue reflect.Value,
+	strict bool,
 ) ([]T, error) {
 	reflectValue, ok := UnwrapPointerFromReflectValue(reflectValue)
 	if !ok {
@@ -786,7 +908,7 @@ func DecodeNumberSliceReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~ui
 	results := make([]T, valueLen)
 
 	for i := range valueLen {
-		elem, err := DecodeNullableNumberReflection[T](reflectValue.Index(i))
+		elem, err := decodeNullableNumberReflection[T](reflectValue.Index(i), strict, false)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode number element at %d: %w", i, err)
 		}
@@ -801,8 +923,71 @@ func DecodeNumberSliceReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~ui
 	return results, nil
 }
 
-// DecodeNullableBoolean tries to convert an unknown value to a bool pointer.
-func DecodeNullableBoolean(value any) (*bool, error) {
+func decodeNullableNumberReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	value reflect.Value,
+	strict bool,
+	isRecursive bool,
+) (*T, error) {
+	inferredValue, ok := UnwrapPointerFromReflectValue(value)
+	if !ok {
+		return nil, nil
+	}
+
+	kind := inferredValue.Kind()
+
+	switch kind {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return new(T(inferredValue.Int())), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return new(T(inferredValue.Uint())), nil
+	case reflect.Float32, reflect.Float64:
+		return new(T(inferredValue.Float())), nil
+	case reflect.String:
+		if strict {
+			return nil, fmt.Errorf("%w, got: %s <%s>", ErrMalformedNumber, value.Type(), kind)
+		}
+
+		result, err := parseNumber[T](inferredValue.String())
+		if err != nil {
+			return nil, err
+		}
+
+		return &result, nil
+	case reflect.Interface:
+		// guard against infinite loop.
+		if isRecursive {
+			return nil, fmt.Errorf("%w, got: %s <%s>", ErrMalformedNumber, value.Type(), kind)
+		}
+
+		result, err := decodeNullableNumber[T](inferredValue.Interface(), strict, true)
+		if err != nil {
+			return nil, err
+		}
+
+		return result, nil
+	default:
+		return nil, fmt.Errorf("%w, got: %s <%s>", ErrMalformedNumber, value.Type(), kind)
+	}
+}
+
+func decodeNumberReflection[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
+	value reflect.Value,
+	strict bool,
+	isRecursive bool,
+) (T, error) {
+	result, err := decodeNullableNumberReflection[T](value, strict, isRecursive)
+	if err != nil {
+		return 0, err
+	}
+
+	if result == nil {
+		return 0, ErrNumberNull
+	}
+
+	return *result, nil
+}
+
+func decodeNullableBoolean(value any, strict bool) (*bool, error) {
 	if value == nil {
 		return nil, nil
 	}
@@ -813,6 +998,10 @@ func DecodeNullableBoolean(value any) (*bool, error) {
 	case *bool:
 		return v, nil
 	case string:
+		if strict {
+			return nil, ErrMalformedBoolean
+		}
+
 		result, err := parseBool(v)
 		if err != nil {
 			return nil, err
@@ -820,6 +1009,10 @@ func DecodeNullableBoolean(value any) (*bool, error) {
 
 		return &result, nil
 	case *string:
+		if strict {
+			return nil, ErrMalformedBoolean
+		}
+
 		if v == nil {
 			return nil, nil
 		}
@@ -831,76 +1024,181 @@ func DecodeNullableBoolean(value any) (*bool, error) {
 
 		return &result, nil
 	default:
-		return DecodeNullableBooleanReflection(reflect.ValueOf(value))
+		return decodeNullableBooleanReflection(reflect.ValueOf(value), strict)
 	}
 }
 
-// DecodeBoolean tries to convert an unknown value to a bool value.
-func DecodeBoolean(value any) (bool, error) {
-	if value == nil {
-		return false, ErrBooleanNull
-	}
-
-	switch v := value.(type) {
-	case bool:
-		return v, nil
-	case *bool:
-		if v == nil {
-			return false, ErrBooleanNull
-		}
-
-		return *v, nil
-	case string:
-		return parseBool(v)
-	case *string:
-		if v == nil {
-			return false, ErrBooleanNull
-		}
-
-		return parseBool(*v)
-	default:
-		return DecodeBooleanReflection(reflect.ValueOf(value))
-	}
-}
-
-// DecodeNullableBooleanReflection decodes a nullable boolean value from reflection.
-func DecodeNullableBooleanReflection(value reflect.Value) (*bool, error) {
-	inferredValue, ok := UnwrapPointerFromReflectValue(value)
+func decodeNullableBooleanReflection(reflectValue reflect.Value, strict bool) (*bool, error) {
+	value, ok := UnwrapPointerFromReflectValue(reflectValue)
 	if !ok {
 		return nil, nil
 	}
 
-	result, err := DecodeBooleanReflection(inferredValue)
-	if err != nil {
-		return nil, err
-	}
-
-	return &result, nil
-}
-
-// DecodeBooleanReflection decodes a boolean value from reflection.
-func DecodeBooleanReflection(value reflect.Value) (bool, error) {
 	kind := value.Kind()
 
 	switch kind {
 	case reflect.Bool:
-		result := value.Bool()
-
-		return result, nil
+		return new(value.Bool()), nil
 	case reflect.String:
-		return parseBool(value.String())
+		if !strict {
+			result, err := parseBool(value.String())
+			if err != nil {
+				return nil, err
+			}
+
+			return &result, nil
+		}
 	case reflect.Interface:
 		if value.Equal(trueValue) {
-			return true, nil
+			return new(true), nil
 		}
 
 		if value.Equal(falseValue) {
-			return false, nil
+			return new(false), nil
+		}
+
+		if !strict {
+			strValue, ok := value.Interface().(string)
+			if ok {
+				result, err := parseBool(strValue)
+				if err != nil {
+					return nil, err
+				}
+
+				return &result, nil
+			}
 		}
 	default:
 	}
 
-	return false, fmt.Errorf("%w; got: %v", ErrMalformedBoolean, kind)
+	return nil, fmt.Errorf("%w; got: %v", ErrMalformedBoolean, kind)
+}
+
+func decodeBooleanReflection(value reflect.Value, strict bool) (bool, error) {
+	result, err := decodeNullableBooleanReflection(value, strict)
+	if err != nil {
+		return false, err
+	}
+
+	if result == nil {
+		return false, ErrBooleanNull
+	}
+
+	return *result, nil
+}
+
+func decodeNullableBooleanSlice(value any, strict bool) (*[]bool, error) { //nolint:cyclop,funlen
+	if value == nil {
+		return nil, nil
+	}
+
+	switch vs := value.(type) {
+	case []bool:
+		return &vs, nil
+	case *[]bool:
+		return vs, nil
+	case []*bool:
+		results := make([]bool, len(vs))
+
+		for i, v := range vs {
+			if v == nil {
+				return nil, fmt.Errorf(
+					"failed to decode boolean element at %d: %w",
+					i,
+					ErrBooleanNull,
+				)
+			}
+
+			results[i] = *v
+		}
+
+		return &results, nil
+	case []any:
+		results := make([]bool, len(vs))
+
+		for i, v := range vs {
+			n, err := decodeBoolean(v, strict)
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode boolean element at %d: %w", i, err)
+			}
+
+			results[i] = n
+		}
+
+		return &results, nil
+	case []string:
+		if strict {
+			return nil, fmt.Errorf(
+				"%w; got: %s",
+				ErrMalformedBooleanSlice,
+				reflect.TypeOf(value),
+			)
+		}
+
+		results := make([]bool, len(vs))
+
+		for i, v := range vs {
+			num, err := parseBool(v)
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode boolean element at %d: %w", i, err)
+			}
+
+			results[i] = num
+		}
+
+		return &results, nil
+	case bool,
+		string,
+		int,
+		int8,
+		int16,
+		int32,
+		int64,
+		uint,
+		uint8,
+		uint16,
+		uint32,
+		uint64,
+		float32,
+		float64,
+		*bool,
+		*string,
+		*int,
+		*int8,
+		*int16,
+		*int32,
+		*int64,
+		*uint,
+		*uint8,
+		*uint16,
+		*uint32,
+		*uint64,
+		*float32,
+		*float64,
+		complex64,
+		complex128,
+		*complex64,
+		*complex128:
+		return nil, fmt.Errorf("%w; got: %s", ErrMalformedBooleanSlice, reflect.TypeOf(vs))
+	case []int,
+		[]int8,
+		[]int16,
+		[]int32,
+		[]int64,
+		[]uint,
+		[]uint8,
+		[]uint16,
+		[]uint32,
+		[]uint64,
+		[]float32,
+		[]float64,
+		[]complex64,
+		[]complex128,
+		map[string]any:
+		return nil, fmt.Errorf("%w; got: %s", ErrMalformedBooleanSlice, reflect.TypeOf(vs))
+	default:
+		return decodeNullableBooleanSliceReflection(reflect.ValueOf(value), strict)
+	}
 }
 
 func parseNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64](
@@ -930,6 +1228,41 @@ func parseNumber[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~u
 		}
 
 		return T(fResult), nil
+	}
+}
+
+func decodeBoolean(value any, strict bool) (bool, error) {
+	if value == nil {
+		return false, ErrBooleanNull
+	}
+
+	switch v := value.(type) {
+	case bool:
+		return v, nil
+	case *bool:
+		if v == nil {
+			return false, ErrBooleanNull
+		}
+
+		return *v, nil
+	case string:
+		if strict {
+			return false, ErrMalformedBoolean
+		}
+
+		return parseBool(v)
+	case *string:
+		if strict {
+			return false, ErrMalformedBoolean
+		}
+
+		if v == nil {
+			return false, ErrBooleanNull
+		}
+
+		return parseBool(*v)
+	default:
+		return decodeBooleanReflection(reflect.ValueOf(value), strict)
 	}
 }
 
