@@ -464,7 +464,7 @@ func TestDecodeNumberSlice(t *testing.T) {
 }
 
 func TestAsBoolean(t *testing.T) {
-	// Direct bool values work in both strict and non-strict
+	// Direct bool values are accepted
 	value, err := AsBoolean(true)
 	assertNilError(t, err)
 	assertEqual(t, true, value)
