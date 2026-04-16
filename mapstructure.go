@@ -814,7 +814,7 @@ func decodeNumberSlice[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint
 		results := make([]T, len(vs))
 
 		for i, v := range vs {
-			n, err := DecodeNumber[T](v)
+			n, err := decodeNumber[T](v, strict)
 			if err != nil {
 				return nil, fmt.Errorf("failed to decode number at %d: %w", i, err)
 			}
