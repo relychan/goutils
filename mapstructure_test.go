@@ -101,6 +101,16 @@ func TestDecodeBool(t *testing.T) {
 		_, err = DecodeNullableBoolean(&bad)
 		assertError(t, err, "malformed boolean")
 	})
+
+	t.Run("decode_any", func(t *testing.T) {
+		var f any
+
+		f = any(true)
+
+		uv, err := DecodeBoolean(any(any(new(&f))))
+		assertNilError(t, err)
+		assertEqual(t, true, uv)
+	})
 }
 
 func TestDecodeBooleanSlice(t *testing.T) {
@@ -192,6 +202,16 @@ func TestDecodeString(t *testing.T) {
 
 	_, err = DecodeString(0)
 	assertError(t, err, "malformed string, got: int")
+
+	t.Run("decode_any", func(t *testing.T) {
+		var f any
+
+		f = any("hello")
+
+		uv, err := DecodeString(any(any(new(&f))))
+		assertNilError(t, err)
+		assertEqual(t, "hello", uv)
+	})
 }
 
 func TestDecodeStringSlice(t *testing.T) {
