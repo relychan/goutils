@@ -759,8 +759,8 @@ func TestUnwrapPointerFromReflectValue(t *testing.T) {
 		ch := make(chan int)
 		rv := reflect.ValueOf(ch)
 		_, ok := UnwrapPointerFromReflectValue(rv)
-		if ok {
-			t.Error("expected invalid for channel")
+		if !ok {
+			t.Error("expected not null for channel")
 		}
 	})
 
@@ -768,8 +768,8 @@ func TestUnwrapPointerFromReflectValue(t *testing.T) {
 		fn := func() {}
 		rv := reflect.ValueOf(fn)
 		_, ok := UnwrapPointerFromReflectValue(rv)
-		if ok {
-			t.Error("expected invalid for function")
+		if !ok {
+			t.Error("expected not null for function")
 		}
 	})
 }

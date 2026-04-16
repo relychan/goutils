@@ -126,10 +126,10 @@ func TestDecodeBooleanSlice(t *testing.T) {
 	assertError(t, err, "malformed boolean slice; got: struct")
 
 	_, err = DecodeBooleanSlice([]any{nil})
-	assertError(t, err, "element 0: boolean value must not be null")
+	assertError(t, err, "failed to decode boolean element at 0: boolean value must not be null")
 
 	_, err = DecodeBooleanSlice(&[]any{nil})
-	assertError(t, err, "element 0: boolean value must not be null")
+	assertError(t, err, "failed to decode boolean element at 0: boolean value must not be null")
 }
 
 func TestDecodeNullableBooleanSlice(t *testing.T) {
@@ -154,22 +154,18 @@ func TestDecodeNullableBooleanSlice(t *testing.T) {
 	assertDeepEqual(t, []bool{true}, *value)
 
 	_, err = DecodeNullableBooleanSlice([]any{nil})
-	assertError(t, err, "element 0: boolean value must not be null")
+	assertError(t, err, "failed to decode boolean element at 0: boolean value must not be null")
 
 	value, err = DecodeNullableBooleanSlice(nil)
 	assertNilError(t, err)
 	assertEqual(t, nil, value)
 
 	value, err = DecodeNullableBooleanSlice((*string)(nil))
-	assertNilError(t, err)
-	assertEqual(t, nil, value)
+	assertError(t, err, "malformed boolean slice; got: *string")
 
-	_, err = DecodeNullableBooleanSlice([]any{"true"})
-	assertError(
-		t,
-		err,
-		"failed to decode boolean element at 0: malformed boolean; got: interface",
-	)
+	value, err = DecodeNullableBooleanSlice([]any{"true"})
+	assertNilError(t, err)
+	assertDeepEqual(t, new([]bool{true}), value)
 
 	_, err = DecodeNullableBooleanSlice("failure")
 	assertError(t, err, "malformed boolean slice; got: string")
@@ -362,11 +358,11 @@ func TestDecodeNumber(t *testing.T) {
 
 		var vAny any = "test"
 		_, err = DecodeNullableNumber[float64](&vAny)
-		assertError(t, err, "failed to convert number, got: strconv.ParseFloat: parsing \"test\": invalid syntax")
+		assertError(t, err, "malformed number")
 
 		var vFn any = func() {}
 		_, err = DecodeNullableNumber[float64](&vFn)
-		assertError(t, err, "failed to convert number, got: strconv.ParseFloat")
+		assertError(t, err, "malformed number")
 	})
 
 	t.Run("decode_nil", func(t *testing.T) {
@@ -438,6 +434,16 @@ func TestDecodeNumber(t *testing.T) {
 		bad := "bad"
 		_, err = DecodeNullableNumber[int](&bad)
 		assertError(t, err, "malformed number")
+	})
+
+	t.Run("decode_any", func(t *testing.T) {
+		var f any
+
+		f = any(3.14)
+
+		uv, err := DecodeNumber[float64](any(any(new(&f))))
+		assertNilError(t, err)
+		assertEqual(t, "3.14", fmt.Sprintf("%.2f", uv))
 	})
 }
 
@@ -582,7 +588,7 @@ func TestAsBooleanSlice(t *testing.T) {
 
 	// nil element in slice rejected
 	_, err = AsBooleanSlice([]any{nil})
-	assertError(t, err, "element 0: boolean value must not be null")
+	assertError(t, err, "failed to decode boolean element at 0: boolean value must not be null")
 }
 
 func TestAsNullableBooleanSlice(t *testing.T) {
