@@ -36,3 +36,14 @@ func GetSortedKeys[K cmp.Ordered, V any](input map[K]V) []K {
 
 	return keys
 }
+
+// ToAnyMap converts a typed map to a any map.
+func ToAnyMap[K comparable, V any](input map[K]V) map[K]any {
+	result := make(map[K]any, len(input))
+
+	for key, value := range input {
+		result[key] = value
+	}
+
+	return result
+}
