@@ -77,3 +77,107 @@ func TestGetSortedKeys(t *testing.T) {
 		}
 	})
 }
+
+func TestToAnyMap(t *testing.T) {
+	t.Run("string key string value", func(t *testing.T) {
+		input := map[string]string{"a": "1", "b": "2"}
+		got := ToAnyMap(input)
+		if len(got) != len(input) {
+			t.Fatalf("got len %d, want %d", len(got), len(input))
+		}
+		for k, v := range input {
+			anyVal, ok := got[k]
+			if !ok {
+				t.Errorf("key %q missing from result", k)
+				continue
+			}
+			if anyVal != v {
+				t.Errorf("got[%q] = %v, want %v", k, anyVal, v)
+			}
+		}
+	})
+
+	t.Run("string key int value", func(t *testing.T) {
+		input := map[string]int{"x": 10, "y": 20}
+		got := ToAnyMap(input)
+		if len(got) != len(input) {
+			t.Fatalf("got len %d, want %d", len(got), len(input))
+		}
+		for k, v := range input {
+			anyVal, ok := got[k]
+			if !ok {
+				t.Errorf("key %q missing from result", k)
+				continue
+			}
+			if anyVal != v {
+				t.Errorf("got[%q] = %v, want %v", k, anyVal, v)
+			}
+		}
+	})
+
+	t.Run("int key", func(t *testing.T) {
+		input := map[int]string{1: "one", 2: "two"}
+		got := ToAnyMap(input)
+		if len(got) != len(input) {
+			t.Fatalf("got len %d, want %d", len(got), len(input))
+		}
+		for k, v := range input {
+			anyVal, ok := got[k]
+			if !ok {
+				t.Errorf("key %d missing from result", k)
+				continue
+			}
+			if anyVal != v {
+				t.Errorf("got[%d] = %v, want %v", k, anyVal, v)
+			}
+		}
+	})
+
+	t.Run("struct value", func(t *testing.T) {
+		type point struct{ X, Y int }
+		input := map[string]point{"origin": {0, 0}, "unit": {1, 1}}
+		got := ToAnyMap(input)
+		if len(got) != len(input) {
+			t.Fatalf("got len %d, want %d", len(got), len(input))
+		}
+		for k, v := range input {
+			anyVal, ok := got[k]
+			if !ok {
+				t.Errorf("key %q missing from result", k)
+				continue
+			}
+			if anyVal != v {
+				t.Errorf("got[%q] = %v, want %v", k, anyVal, v)
+			}
+		}
+	})
+
+	t.Run("empty map", func(t *testing.T) {
+		input := map[string]int{}
+		got := ToAnyMap(input)
+		if len(got) != 0 {
+			t.Errorf("expected empty map, got %v", got)
+		}
+	})
+
+	t.Run("nil value preserved", func(t *testing.T) {
+		input := map[string]*int{"ptr": nil}
+		got := ToAnyMap(input)
+		v, ok := got["ptr"]
+		if !ok {
+			t.Fatal("key \"ptr\" missing from result")
+		}
+		if v != (*int)(nil) {
+			t.Errorf("got %v, want nil *int", v)
+		}
+	})
+
+	t.Run("result is independent copy", func(t *testing.T) {
+		input := map[string]int{"a": 1}
+		got := ToAnyMap(input)
+		input["b"] = 2
+		if len(got) != 1 {
+			t.Errorf("result map was mutated by change to input: %v", got)
+		}
+	})
+}
