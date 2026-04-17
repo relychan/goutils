@@ -160,6 +160,14 @@ func TestToAnyMap(t *testing.T) {
 		}
 	})
 
+	t.Run("nil map", func(t *testing.T) {
+		var input map[string]int
+		got := ToAnyMap(input)
+		if got != nil {
+			t.Errorf("expected nil map, got %v", got)
+		}
+	})
+
 	t.Run("nil value preserved", func(t *testing.T) {
 		input := map[string]*int{"ptr": nil}
 		got := ToAnyMap(input)
