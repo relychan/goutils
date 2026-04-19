@@ -40,7 +40,7 @@ func IsUpperAlphabet[C byte | rune](c C) bool {
 	return c >= 'A' && c <= 'Z'
 }
 
-// IsDigitString checks if every character in the string is digit.
+// IsDigitString checks if every character in the string is an ASCII digit.
 func IsDigitString(value string) bool {
 	if len(value) > 0 && (value[0] == '+' || value[0] == '-') {
 		value = value[1:]
