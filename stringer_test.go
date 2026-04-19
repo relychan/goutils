@@ -18,6 +18,37 @@ import (
 	"testing"
 )
 
+func TestIsIntegerString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{name: "single digit", input: "0", expected: true},
+		{name: "positive integer", input: "123", expected: true},
+		{name: "large number", input: "9999999999", expected: true},
+		{name: "leading zeros", input: "007", expected: true},
+		{name: "empty string", input: "", expected: false},
+		{name: "negative integer", input: "-1", expected: true},
+		{name: "float", input: "1.5", expected: false},
+		{name: "letters only", input: "abc", expected: false},
+		{name: "alphanumeric", input: "12abc", expected: false},
+		{name: "spaces", input: "12 34", expected: false},
+		{name: "leading space", input: " 123", expected: false},
+		{name: "trailing space", input: "123 ", expected: false},
+		{name: "plus sign", input: "+1", expected: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := IsIntegerString(tc.input)
+			if got != tc.expected {
+				t.Errorf("IsIntegerString(%q) = %v, want %v", tc.input, got, tc.expected)
+			}
+		})
+	}
+}
+
 func TestHasStringPrefixFold(t *testing.T) {
 	tests := []struct {
 		name     string
