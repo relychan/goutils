@@ -40,11 +40,28 @@ func IsUpperAlphabet[C byte | rune](c C) bool {
 	return c >= 'A' && c <= 'Z'
 }
 
-// IsIntegerString checks if every character in the string is digit and it can be parsed to an integer.
-func IsIntegerString(value string) bool {
+// IsDigitString checks if every character in the string is digit.
+func IsDigitString(value string) bool {
+	if len(value) > 0 && (value[0] == '+' || value[0] == '-') {
+		value = value[1:]
+	}
+
+	if len(value) == 0 {
+		return false
+	}
+
 	return !strings.ContainsFunc(value, func(r rune) bool {
 		return !IsDigit(r)
 	})
+}
+
+// IsIntegerString checks if the input string can be parsed to an integer.
+func IsIntegerString(value string) bool {
+	if len(value) > 0 && (value[0] == '+' || value[0] == '-') {
+		value = value[1:]
+	}
+
+	return IsDigitString(value)
 }
 
 // ParseIntInRange parses s as an integer and
