@@ -27,6 +27,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/relychan/goutils/httperror"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -199,7 +200,7 @@ func fileReaderFromURL(
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		respError := NewRFC9457ErrorFromResponse(resp)
+		respError := httperror.NewHTTPErrorFromResponse(resp)
 		respError.Title = "Read File Failure"
 
 		return nil, "", respError

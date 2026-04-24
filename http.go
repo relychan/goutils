@@ -15,8 +15,12 @@
 package goutils
 
 import (
+	"io"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/relychan/goutils/httperror"
 )
 
 // Doer abstracts an interface for sending HTTP requests.
@@ -39,4 +43,29 @@ func ExtractHeaders(headers http.Header) map[string]string {
 	}
 
 	return result
+}
+
+// CloseResponse gracefully closes the HTTP response and tries to drain the body if it exists.
+// It makes a best effort to reuse the HTTP connection.
+func CloseResponse(resp *http.Response) {
+	if resp == nil || resp.Body == nil || resp.Body == http.NoBody {
+		return
+	}
+
+	contentLength := resp.ContentLength
+	if contentLength == -1 {
+		rawContentLength := resp.Header["Content-Length"]
+		if len(rawContentLength) > 0 {
+			intContentLength, err := strconv.ParseInt(rawContentLength[0], 10, 64)
+			if err == nil {
+				contentLength = intContentLength
+			}
+		}
+	}
+
+	if contentLength == -1 || contentLength <= httperror.MaxPostCloseReadBytes {
+		_, _ = io.CopyN(io.Discard, resp.Body, httperror.MaxPostCloseReadBytes+1) //nolint:errcheck
+	}
+
+	CatchWarnErrorFunc(resp.Body.Close)
 }
