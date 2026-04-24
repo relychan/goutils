@@ -70,13 +70,14 @@ func CloseResponse(resp *http.Response) {
 }
 
 // maxPostCloseReadBytes is the max number of bytes that a client is willing to
-// read when draining the response body of any unread bytes after it has been
-// closed. This number is chosen for consistency with maxPostHandlerReadBytes.
+// read when draining any unread bytes from the response body as part of closing
+// the response, before the body itself is closed. This number is chosen for
+// consistency with maxPostHandlerReadBytes.
 const maxPostCloseReadBytes = 256 << 10
 
 // maxPostCloseReadTime defines the maximum amount of time that a client is
-// willing to spend on draining a response body of any unread bytes after it
-// has been closed.
+// willing to spend draining any unread bytes from a response body as part of
+// closing the response, before the body itself is closed.
 const maxPostCloseReadTime = 50 * time.Millisecond
 
 // Try to drain the response body to reuse the HTTP connection.
