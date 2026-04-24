@@ -77,7 +77,7 @@ func (ed ValidationError) Error() string {
 	var sb strings.Builder
 
 	sb.Grow(30 +
-		len(ed.Pointer) + len(ed.Parameter) + len(ed.Header) +
+		len(ed.Detail) + len(ed.Pointer) + len(ed.Parameter) + len(ed.Header) +
 		len(ed.Code) + len(ed.Hint))
 
 	buildValidationErrorToString(&sb, ed, "")
