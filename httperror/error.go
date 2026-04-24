@@ -457,6 +457,7 @@ func NewHTTPErrorStringBuilder(e HTTPError) *strings.Builder {
 
 		sb.WriteString("status: ")
 		sb.WriteString(strconv.Itoa(e.Status))
+
 		wroteField = true
 	}
 
