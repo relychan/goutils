@@ -51,7 +51,7 @@ golangci-lint run
 ### Error Handling
 - Sentinel errors are defined in `error.go` with `Err` prefix (e.g., `ErrInvalidURI`, `ErrBlockedIP`)
 - Use `CatchWarnErrorFunc` for deferred close calls where errors are non-critical
-- HTTP errors follow RFC 9457 via `RFC9457Error` struct with constructor helpers (`NewBadRequestError`, `NewNotFoundError`, etc.)
+- HTTP errors follow RFC 9457 via `HTTPError` struct with constructor helpers (`NewBadRequestError`, `NewNotFoundError`, etc.)
 
 ### Generics
 - Slice utilities use Go generics extensively (`Map[T, M]`, `ToAnySlice[T]`, `PtrToNumberSlice[T1, T2]`)

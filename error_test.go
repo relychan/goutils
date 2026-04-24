@@ -1,95 +1,84 @@
-// Copyright 2026 RelyChan Pte. Ltd
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package goutils
 
 import (
 	"encoding/json"
 	"net/http"
+	"reflect"
 	"testing"
+
+	"github.com/relychan/goutils/httperror"
 )
 
-func TestRFC9457Error(t *testing.T) {
+func TestHTTPError(t *testing.T) {
 	testCases := []struct {
-		Error *RFC9457ErrorWithExtensions
+		Error *HTTPErrorWithExtensions
 	}{
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewAlreadyExistsError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewAlreadyExistsError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewForbiddenError(ErrorDetail{
+			Error: NewHTTPErrorWithExtensions(*httperror.NewForbiddenError(httperror.ValidationError{
 				Detail: "forbidden",
 			}), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewBadRequestError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewBadRequestError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewBusinessRuleViolationError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewBusinessRuleViolationError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewForbiddenError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewForbiddenError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewInvalidBodyPropertyFormatError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewInvalidBodyPropertyFormatError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewInvalidBodyPropertyValueError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewInvalidBodyPropertyValueError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewInvalidRequestHeaderFormatError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewInvalidRequestHeaderFormatError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewInvalidRequestParameterFormatError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewInvalidRequestParameterFormatError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewInvalidRequestParameterValueError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewInvalidRequestParameterValueError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewLicenseCancelledError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewLicenseCancelledError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewLicenseExpiredError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewLicenseExpiredError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewMissingBodyPropertyError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewMissingBodyPropertyError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewServiceUnavailableError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewServiceUnavailableError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewNotFoundError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewNotFoundError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewUnauthorizedError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewUnauthorizedError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewServerError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewServerError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewMissingRequestHeaderError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewMissingRequestHeaderError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewMissingRequestParameterError(), nil),
+			Error: NewHTTPErrorWithExtensions(*httperror.NewMissingRequestParameterError(), nil),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewValidationError(), map[string]any{
+			Error: NewHTTPErrorWithExtensions(*httperror.NewValidationError(), map[string]any{
 				"foo": "bar",
 			}),
 		},
 		{
-			Error: NewRFC9457ErrorWithExtensions(*NewRFC9457Error(http.StatusBadGateway, "bad gateway"), map[string]any{
+			Error: NewHTTPErrorWithExtensions(*httperror.NewHTTPError(http.StatusBadGateway, "bad gateway"), map[string]any{
 				"message": "hello world",
 			}),
 		},
@@ -97,23 +86,49 @@ func TestRFC9457Error(t *testing.T) {
 
 	for _, tc := range testCases {
 		rawBytes, err := json.Marshal(tc.Error)
-		assertNilError(t, err)
+		if err != nil {
+			t.Fatal("expected nil error ,got: " + err.Error())
+		}
 
-		var result RFC9457ErrorWithExtensions
+		var result HTTPErrorWithExtensions
 
 		err = json.Unmarshal(rawBytes, &result)
-		assertNilError(t, err)
+		if err != nil {
+			t.Fatal("expected nil error ,got: " + err.Error())
+		}
 
-		assertEqual(t, tc.Error.Code, result.Code)
-		assertEqual(t, tc.Error.Detail, result.Detail)
-		assertEqual(t, tc.Error.Instance, result.Instance)
-		assertEqual(t, tc.Error.Status, result.Status)
-		assertEqual(t, tc.Error.Title, result.Title)
-		assertEqual(t, tc.Error.Type, result.Type)
-		assertDeepEqual(t, tc.Error.Errors, result.Errors)
+		if tc.Error.Code != result.Code {
+			t.Errorf("expected Code=%v, got=%v", tc.Error.Code, result.Code)
+		}
+
+		if tc.Error.Detail != result.Detail {
+			t.Errorf("expected Detail=%v, got=%v", tc.Error.Detail, result.Detail)
+		}
+
+		if tc.Error.Instance != result.Instance {
+			t.Errorf("expected Instance=%v, got=%v", tc.Error.Instance, result.Instance)
+		}
+
+		if tc.Error.Status != result.Status {
+			t.Errorf("expected Status=%v, got=%v", tc.Error.Status, result.Status)
+		}
+
+		if tc.Error.Title != result.Title {
+			t.Errorf("expected Title=%v, got=%v", tc.Error.Title, result.Title)
+		}
+
+		if tc.Error.Type != result.Type {
+			t.Errorf("expected Type=%v, got=%v", tc.Error.Type, result.Type)
+		}
+
+		if !reflect.DeepEqual(tc.Error.Errors, result.Errors) {
+			t.Errorf("expected Errors=%v, got=%v", tc.Error.Errors, result.Errors)
+		}
 
 		for key, value := range tc.Error.Extensions {
-			assertDeepEqual(t, value, result.Extensions[key])
+			if !reflect.DeepEqual(value, result.Extensions[key]) {
+				t.Errorf("expected Extensions[%s]=%v, got=%v", key, value, result.Extensions[key])
+			}
 		}
 	}
 }

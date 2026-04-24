@@ -4,7 +4,7 @@
   "properties": {
     "type": {
       "type": "string",
-      "description": "A URI reference that identifies the problem type.",
+      "description": "A URI reference that identifies the problem type. When this member is not present, its value is assumed to be `about:blank`.",
       "format": "uri",
       "maxLength": 1024
     },
@@ -45,33 +45,36 @@
         "properties": {
           "detail": {
             "type": "string",
-            "description": "A granular description on the specific error related to a body property, query parameter, path parameters, and/or header.",
-            "maxLength": 4096
+            "description": "A granular description on the specific error related to a body property, query parameter, path parameters, and/or header."
+          },
+          "hint": {
+            "type": "string",
+            "description": "An optional hint text to indicate how to fix the error."
           },
           "pointer": {
             "type": "string",
-            "description": "A JSON Pointer to a specific request body property that is the source of error.",
-            "maxLength": 1024
+            "description": "A JSON Pointer to a specific request body property that is the source of error."
           },
           "parameter": {
             "type": "string",
-            "description": "The name of the query or path parameter that is the source of error.",
-            "maxLength": 1024
+            "description": "The name of the query or path parameter that is the source of error."
           },
           "header": {
             "type": "string",
-            "description": "The name of the header that is the source of error.",
-            "maxLength": 1024
+            "description": "The name of the header that is the source of error."
           },
           "code": {
             "type": "string",
-            "description": "A string containing additional provider specific codes to identify the error context.",
-            "maxLength": 50
+            "description": "A string containing additional provider specific codes to identify the error context."
           }
         },
-        "required": ["detail"]
+        "required": [
+          "detail"
+        ]
       }
     }
   },
-  "required": ["title"]
+  "required": [
+    "title"
+  ]
 }

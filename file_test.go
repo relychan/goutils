@@ -22,6 +22,8 @@ import (
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/relychan/goutils/httperror"
 )
 
 func TestReadJSONOrYAMLFile(t *testing.T) {
@@ -195,9 +197,9 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 			t.Fatal("expected error for 404 response")
 		}
 
-		var rfc9457Err *RFC9457Error
+		var rfc9457Err *httperror.HTTPError
 		if !errors.As(err, &rfc9457Err) {
-			t.Fatalf("expected RFC9457Error, got: %T", err)
+			t.Fatalf("expected httperror.HTTPError, got: %T", err)
 		}
 
 		if rfc9457Err.Status != http.StatusNotFound {
@@ -217,9 +219,9 @@ func TestReadJSONOrYAMLFile_URL(t *testing.T) {
 			t.Fatal("expected error for 500 response")
 		}
 
-		var rfc9457Err *RFC9457Error
+		var rfc9457Err *httperror.HTTPError
 		if !errors.As(err, &rfc9457Err) {
-			t.Fatalf("expected RFC9457Error, got: %T", err)
+			t.Fatalf("expected httperror.HTTPError, got: %T", err)
 		}
 
 		if rfc9457Err.Status != http.StatusInternalServerError {
@@ -438,9 +440,9 @@ features:
 			t.Fatal("expected error for 401 response")
 		}
 
-		var rfc9457Err *RFC9457Error
+		var rfc9457Err *httperror.HTTPError
 		if !errors.As(err, &rfc9457Err) {
-			t.Fatalf("expected RFC9457Error, got: %T", err)
+			t.Fatalf("expected httperror.HTTPError, got: %T", err)
 		}
 
 		if rfc9457Err.Status != http.StatusUnauthorized {
@@ -460,9 +462,9 @@ features:
 			t.Fatal("expected error for 403 response")
 		}
 
-		var rfc9457Err *RFC9457Error
+		var rfc9457Err *httperror.HTTPError
 		if !errors.As(err, &rfc9457Err) {
-			t.Fatalf("expected RFC9457Error, got: %T", err)
+			t.Fatalf("expected httperror.HTTPError, got: %T", err)
 		}
 
 		if rfc9457Err.Status != http.StatusForbidden {
@@ -482,9 +484,9 @@ features:
 			t.Fatal("expected error for 503 response")
 		}
 
-		var rfc9457Err *RFC9457Error
+		var rfc9457Err *httperror.HTTPError
 		if !errors.As(err, &rfc9457Err) {
-			t.Fatalf("expected RFC9457Error, got: %T", err)
+			t.Fatalf("expected httperror.HTTPError, got: %T", err)
 		}
 
 		if rfc9457Err.Status != http.StatusServiceUnavailable {
@@ -687,9 +689,9 @@ func TestReadMultiFromJSONOrYAMLFile(t *testing.T) {
 			t.Fatal("expected error for non-200 response")
 		}
 
-		var rfc9457Err *RFC9457Error
+		var rfc9457Err *httperror.HTTPError
 		if !errors.As(err, &rfc9457Err) {
-			t.Fatalf("expected RFC9457Error, got: %T", err)
+			t.Fatalf("expected httperror.HTTPError, got: %T", err)
 		}
 
 		if rfc9457Err.Status != http.StatusNotFound {
@@ -784,9 +786,9 @@ func TestFileReaderFromPath(t *testing.T) {
 			t.Fatal("expected error for 404 response")
 		}
 
-		var rfc9457Err *RFC9457Error
+		var rfc9457Err *httperror.HTTPError
 		if !errors.As(err, &rfc9457Err) {
-			t.Fatalf("expected RFC9457Error, got: %T", err)
+			t.Fatalf("expected httperror.HTTPError, got: %T", err)
 		}
 	})
 
