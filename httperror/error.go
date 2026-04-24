@@ -76,6 +76,10 @@ type ValidationError struct {
 func (ed ValidationError) Error() string {
 	var sb strings.Builder
 
+	sb.Grow(30 +
+		len(ed.Pointer) + len(ed.Parameter) + len(ed.Header) +
+		len(ed.Code) + len(ed.Hint))
+
 	buildValidationErrorToString(&sb, ed, "")
 
 	return sb.String()
@@ -397,13 +401,16 @@ func buildValidationErrorToString(
 		if value == "" {
 			return
 		}
+
 		if wroteField {
 			sb.WriteByte('\n')
+			sb.WriteString(prefix)
 		}
-		sb.WriteString(prefix)
+
 		sb.WriteString(name)
 		sb.WriteString(": ")
 		sb.WriteString(value)
+
 		wroteField = true
 	}
 
@@ -419,51 +426,47 @@ func buildValidationErrorToString(
 func NewHTTPErrorStringBuilder(e HTTPError) *strings.Builder {
 	sb := &strings.Builder{}
 
-	if e.Title != "" {
-		if sb.Len() > 0 {
+	sb.Grow(60 +
+		len(e.Title) + len(e.Code) + len(e.Detail) + len(e.Instance) +
+		len(e.Type) + (len(e.Errors) * 20))
+
+	wroteField := false
+	writeField := func(name, value string) {
+		if value == "" {
+			return
+		}
+
+		if wroteField {
 			sb.WriteByte('\n')
 		}
 
-		sb.WriteString("title: ")
-		sb.WriteString(e.Title)
+		sb.WriteString(name)
+		sb.WriteString(": ")
+		sb.WriteString(value)
+
+		wroteField = true
 	}
 
-	if e.Type != "" {
-		if sb.Len() > 0 {
-			sb.WriteByte('\n')
-		}
-		sb.WriteString("type: ")
-		sb.WriteString(e.Type)
-	}
+	writeField("title", e.Title)
+	writeField("type", e.Type)
 
 	if e.Status != 0 {
-		if sb.Len() > 0 {
+		if wroteField {
 			sb.WriteByte('\n')
 		}
+
 		sb.WriteString("status: ")
 		sb.WriteString(strconv.Itoa(e.Status))
 	}
 
-	if e.Instance != "" {
-		if sb.Len() > 0 {
-			sb.WriteByte('\n')
-		}
-		sb.WriteString("instance: ")
-		sb.WriteString(e.Instance)
-	}
-
-	if e.Detail != "" {
-		if sb.Len() > 0 {
-			sb.WriteByte('\n')
-		}
-		sb.WriteString("detail: ")
-		sb.WriteString(e.Detail)
-	}
+	writeField("instance", e.Instance)
+	writeField("detail", e.Detail)
 
 	if len(e.Errors) > 0 {
-		if sb.Len() > 0 {
+		if wroteField {
 			sb.WriteByte('\n')
 		}
+
 		sb.WriteString("errors:")
 
 		for _, ed := range e.Errors {

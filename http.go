@@ -62,7 +62,7 @@ func CloseResponse(resp *http.Response) {
 		}
 	}
 
-	if contentLength > 0 && contentLength <= maxPostCloseReadBytes {
+	if contentLength == -1 || contentLength <= maxPostCloseReadBytes {
 		maybeDrainBody(resp.Body)
 	}
 
@@ -88,7 +88,7 @@ func maybeDrainBody(body io.Reader) bool {
 
 	go func() {
 		_, err := io.CopyN(io.Discard, body, maxPostCloseReadBytes+1)
-		drainedCh <- err == io.EOF || err == io.ErrUnexpectedEOF //nolint:errorlint
+		drainedCh <- err == io.EOF || err == io.ErrUnexpectedEOF //nolint:errorlint,err113
 	}()
 
 	select {

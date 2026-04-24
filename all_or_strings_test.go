@@ -1419,3 +1419,22 @@ func TestAllOrListWildcardString_EdgeCases(t *testing.T) {
 		}
 	})
 }
+
+func BenchmarkXxx(b *testing.B) {
+	b.Run("wildcard", func(b *testing.B) {
+		results := make([]AllOrListString, 0, b.N)
+
+		for range b.N {
+			results = append(results, NewAll())
+		}
+	})
+
+	b.Run("values", func(b *testing.B) {
+		results := make([]AllOrListString, 0, b.N)
+		input := []string{"foo", "bar"}
+
+		for range b.N {
+			results = append(results, NewStringList(input))
+		}
+	})
+}
