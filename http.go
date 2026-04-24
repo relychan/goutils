@@ -62,7 +62,7 @@ func CloseResponse(resp *http.Response) {
 		}
 	}
 
-	if contentLength <= maxPostCloseReadBytes {
+	if contentLength > 0 && contentLength <= maxPostCloseReadBytes {
 		maybeDrainBody(resp.Body)
 	}
 

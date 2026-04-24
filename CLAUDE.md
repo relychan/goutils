@@ -16,8 +16,9 @@ goutils/
 ├── data.go                # Generic data/pointer helpers, IsNil
 ├── duration.go            # Custom Duration type with extended unit support (y/w/d/h/m/s/ms)
 ├── equal.go               # DeepEqual and Equaler interface
-├── error.go               # RFC 9457 error types, sentinel errors, CatchWarnErrorFunc
+├── error.go               # Sentinel errors, CatchWarnErrorFunc, HTTPErrorWithExtensions
 ├── file.go                # ReadJSONOrYAMLFile, ReadMultiFromJSONOrYAMLFile, FileReaderFromPath
+├── http.go                # Doer interface, ExtractHeaders, CloseResponse (with body drain)
 ├── mapstructure.go        # Map-to-struct decoding utilities
 ├── network.go             # URL parsing/validation, IP/SSRF protection, subnet utilities
 ├── regexp.go              # Regexp helpers
@@ -26,8 +27,10 @@ goutils/
 ├── stringer.go            # ToString, ToDebugString, character helpers
 ├── time.go                # Time utilities
 ├── yaml.go                # YAML node helpers, tag constants
-└── httpheader/
-    └── header.go          # HTTP header name constants and content-type constants
+├── httpheader/
+│   └── header.go          # HTTP header name constants and content-type constants
+└── httperror/
+    └── error.go           # RFC 9457 HTTPError, ValidationError, constructor helpers
 ```
 
 ## Common Commands
@@ -51,7 +54,10 @@ golangci-lint run
 ### Error Handling
 - Sentinel errors are defined in `error.go` with `Err` prefix (e.g., `ErrInvalidURI`, `ErrBlockedIP`)
 - Use `CatchWarnErrorFunc` for deferred close calls where errors are non-critical
-- HTTP errors follow RFC 9457 via `HTTPError` struct with constructor helpers (`NewBadRequestError`, `NewNotFoundError`, etc.)
+- RFC 9457 HTTP error types live in `httperror/`: `HTTPError`, `ValidationError`, and constructor helpers (`NewBadRequestError`, `NewNotFoundError`, etc.)
+- `ValidationError` includes a `Hint` field for fix guidance, in addition to `Detail`, `Pointer`, `Parameter`, `Header`, `Code`
+- `HTTPErrorWithExtensions` (root package) embeds `httperror.HTTPError` and adds arbitrary extension fields; handles custom JSON marshal/unmarshal including `message` → `detail` aliasing
+- `CloseResponse` in `http.go` drains response bodies up to 256 KiB within 50 ms to enable HTTP connection reuse; bodies larger than that threshold skip the drain
 
 ### Generics
 - Slice utilities use Go generics extensively (`Map[T, M]`, `ToAnySlice[T]`, `PtrToNumberSlice[T1, T2]`)
