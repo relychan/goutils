@@ -19,7 +19,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
+
+	"github.com/relychan/goutils/httperror"
 )
 
 // Doer abstracts an interface for sending HTTP requests.
@@ -62,40 +63,9 @@ func CloseResponse(resp *http.Response) {
 		}
 	}
 
-	if contentLength == -1 || contentLength <= maxPostCloseReadBytes {
-		maybeDrainBody(resp.Body)
+	if contentLength == -1 || contentLength <= httperror.MaxPostCloseReadBytes {
+		_, _ = io.CopyN(io.Discard, resp.Body, httperror.MaxPostCloseReadBytes+1) //nolint:errcheck
 	}
 
 	CatchWarnErrorFunc(resp.Body.Close)
-}
-
-// maxPostCloseReadBytes is the max number of bytes that a client is willing to
-// read when draining any unread bytes from the response body as part of closing
-// the response, before the body itself is closed. This threshold matches the
-// commonly used small-body drain limit for preserving HTTP connection reuse.
-const maxPostCloseReadBytes = 256 << 10
-
-// maxPostCloseReadTime defines the maximum amount of time that a client is
-// willing to spend draining any unread bytes from a response body as part of
-// closing the response, before the body itself is closed.
-const maxPostCloseReadTime = 50 * time.Millisecond
-
-// Try to drain the response body to reuse the HTTP connection.
-// TODO: deprecate this function if this PR was merged https://go-review.googlesource.com/c/go/+/737720
-//
-//nolint:godox
-func maybeDrainBody(body io.Reader) bool {
-	drainedCh := make(chan bool, 1)
-
-	go func() {
-		_, err := io.CopyN(io.Discard, body, maxPostCloseReadBytes+1)
-		drainedCh <- err == io.EOF || err == io.ErrUnexpectedEOF //nolint:errorlint,err113
-	}()
-
-	select {
-	case drained := <-drainedCh:
-		return drained
-	case <-time.After(maxPostCloseReadTime):
-		return false
-	}
 }

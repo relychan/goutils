@@ -22,6 +22,12 @@ import (
 	"strings"
 )
 
+// MaxPostCloseReadBytes is the max number of bytes that a client is willing to
+// read when draining any unread bytes from the response body as part of closing
+// the response, before the body itself is closed. This threshold matches the
+// commonly used small-body drain limit for preserving HTTP connection reuse.
+const MaxPostCloseReadBytes int64 = 256 << 10
+
 // HTTPError is the data structure of an HTTP error
 // that follows the [RFC 9457] specification.
 // The schema is inspired by [Swagger API] specification.
@@ -367,18 +373,13 @@ func NewHTTPErrorFromResponse(resp *http.Response) *HTTPError {
 	}
 
 	if resp.Body != nil {
-		const maxErrorBodyBytes int64 = 64 * 1024
-
-		bodyBytes, err := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes+1))
-
+		bodyBytes, err := io.ReadAll(io.LimitReader(resp.Body, MaxPostCloseReadBytes+1))
+		// The HTTP client does not reuse the connection with large response body size.
+		// It's fine to close the connection on the fly.
 		_ = resp.Body.Close() //nolint:errcheck
 
 		if err == nil {
-			if int64(len(bodyBytes)) > maxErrorBodyBytes {
-				respError.Detail = string(bodyBytes[:maxErrorBodyBytes]) + "... (truncated)"
-			} else {
-				respError.Detail = string(bodyBytes)
-			}
+			respError.Detail = string(bodyBytes)
 		}
 	}
 
