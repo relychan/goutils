@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/relychan/goutils"
-	"github.com/relychan/goutils/httperror"
 )
 
 // closeSpy wraps a ReadCloser and records whether Close was called.
@@ -160,42 +159,4 @@ func TestCloseResponse_InvalidContentLengthHeader_FallsBackToNoDrain(t *testing.
 	if !spy.closed {
 		t.Error("expected body to be closed even with invalid Content-Length header")
 	}
-}
-
-// BenchmarkXxx/extensions-11         	 4402082	       266.0 ns/op	     355 B/op	       6 allocs/op
-// BenchmarkXxx/no_extension-11       	 5228545	       230.1 ns/op	     243 B/op	       3 allocs/op
-func BenchmarkXxx(b *testing.B) {
-	b.Run("extensions", func(b *testing.B) {
-		err := goutils.NewHTTPErrorWithExtensions(*httperror.NewHTTPError(http.StatusBadGateway, "bad gateway"), map[string]any{
-			"message": "hello world",
-			"test":    true,
-		})
-
-		for b.Loop() {
-			_ = err.Error()
-		}
-	})
-
-	b.Run("no_extension", func(b *testing.B) {
-		err := goutils.NewHTTPErrorWithExtensions(*httperror.NewHTTPError(http.StatusBadGateway, "bad gateway"), map[string]any{
-			"message": "hello world",
-			"test":    true,
-		})
-
-		err.Errors = append(err.Errors, httperror.ValidationError{
-			Detail: "test",
-		}, httperror.ValidationError{
-			Detail: "test",
-		}, httperror.ValidationError{
-			Detail: "test",
-		}, httperror.ValidationError{
-			Detail: "test",
-		}, httperror.ValidationError{
-			Detail: "test",
-		})
-
-		for b.Loop() {
-			_ = err.HTTPError.Error()
-		}
-	})
 }
