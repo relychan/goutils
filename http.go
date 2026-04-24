@@ -88,7 +88,7 @@ func maybeDrainBody(body io.Reader) bool {
 
 	go func() {
 		_, err := io.CopyN(io.Discard, body, maxPostCloseReadBytes+1)
-		drainedCh <- err == io.EOF //nolint:errorlint
+		drainedCh <- err == io.EOF || err == io.ErrUnexpectedEOF //nolint:errorlint
 	}()
 
 	select {

@@ -363,12 +363,18 @@ func NewHTTPErrorFromResponse(resp *http.Response) *HTTPError {
 	}
 
 	if resp.Body != nil {
-		bodyBytes, err := io.ReadAll(resp.Body)
+		const maxErrorBodyBytes int64 = 64 * 1024
+
+		bodyBytes, err := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes+1))
 
 		_ = resp.Body.Close() //nolint:errcheck
 
 		if err == nil {
-			respError.Detail = string(bodyBytes)
+			if int64(len(bodyBytes)) > maxErrorBodyBytes {
+				respError.Detail = string(bodyBytes[:maxErrorBodyBytes]) + "... (truncated)"
+			} else {
+				respError.Detail = string(bodyBytes)
+			}
 		}
 	}
 
@@ -386,50 +392,27 @@ func buildValidationErrorToString(
 	ed ValidationError,
 	prefix string,
 ) {
-	if ed.Detail != "" {
-		if sb.Len() > 0 {
+	wroteField := false
+	writeField := func(name, value string) {
+		if value == "" {
+			return
+		}
+		if wroteField {
 			sb.WriteByte('\n')
 		}
-
 		sb.WriteString(prefix)
-		sb.WriteString("detail: ")
-		sb.WriteString(ed.Detail)
+		sb.WriteString(name)
+		sb.WriteString(": ")
+		sb.WriteString(value)
+		wroteField = true
 	}
 
-	if ed.Code != "" {
-		sb.WriteByte('\n')
-		sb.WriteString(prefix)
-		sb.WriteString("code: ")
-		sb.WriteString(ed.Code)
-	}
-
-	if ed.Pointer != "" {
-		sb.WriteByte('\n')
-		sb.WriteString(prefix)
-		sb.WriteString("pointer: ")
-		sb.WriteString(ed.Pointer)
-	}
-
-	if ed.Parameter != "" {
-		sb.WriteByte('\n')
-		sb.WriteString(prefix)
-		sb.WriteString("parameter: ")
-		sb.WriteString(ed.Parameter)
-	}
-
-	if ed.Header != "" {
-		sb.WriteByte('\n')
-		sb.WriteString(prefix)
-		sb.WriteString("header: ")
-		sb.WriteString(ed.Header)
-	}
-
-	if ed.Hint != "" {
-		sb.WriteByte('\n')
-		sb.WriteString(prefix)
-		sb.WriteString("hint: ")
-		sb.WriteString(ed.Hint)
-	}
+	writeField("detail", ed.Detail)
+	writeField("code", ed.Code)
+	writeField("pointer", ed.Pointer)
+	writeField("parameter", ed.Parameter)
+	writeField("header", ed.Header)
+	writeField("hint", ed.Hint)
 }
 
 // NewHTTPErrorStringBuilder creates a string builder from an [HTTPError].
@@ -446,31 +429,42 @@ func NewHTTPErrorStringBuilder(e HTTPError) *strings.Builder {
 	}
 
 	if e.Type != "" {
-		sb.WriteByte('\n')
+		if sb.Len() > 0 {
+			sb.WriteByte('\n')
+		}
 		sb.WriteString("type: ")
 		sb.WriteString(e.Type)
 	}
 
 	if e.Status != 0 {
-		sb.WriteByte('\n')
+		if sb.Len() > 0 {
+			sb.WriteByte('\n')
+		}
 		sb.WriteString("status: ")
 		sb.WriteString(strconv.Itoa(e.Status))
 	}
 
 	if e.Instance != "" {
-		sb.WriteByte('\n')
+		if sb.Len() > 0 {
+			sb.WriteByte('\n')
+		}
 		sb.WriteString("instance: ")
 		sb.WriteString(e.Instance)
 	}
 
 	if e.Detail != "" {
-		sb.WriteByte('\n')
+		if sb.Len() > 0 {
+			sb.WriteByte('\n')
+		}
 		sb.WriteString("detail: ")
 		sb.WriteString(e.Detail)
 	}
 
 	if len(e.Errors) > 0 {
-		sb.WriteString("\nerrors:")
+		if sb.Len() > 0 {
+			sb.WriteByte('\n')
+		}
+		sb.WriteString("errors:")
 
 		for _, ed := range e.Errors {
 			sb.WriteString("\n  - ")
