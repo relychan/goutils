@@ -63,7 +63,7 @@ func NewHTTPError(httpStatus int, detail string) *HTTPError {
 }
 
 // ValidationError is an object to provide explicit details on a problem towards an API consumer.
-type ValidationError struct {
+type ValidationError struct { //nolint:recvcheck
 	// A granular description on the specific error related to a body property, query parameter, path parameters, and/or header.
 	Detail string `json:"detail"`
 	// A JSON Pointer to a specific request body property that is the source of error.
@@ -89,6 +89,15 @@ func (ed ValidationError) Error() string {
 	buildValidationErrorToString(&sb, ed, "")
 
 	return sb.String()
+}
+
+// PrependPointer prepends the prefix to the pointer.
+func (ed *ValidationError) PrependPointer(prefix string) {
+	if ed.Pointer == "" {
+		ed.Pointer = prefix
+	} else {
+		ed.Pointer = prefix + ed.Pointer
+	}
 }
 
 // NewAlreadyExistsError creates an error that occurs when the resource being created is found to already exist on the server.
