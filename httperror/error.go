@@ -55,7 +55,6 @@ type HTTPError struct {
 // NewHTTPError creates an HTTPError instance with status.
 func NewHTTPError(httpStatus int, detail string) *HTTPError {
 	return &HTTPError{
-		Type:   "about:blank",
 		Status: httpStatus,
 		Title:  http.StatusText(httpStatus),
 		Detail: detail,
@@ -63,7 +62,7 @@ func NewHTTPError(httpStatus int, detail string) *HTTPError {
 }
 
 // ValidationError is an object to provide explicit details on a problem towards an API consumer.
-type ValidationError struct {
+type ValidationError struct { //nolint:recvcheck
 	// A granular description on the specific error related to a body property, query parameter, path parameters, and/or header.
 	Detail string `json:"detail"`
 	// A JSON Pointer to a specific request body property that is the source of error.
@@ -91,6 +90,15 @@ func (ed ValidationError) Error() string {
 	return sb.String()
 }
 
+// PrependPointer prepends the prefix to the pointer.
+func (ed *ValidationError) PrependPointer(prefix string) {
+	if ed.Pointer == "" {
+		ed.Pointer = prefix
+	} else {
+		ed.Pointer = prefix + ed.Pointer
+	}
+}
+
 // NewAlreadyExistsError creates an error that occurs when the resource being created is found to already exist on the server.
 func NewAlreadyExistsError(errors ...ValidationError) *HTTPError {
 	return &HTTPError{
@@ -107,7 +115,6 @@ func NewAlreadyExistsError(errors ...ValidationError) *HTTPError {
 // Your client application did everything correct. Unfortunately our API is currently unavailable.
 func NewServiceUnavailableError(errors ...ValidationError) *HTTPError {
 	return &HTTPError{
-		Type:   "about:blank",
 		Title:  "Service Unavailable",
 		Detail: "The service is currently unavailable.",
 		Status: http.StatusServiceUnavailable,
@@ -145,7 +152,6 @@ func NewLicenseExpiredError(errors ...ValidationError) *HTTPError {
 // Please review how your users initiated such a request.
 func NewNotFoundError(errors ...ValidationError) *HTTPError {
 	return &HTTPError{
-		Type:   "about:blank",
 		Title:  "Not Found",
 		Detail: "The requested resource was not found.",
 		Status: http.StatusNotFound,
@@ -159,7 +165,6 @@ func NewNotFoundError(errors ...ValidationError) *HTTPError {
 // Please ensure that your requests include the necessary authentication credentials.
 func NewUnauthorizedError(errors ...ValidationError) *HTTPError {
 	return &HTTPError{
-		Type:   "about:blank",
 		Title:  "Unauthorized",
 		Detail: "Access token not set or invalid, and the requested resource could not be returned.",
 		Status: http.StatusUnauthorized,
@@ -174,7 +179,6 @@ func NewUnauthorizedError(errors ...ValidationError) *HTTPError {
 // it’s not authorized to perform in the given context.
 func NewForbiddenError(errors ...ValidationError) *HTTPError {
 	return &HTTPError{
-		Type:   "about:blank",
 		Title:  "Forbidden",
 		Detail: "The resource could not be returned as the requestor is not authorized.",
 		Status: http.StatusForbidden,
@@ -190,7 +194,6 @@ func NewForbiddenError(errors ...ValidationError) *HTTPError {
 // Please review your client request against the defined semantics for the API.
 func NewBadRequestError(errors ...ValidationError) *HTTPError {
 	return &HTTPError{
-		Type:   "about:blank",
 		Title:  "Bad Request",
 		Detail: "The request is invalid or malformed.",
 		Status: http.StatusBadRequest,
@@ -203,7 +206,6 @@ func NewBadRequestError(errors ...ValidationError) *HTTPError {
 // Your client application did everything correct. Unfortunately our API encountered a condition that resulted in this problem.
 func NewServerError(errors ...ValidationError) *HTTPError {
 	return &HTTPError{
-		Type:   "about:blank",
 		Title:  "Server Error",
 		Detail: "The server encountered an unexpected error.",
 		Status: http.StatusInternalServerError,
@@ -387,8 +389,13 @@ func NewHTTPErrorFromResponse(resp *http.Response) *HTTPError {
 }
 
 // Error implements the error interface for HTTPError.
-func (e HTTPError) Error() string {
-	return NewHTTPErrorStringBuilder(e).String()
+func (he HTTPError) Error() string {
+	return NewHTTPErrorStringBuilder(he).String()
+}
+
+// IsBlankType checks if the type of error is empty or about:blank.
+func (he HTTPError) IsBlankType() bool {
+	return he.Type == "" || he.Type == "about:blank"
 }
 
 // build the error to debug string with indent format.
