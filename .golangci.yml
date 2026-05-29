@@ -11,6 +11,8 @@ linters:
     - gochecknoglobals
     - nilnil
     - ireturn
+    - goconst
+    - gomodguard
   settings:
     errcheck:
       # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
