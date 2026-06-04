@@ -199,7 +199,7 @@ func TestValidateIP(t *testing.T) {
 		}
 	})
 
-	t.Run("public IP with no restrictions returns ErrBlockedIP (no allowed ranges)", func(t *testing.T) {
+	t.Run("public IP with no allowlist is allowed", func(t *testing.T) {
 		// No allowedIPRanges means ValidateIP always returns ErrBlockedIP after passing public check
 		err := ValidateIPOrDomain(context.Background(), "8.8.8.8", ValidateIPOptions{
 			PublicIPOnly: true,
@@ -219,7 +219,7 @@ func TestValidateIP(t *testing.T) {
 		}
 	})
 
-	t.Run("IP in blocked range returns ErrBlockedIP", func(t *testing.T) {
+	t.Run("allowlist takes precedence over blocklist", func(t *testing.T) {
 		_, subnet, _ := parseNetCIDR("8.8.8.0/24")
 		_, allowed, _ := parseNetCIDR("0.0.0.0/0")
 		err := ValidateIPOrDomain(context.Background(), "8.8.8.8", ValidateIPOptions{

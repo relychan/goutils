@@ -68,6 +68,10 @@ func IsIntegerString(value string) bool {
 // If it is invalid or out-of-range,
 // it sets ok to false and returns the min value.
 func ParseIntInRange[B []byte | string](s B, minValue int, maxValue int) (int, error) {
+	if len(s) == 0 {
+		return 0, strconv.ErrSyntax
+	}
+
 	var x int
 
 	for _, c := range []byte(s) {

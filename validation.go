@@ -156,7 +156,7 @@ func ValidateDurationRFC3339( //nolint:gocognit,funlen
 // ValidateIPV4 validates if the string satisfies the IPv4 format.
 func ValidateIPV4(s string) *httperror.ValidationError {
 	ip := net.ParseIP(s)
-	if ip == nil || !strings.ContainsRune(s, '.') {
+	if ip == nil || ip.To4() == nil || !strings.ContainsRune(s, '.') {
 		return &httperror.ValidationError{
 			Detail: "Invalid IPv4",
 		}
@@ -244,7 +244,7 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 	// entire email address to be no more than 254 characters long
 	if len(s) > 254 {
 		return &httperror.ValidationError{
-			Detail: "Email must not be more than 255 characters long",
+			Detail: "Email must not be more than 254 characters long",
 		}
 	}
 
