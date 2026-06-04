@@ -553,10 +553,8 @@ func ValidateIP(ip net.IP, options ValidateIPOptions) error {
 }
 
 func validateHost(host, hostname string, options *ValidateHTTPURLOptions) error {
-	for _, expr := range options.BlockedHosts {
-		re, err := NewRegexpMatcher(expr)
 		if err != nil {
-			return fmt.Errorf("failed to parse allowed host rule: %w", err)
+			return fmt.Errorf("failed to parse blocked host rule: %w", err)
 		}
 
 		if re.MatchString(hostname) || re.MatchString(host) {
