@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"slices"
 	"strings"
 )
 
@@ -87,8 +86,8 @@ func ParsePathOrURL(input string) (*url.URL, error) {
 	return result, nil
 }
 
-// ParseHTTPURL parses and validate the input string to have http(s) scheme.
-func ParseHTTPURL(input string) (*url.URL, error) {
+// ParseURL parses and validate the input string to be a valid URI.
+func ParseURL(input string) (*url.URL, error) {
 	urlStr := strings.TrimSpace(input)
 	if urlStr == "" {
 		return nil, ErrInvalidURI
@@ -104,155 +103,52 @@ func ParseHTTPURL(input string) (*url.URL, error) {
 		return nil, ErrInvalidURI
 	}
 
-	return parsedURL, validateURLScheme(parsedURL, httpSchemes)
-}
+	if strings.Contains(hostname, ":") {
+		if !strings.Contains(parsedURL.Host, "[") || !strings.Contains(parsedURL.Host, "]") {
+			return nil, ErrInvalidURI
+		}
 
-// ValidateHTTPURLOptions represent URL validation options.
-type ValidateHTTPURLOptions struct {
-	AllowedSchemes  []string
-	AllowedHosts    []string
-	BlockedHosts    []string
-	PublicIPOnly    bool
-	AllowedIPRanges []string
-	BlockedIPRanges []string
-	// Custom lookup IP function.
-	LookupIP func(ctx context.Context, host string) ([]net.IP, error)
-}
-
-// ValidateURLString parses and validates URL from a string. Returns the parsed URL and an error.
-func ValidateURLString(
-	ctx context.Context,
-	urlStr string,
-	options ValidateHTTPURLOptions,
-) (*url.URL, error) {
-	urlStr = strings.TrimSpace(urlStr)
-	if urlStr == "" {
-		return nil, ErrInvalidURI
+		err := ValidateIPV6(hostname)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	parsedURL, err := url.Parse(urlStr)
+	return parsedURL, nil
+}
+
+// ParseHTTPURL parses and validate the input string to be a valid URI and have http(s) scheme.
+func ParseHTTPURL(input string) (*url.URL, error) {
+	parsedURL, err := ParseURL(input)
 	if err != nil {
 		return nil, err
 	}
 
-	return parsedURL, ValidateURL(ctx, parsedURL, options)
+	err = validateURLScheme(parsedURL, httpSchemes)
+	if err != nil {
+		return nil, err
+	}
+
+	return parsedURL, nil
 }
 
-// ValidateURL parses and validates URL.
-func ValidateURL(ctx context.Context, uri *url.URL, options ValidateHTTPURLOptions) error {
-	err := validateURLScheme(uri, options.AllowedSchemes)
-	if err != nil {
-		return err
-	}
-
-	// Extract hostname without port
-	hostname := uri.Hostname()
-	if hostname == "" {
-		return ErrInvalidURI
-	}
-
-	err = validateHost(uri.Host, hostname, &options)
-	if err != nil {
-		return err
-	}
-
-	if !options.PublicIPOnly &&
-		len(options.AllowedIPRanges) == 0 && len(options.BlockedIPRanges) == 0 {
-		return nil
-	}
-
-	allowedIPRanges, err := parseIPRanges(options.AllowedIPRanges)
-	if err != nil {
-		return err
-	}
-
-	blockedIPRanges, err := parseIPRanges(options.BlockedIPRanges)
-	if err != nil {
-		return err
-	}
-
-	return ValidateIPOrDomain(ctx, hostname, ValidateIPOptions{
-		PublicIPOnly:    options.PublicIPOnly,
-		AllowedIPRanges: allowedIPRanges,
-		BlockedIPRanges: blockedIPRanges,
-		LookupIP:        options.LookupIP,
-	})
-}
-
-// ValidateIPOptions represent URL validation options.
-type ValidateIPOptions struct {
-	// Block all private IPs.
-	PublicIPOnly bool
-	// IP ranges to allow.
-	AllowedIPRanges []*net.IPNet
-	// IP ranges to block.
-	BlockedIPRanges []*net.IPNet
-	// Custom lookup IP function.
-	LookupIP func(ctx context.Context, host string) ([]net.IP, error)
-}
-
-// ValidateIPOrDomain checks if the IP string or IP of domain is valid for SSRF protection.
-// If the input string is a domain, lookup the IP from it before validation.
-func ValidateIPOrDomain(
+// ParseAndValidateURL parses and validates URL from a string. Returns the parsed URL and an error.
+func ParseAndValidateURL(
 	ctx context.Context,
-	domainOrIP string,
-	options ValidateIPOptions,
-) error {
-	// Resolve IP addresses
-	var ips []net.IP
-
-	var err error
-
-	if options.LookupIP != nil {
-		ips, err = options.LookupIP(ctx, domainOrIP)
-	} else {
-		ips, err = net.DefaultResolver.LookupIP(ctx, "ip", domainOrIP)
-	}
-
+	urlStr string,
+	options ValidateHTTPURLOptions,
+) (*url.URL, error) {
+	parsedURL, err := ParseURL(urlStr)
 	if err != nil {
-		// Block on DNS resolution failure
-		return err
+		return nil, err
 	}
 
-	// Check each IP against blocked ranges
-	for _, ip := range ips {
-		err := ValidateIP(ip, options)
-		if err != nil {
-			return err
-		}
+	err = ValidateURLWithOptions(ctx, parsedURL, options)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
-}
-
-// ValidateIP checks if the IP is valid for SSRF protection.
-// Note: the allowed ranges option is the highest priority to bypass other rules.
-func ValidateIP(ip net.IP, options ValidateIPOptions) error {
-	for _, subnet := range options.AllowedIPRanges {
-		if subnet.Contains(ip) {
-			return nil
-		}
-	}
-
-	if options.PublicIPOnly && (ip.IsPrivate() ||
-		!ip.IsGlobalUnicast() ||
-		ip.IsLinkLocalMulticast() ||
-		cgNATSubnet.Contains(ip)) {
-		return ErrBlockedIP
-	}
-
-	for _, subnet := range options.BlockedIPRanges {
-		if subnet.Contains(ip) {
-			return ErrBlockedIP
-		}
-	}
-
-	// The IP is valid if allowed IP ranges are empty.
-	if len(options.AllowedIPRanges) == 0 {
-		return nil
-	}
-
-	return ErrBlockedIP
+	return parsedURL, nil
 }
 
 // ParseSubnet parses the subnet from a raw string.
@@ -295,51 +191,6 @@ func parseIPRanges(ipRanges []string) ([]*net.IPNet, error) {
 	}
 
 	return results, nil
-}
-
-func validateHost(host, hostname string, options *ValidateHTTPURLOptions) error {
-	for _, expr := range options.BlockedHosts {
-		re, err := NewRegexpMatcher(expr)
-		if err != nil {
-			return fmt.Errorf("failed to parse allowed host rule: %w", err)
-		}
-
-		if re.MatchString(hostname) || re.MatchString(host) {
-			return fmt.Errorf("%w: host is blocked", ErrInvalidURI)
-		}
-	}
-
-	if len(options.AllowedHosts) == 0 {
-		return nil
-	}
-
-	for _, expr := range options.AllowedHosts {
-		re, err := NewRegexpMatcher(expr)
-		if err != nil {
-			return fmt.Errorf("failed to parse allowed host rule: %w", err)
-		}
-
-		if re.MatchString(hostname) || re.MatchString(host) {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%w: host is not allowed", ErrInvalidURI)
-}
-
-func validateURLScheme(uri *url.URL, allowedSchemes []string) error {
-	if len(allowedSchemes) > 0 && !slices.ContainsFunc(allowedSchemes, func(item string) bool {
-		return strings.EqualFold(item, uri.Scheme)
-	}) {
-		return fmt.Errorf(
-			"%w. Accept one of %v, got: %s",
-			ErrInvalidURLScheme,
-			allowedSchemes,
-			uri.Scheme,
-		)
-	}
-
-	return nil
 }
 
 func mustParseCIDR(cidr string) *net.IPNet {

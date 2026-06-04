@@ -32,7 +32,11 @@ var (
 	// ErrUnknownDurationUnit occurs when the duration unit is unknown.
 	ErrUnknownDurationUnit = errors.New("unknown duration unit")
 	// ErrInvalidDateTimeString occurs when the date time string is invalid.
-	ErrInvalidDateTimeString = errors.New("not a valid date time string")
+	ErrInvalidDateTimeString = errors.New("invalid date time format")
+	// ErrInvalidDateString occurs when the date string is malformed.
+	ErrInvalidDateString = errors.New("invalid date format")
+	// ErrInvalidTimeString occurs when the time string is invalid.
+	ErrInvalidTimeString = errors.New("invalid time format")
 )
 
 // Duration wraps time.Duration. It is used to parse and format custom duration strings

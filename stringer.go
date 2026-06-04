@@ -14,7 +14,10 @@
 
 package goutils
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 // IsMetaCharacter checks if the character is a word character.
 // A word character is a character a-z, A-Z, 0-9, including _ (underscore) and - (hyphen).
@@ -64,22 +67,26 @@ func IsIntegerString(value string) bool {
 // verifies that it is within some range.
 // If it is invalid or out-of-range,
 // it sets ok to false and returns the min value.
-func ParseIntInRange[B []byte | string](s B, minValue int, maxValue int) (int, bool) {
+func ParseIntInRange[B []byte | string](s B, minValue int, maxValue int) (int, error) {
+	if len(s) == 0 {
+		return 0, strconv.ErrSyntax
+	}
+
 	var x int
 
 	for _, c := range []byte(s) {
 		if !IsDigit(c) {
-			return minValue, false
+			return minValue, strconv.ErrSyntax
 		}
 
 		x = x*10 + int(c) - '0'
 	}
 
 	if x < minValue || maxValue < x {
-		return minValue, false
+		return minValue, strconv.ErrRange
 	}
 
-	return x, true
+	return x, nil
 }
 
 // QuoteBytes add double quotes surround the string and convert it to bytes.
