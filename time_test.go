@@ -879,11 +879,11 @@ func TestUnmarshalInvalidTimes(t *testing.T) {
 		in   string
 		want string
 	}{
-		{`"2000-01-01T1:12:34Z"`, `not a valid date time string: 2000-01-01T1:12:34Z`},
-		{`"2000-01-01T00:00:00,000Z"`, `not a valid date time string: 2000-01-01T00:00:00,000Z`},
-		{`"2000-01-01T00:00:00+24:00"`, `not a valid date time string: 2000-01-01T00:00:00+24:00`},
-		{`"2000-01-01T00:00:00+00:60"`, `not a valid date time string: 2000-01-01T00:00:00+00:60`},
-		{`"2000-01-01T00:00:00+123:45"`, `not a valid date time string: 2000-01-01T00:00:00+123:45`},
+		{`"2000-01-01T1:12:34Z"`, `invalid time format: 1:12:34Z`},
+		{`"2000-01-01T00:00:00,000Z"`, `invalid time format: offset must begin with Z, plus or minus`},
+		{`"2000-01-01T00:00:00+24:00"`, `invalid time format: hour offset value out of range`},
+		{`"2000-01-01T00:00:00+00:60"`, `invalid time format: minute offset value out of range`},
+		{`"2000-01-01T00:00:00+123:45"`, `invalid time format: invalid offset syntax`},
 	}
 
 	for _, tt := range tests {
@@ -1207,22 +1207,6 @@ func TestDefaultLoc(t *testing.T) {
 
 const testdataRFC3339UTC = "2020-08-22T11:27:43.123456789Z"
 
-// cpu: Apple M3 Pro
-// BenchmarkParseDateTime-11    	17008861	        65.69 ns/op	       0 B/op	       0 allocs/op
-func BenchmarkParseDateTime(b *testing.B) {
-	for b.Loop() {
-		ParseDateTime(testdataRFC3339UTC)
-	}
-}
-
-// cpu: Apple M3 Pro
-// BenchmarkTimeParse-11    	20990029	        55.45 ns/op	       0 B/op	       0 allocs/op
-func BenchmarkTimeParse(b *testing.B) {
-	for b.Loop() {
-		time.Parse(time.RFC3339, testdataRFC3339UTC)
-	}
-}
-
 func TestMarshalBinaryZeroTime(t *testing.T) {
 	t0 := Time{}
 	enc, err := t0.MarshalBinary()
@@ -1297,4 +1281,21 @@ func TestZoneBounds(t *testing.T) {
 	if start.IsZero() || !end.IsZero() {
 		t.Errorf("ZoneBounds of %v expects end is zero Time, got:\n  start=%v\n  end=%v", foreverTime, start, end)
 	}
+}
+
+// cpu: Apple M3 Pro
+// BenchmarkDateTime/parse-11         	16437229	        67.43 ns/op	       0 B/op	       0 allocs/op
+// BenchmarkDateTime/parse_builtin-11 	22864509	        52.24 ns/op	       0 B/op	       0 allocs/op
+func BenchmarkDateTime(b *testing.B) {
+	b.Run("parse", func(b *testing.B) {
+		for b.Loop() {
+			ParseDateTime(testdataRFC3339UTC)
+		}
+	})
+
+	b.Run("parse_builtin", func(b *testing.B) {
+		for b.Loop() {
+			time.Parse(time.RFC3339, testdataRFC3339UTC)
+		}
+	})
 }

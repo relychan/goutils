@@ -23,6 +23,7 @@ import (
 
 var (
 	dateLength     = len("2006-01-02")
+	timeLength     = len("15:04:05")
 	dateTimeLength = len("2006-01-02T15:04:05")
 )
 
@@ -407,64 +408,157 @@ func ParseDateTime[B []byte | string](input B) (Time, error) {
 	return Time(result), err
 }
 
-// ParseDateTimeNative parses date time in RFC 3339 or ISO 8601 format formats.
+// ParseDateTimeNative parses date time in RFC 3339 or ISO 8601 format.
 func ParseDateTimeNative[B []byte | string](input B) (time.Time, error) {
-	result, ok := parseDateTimeString(input)
-	if ok {
-		return result, nil
-	}
-
-	return time.Time{}, fmt.Errorf("%w: %s", ErrInvalidDateTimeString, input)
-}
-
-func parseDateTimeString[B []byte | string](s B) (time.Time, bool) { //nolint:cyclop,funlen
 	// Parse the date and time.
-	if (len(s) < dateLength) || s[4] != '-' || s[7] != '-' {
-		return time.Time{}, false
+	if len(input) < dateLength {
+		return time.Time{}, fmt.Errorf("%w: %s", ErrInvalidDateTimeString, input)
 	}
 
-	year, ok := ParseIntInRange(s[0:4], 0, 9999) // e.g., 2006
-	if !ok {
-		return time.Time{}, false
+	year, month, day, err := parseDateString(input[:dateLength])
+	if err != nil {
+		return time.Time{}, err
 	}
 
-	month, ok := ParseIntInRange(s[5:7], 1, 12) // e.g., 01
-	if !ok {
-		return time.Time{}, false
-	}
-
-	day, ok := ParseIntInRange(s[8:10], 1, daysIn(time.Month(month), year)) // e.g., 02
-	if !ok {
-		return time.Time{}, false
-	}
-
-	if len(s) == dateLength {
+	if len(input) == dateLength {
 		t := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
-		return t, true
+		return t, nil
 	}
 
-	if (len(s) < dateTimeLength) || (s[10] != 'T' && s[10] != ' ') || s[13] != ':' ||
-		s[16] != ':' {
-		return time.Time{}, false
+	if (len(input) < dateTimeLength) || (input[10] != 't' && input[10] != 'T' && input[10] != ' ') {
+		return time.Time{}, ErrInvalidDateTimeString
 	}
 
-	hour, ok := ParseIntInRange(s[11:13], 0, 23) // e.g., 15
-	if !ok {
-		return time.Time{}, false
+	hour, minute, sec, nsec, zoneOffset, err := parseTimeString(input[11:])
+	if err != nil {
+		return time.Time{}, err
 	}
 
-	minute, ok := ParseIntInRange(s[14:16], 0, 59) // e.g., 04
-	if !ok {
-		return time.Time{}, false
+	// Parse the time zone.
+	t := time.Date(year, time.Month(month), day, hour, minute, sec, nsec, time.UTC)
+
+	if zoneOffset == 0 {
+		return t, nil
 	}
 
-	sec, ok := ParseIntInRange(s[17:19], 0, 59) // e.g., 05
-	if !ok {
-		return time.Time{}, false
+	t = t.Add(time.Duration(-zoneOffset) * time.Second)
+
+	// Use local zone with the given offset if possible.
+	tz := t.Local() //nolint:gosmopolitan
+
+	_, offset := tz.Zone()
+	if offset == zoneOffset {
+		return tz, nil
 	}
 
-	s = s[19:]
+	t = t.In(time.FixedZone("", zoneOffset))
+
+	return t, nil
+}
+
+// ParseDate parses date in YYYY-MM-DD format.
+func ParseDate[B []byte | string](input B) (Time, error) {
+	result, err := ParseDateNative(input)
+	if err != nil {
+		return Time{}, err
+	}
+
+	return Time(result), nil
+}
+
+// ParseDateNative parses date in YYYY-MM-DD format. Return the native time.Time instance.
+func ParseDateNative[B []byte | string](input B) (time.Time, error) {
+	year, month, day, err := parseDateString(input)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	t := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+
+	return t, nil
+}
+
+// ParseTimeNative parses time in RFC 3339 or ISO 8601 format.
+func ParseTimeNative[B []byte | string](input B) (time.Time, error) {
+	hour, minute, sec, nsec, zoneOffset, err := parseTimeString(input)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	// Parse the time zone.
+	t := time.Date(0, time.Month(0), 0, hour, minute, sec, nsec, time.UTC)
+
+	if zoneOffset == 0 {
+		return t, nil
+	}
+
+	t = t.Add(time.Duration(-zoneOffset) * time.Second)
+
+	// Use local zone with the given offset if possible.
+	tz := t.Local() //nolint:gosmopolitan
+
+	_, offset := tz.Zone()
+	if offset == zoneOffset {
+		return tz, nil
+	}
+
+	t = t.In(time.FixedZone("", zoneOffset))
+
+	return t, nil
+}
+
+func parseDateString[B []byte | string](s B) (int, int, int, error) {
+	if (len(s) != dateLength) || s[4] != '-' || s[7] != '-' {
+		return 0, 0, 0, fmt.Errorf("%w: %s", ErrInvalidDateString, s)
+	}
+
+	year, err := ParseIntInRange(s[0:4], 0, 9999) // e.g., 2006
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("%w: year %s", ErrInvalidDateString, err.Error())
+	}
+
+	month, err := ParseIntInRange(s[5:7], 1, 12) // e.g., 01
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("%w: month %s", ErrInvalidDateString, err.Error())
+	}
+
+	day, err := ParseIntInRange(s[8:10], 1, daysIn(time.Month(month), year)) // e.g., 02
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("%w: day %s", ErrInvalidDateString, err.Error())
+	}
+
+	return year, month, day, nil
+}
+
+func parseTimeString[B []byte | string]( //nolint:cyclop
+	s B,
+) (int, int, int, int, int, error) {
+	if len(s) < timeLength || s[2] != ':' || s[5] != ':' {
+		return 0, 0, 0, 0, 0, fmt.Errorf("%w: %s", ErrInvalidTimeString, s)
+	}
+
+	hour, err := ParseIntInRange(s[0:2], 0, 23) // e.g., 15
+	if err != nil {
+		return 0, 0, 0, 0, 0, fmt.Errorf("%w: hour %s", ErrInvalidTimeString, s)
+	}
+
+	minute, err := ParseIntInRange(s[3:5], 0, 59) // e.g., 04
+	if err != nil {
+		return 0, 0, 0, 0, 0, fmt.Errorf("%w: minute %s", ErrInvalidTimeString, s)
+	}
+
+	sec, err := ParseIntInRange(s[6:8], 0, 60) // e.g., 05
+	if err != nil {
+		return 0, 0, 0, 0, 0, fmt.Errorf("%w: second %s", ErrInvalidTimeString, s)
+	}
+
+	// check leap second
+	if sec >= 60 && (hour != 23 || minute != 59) {
+		return hour, minute, sec, 0, 0, fmt.Errorf("%w: invalid leap second", ErrInvalidTimeString)
+	}
+
+	s = s[8:]
 
 	// Parse the fractional second.
 	var nsec int
@@ -480,16 +574,14 @@ func parseDateTimeString[B []byte | string](s B) (time.Time, bool) { //nolint:cy
 		s = s[n:]
 	}
 
-	// Parse the time zone.
-	t := time.Date(year, time.Month(month), day, hour, minute, sec, nsec, time.UTC)
-
-	if len(s) == 0 || (len(s) == 1 && s[0] == 'Z') {
-		return t, true
+	if len(s) == 0 || (len(s) == 1 && (s[0] == 'Z' || s[0] == 'z')) {
+		return hour, minute, sec, nsec, 0, nil
 	}
 
-	hr, mm, ok := parseTimeZoneOffset(s)
-	if !ok {
-		return time.Time{}, false
+	// Parse the time zone.
+	hr, mm, err := parseTimeZoneOffset(s)
+	if err != nil {
+		return 0, 0, 0, 0, 0, err
 	}
 
 	zoneOffset := (hr*60 + mm) * 60
@@ -497,26 +589,14 @@ func parseDateTimeString[B []byte | string](s B) (time.Time, bool) { //nolint:cy
 		zoneOffset *= -1
 	}
 
-	t = t.Add(time.Duration(-zoneOffset) * time.Second)
-
-	// Use local zone with the given offset if possible.
-	tz := t.Local() //nolint:gosmopolitan
-
-	_, offset := tz.Zone()
-	if offset == zoneOffset {
-		return tz, true
-	}
-
-	t = t.In(time.FixedZone("", zoneOffset))
-
-	return t, true
+	return hour, minute, sec, nsec, zoneOffset, nil
 }
 
-func parseTimeZoneOffset[B []byte | string](s B) (int, int, bool) {
+func parseTimeZoneOffset[B []byte | string](s B) (int, int, error) {
 	var rawHour, rawMinute B
 
-	if s[0] != 'Z' && s[0] != '+' && s[0] != '-' {
-		return 0, 0, false
+	if s[0] != 'z' && s[0] != 'Z' && s[0] != '+' && s[0] != '-' {
+		return 0, 0, fmt.Errorf("%w: offset must begin with Z, plus or minus", ErrInvalidTimeString)
 	}
 
 	switch {
@@ -527,20 +607,20 @@ func parseTimeZoneOffset[B []byte | string](s B) (int, int, bool) {
 		rawHour = s[1:3]
 		rawMinute = s[4:6]
 	default:
-		return 0, 0, false
+		return 0, 0, fmt.Errorf("%w: invalid offset syntax", ErrInvalidTimeString)
 	}
 
-	hr, ok := ParseIntInRange(rawHour, 0, 23) // e.g., 07
-	if !ok {
-		return 0, 0, false
+	hr, err := ParseIntInRange(rawHour, 0, 23) // e.g., 07
+	if err != nil {
+		return 0, 0, fmt.Errorf("%w: hour offset %s", ErrInvalidTimeString, err.Error())
 	}
 
-	mm, ok := ParseIntInRange(rawMinute, 0, 59) // e.g., 00
-	if !ok {
-		return 0, 0, false
+	mm, err := ParseIntInRange(rawMinute, 0, 59) // e.g., 00
+	if err != nil {
+		return 0, 0, fmt.Errorf("%w: minute offset %s", ErrInvalidTimeString, err.Error())
 	}
 
-	return hr, mm, true
+	return hr, mm, nil
 }
 
 func isLeap(year int) bool {
