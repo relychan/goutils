@@ -32,7 +32,7 @@ var allDurationUnits = []string{"YMWD", "HMS"}
 // ValidateJSONPointer validates the JSON pointer string according to the [RFC 6901] specification.
 //
 // [RFC 6901]: https://www.rfc-editor.org/rfc/rfc6901#section-3
-func ValidateJSONPointer(s string) *httperror.ValidationError { //nolint:cyclop
+func ValidateJSONPointer(s string) *httperror.ValidationError {
 	if s == "" {
 		return nil
 	}
@@ -43,42 +43,10 @@ func ValidateJSONPointer(s string) *httperror.ValidationError { //nolint:cyclop
 		}
 	}
 
-	for _, tok := range strings.Split(s, "/")[1:] {
-		escape := false
-		for _, ch := range tok {
-			if escape {
-				escape = false
-
-				if ch != '0' && ch != '1' {
-					return &httperror.ValidationError{
-						Detail: "Invalid JSON pointer; ~ must be followed by 0 or 1",
-					}
-				}
-
-				continue
-			}
-
-			if ch == '~' {
-				escape = true
-
-				continue
-			}
-
-			switch {
-			case ch >= '\x00' && ch <= '\x2E':
-			case ch >= '\x30' && ch <= '\x7D':
-			case ch >= '\x7F' && ch <= '\U0010FFFF':
-			default:
-				return &httperror.ValidationError{
-					Detail: "Invalid JSON pointer; invalid character " + string(ch),
-				}
-			}
-		}
-
-		if escape {
-			return &httperror.ValidationError{
-				Detail: "Invalid JSON pointer; ~ must be followed by 0 or 1",
-			}
+	for tok := range strings.SplitSeq(s[1:], "/") {
+		err := validateJSONPointerToken(tok)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -234,7 +202,7 @@ func ValidateHostname(s string) *httperror.ValidationError {
 	}
 
 	// Hostnames are composed of series of labels concatenated with dots, as are all domain names
-	for _, label := range strings.Split(s, ".") {
+	for label := range strings.SplitSeq(s, ".") {
 		// Each label must be from 1 to 63 characters long
 		if len(label) < 1 || len(label) > 63 {
 			return &httperror.ValidationError{
@@ -404,7 +372,26 @@ func ValidateTime(str string) *httperror.ValidationError {
 //
 // [RFC 3339]: https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
 func ValidateDateTime(input string) *httperror.ValidationError {
-	_, err := ParseDateTime(input)
+	if len(input) < dateTimeLength {
+		return &httperror.ValidationError{
+			Detail: ErrInvalidDateTimeString.Error(),
+		}
+	}
+
+	_, _, _, err := parseDateString(input[:dateLength]) //nolint:dogsled
+	if err != nil {
+		return &httperror.ValidationError{
+			Detail: err.Error(),
+		}
+	}
+
+	if input[10] != 't' && input[10] != 'T' && input[10] != ' ' {
+		return &httperror.ValidationError{
+			Detail: "Invalid date time format. Missing T between date and time",
+		}
+	}
+
+	_, _, _, _, _, err = parseTimeString(input[11:]) //nolint:dogsled
 	if err != nil {
 		return &httperror.ValidationError{
 			Detail: err.Error(),
@@ -426,24 +413,6 @@ func ValidateURI(s string) *httperror.ValidationError {
 	if !u.IsAbs() {
 		return &httperror.ValidationError{
 			Detail: "Relative URL is not allowed",
-		}
-	}
-
-	return nil
-}
-
-// ValidateURIReference validates if the input string is a valid URI reference.
-func ValidateURIReference(s string) *httperror.ValidationError {
-	if strings.Contains(s, `\`) {
-		return &httperror.ValidationError{
-			Detail: "URI reference must not contain \\",
-		}
-	}
-
-	_, err := ParseURL(s)
-	if err != nil {
-		return &httperror.ValidationError{
-			Detail: err.Error(),
 		}
 	}
 
@@ -583,12 +552,6 @@ func ValidateIP(ip net.IP, options ValidateIPOptions) error {
 	return ErrBlockedIP
 }
 
-func invalidDateTimeError() *httperror.ValidationError {
-	return &httperror.ValidationError{
-		Detail: "Invalid date time format yyyy-MM-ddThh:mm:ssZ",
-	}
-}
-
 func validateHost(host, hostname string, options *ValidateHTTPURLOptions) error {
 	for _, expr := range options.BlockedHosts {
 		re, err := NewRegexpMatcher(expr)
@@ -629,6 +592,48 @@ func validateURLScheme(uri *url.URL, allowedSchemes []string) error {
 			allowedSchemes,
 			uri.Scheme,
 		)
+	}
+
+	return nil
+}
+
+func validateJSONPointerToken(tok string) *httperror.ValidationError {
+	escape := false
+
+	for _, ch := range tok {
+		if escape {
+			escape = false
+
+			if ch != '0' && ch != '1' {
+				return &httperror.ValidationError{
+					Detail: "Invalid JSON pointer; ~ must be followed by 0 or 1",
+				}
+			}
+
+			continue
+		}
+
+		if ch == '~' {
+			escape = true
+
+			continue
+		}
+
+		switch {
+		case ch >= '\x00' && ch <= '\x2E':
+		case ch >= '\x30' && ch <= '\x7D':
+		case ch >= '\x7F' && ch <= '\U0010FFFF':
+		default:
+			return &httperror.ValidationError{
+				Detail: "Invalid JSON pointer; invalid character " + string(ch),
+			}
+		}
+	}
+
+	if escape {
+		return &httperror.ValidationError{
+			Detail: "Invalid JSON pointer; ~ must be followed by 0 or 1",
+		}
 	}
 
 	return nil
