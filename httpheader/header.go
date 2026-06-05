@@ -236,10 +236,11 @@ func IsContentTypeXML(contentType string) bool {
 	}
 
 	mediaType := ExtractBaseMediaType(contentType)
+	if mediaType == ContentTypeXML || mediaType == ContentTypeTextXML {
+		return true
+	}
 
-	return strings.EqualFold(mediaType, ContentTypeXML) ||
-		strings.EqualFold(mediaType, ContentTypeTextXML) ||
-		goutils.HasStringSuffixFold(mediaType, "+xml")
+	return isContentTypeWithSuffix(mediaType, "xml")
 }
 
 // IsContentTypeJSON checks if the content type is JSON.
@@ -249,19 +250,25 @@ func IsContentTypeJSON(contentType string) bool {
 	}
 
 	mediaType := ExtractBaseMediaType(contentType)
+	if mediaType == ContentTypeJSON || mediaType == ContentTypeGraphQLResponseJSON {
+		return true
+	}
 
-	return strings.EqualFold(mediaType, ContentTypeJSON) ||
-		goutils.HasStringSuffixFold(mediaType, "+json")
+	return isContentTypeWithSuffix(mediaType, "json")
 }
 
 // IsContentTypeText checks if the content type relates to text.
 func IsContentTypeText(contentType string) bool {
-	return goutils.HasStringPrefixFold(contentType, "text/")
+	// text/xml
+	return len(contentType) >= 5 &&
+		goutils.HasStringPrefixFold(contentType, "text/")
 }
 
 // IsContentTypeMultipartForm checks the content type relates to multipart form.
 func IsContentTypeMultipartForm(contentType string) bool {
-	return goutils.HasStringPrefixFold(contentType, "multipart/")
+	// multipart/form
+	return len(contentType) >= 10 &&
+		goutils.HasStringPrefixFold(contentType, "multipart/")
 }
 
 // ExtractBaseMediaType extracts the media type from the content type with parameters removed.
@@ -287,4 +294,19 @@ func GetHeaderValue(header http.Header, key string) string {
 	}
 
 	return ""
+}
+
+func isContentTypeWithSuffix(mediaType string, suffix string) bool {
+	slashIndex := strings.IndexRune(mediaType, '/')
+	if slashIndex <= 0 {
+		// the content type must follow this format */*
+		return false
+	}
+
+	mediaTypeLength := len(mediaType)
+	suffixLength := len(suffix)
+	symbolChar := mediaType[mediaTypeLength-suffixLength-1]
+
+	return goutils.HasStringSuffixFold(mediaType, suffix) &&
+		(symbolChar == '+' || symbolChar == '/')
 }

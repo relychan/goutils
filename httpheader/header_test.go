@@ -56,6 +56,7 @@ func TestIsContentTypeJSON(t *testing.T) {
 		{name: "custom +json vendor type", contentType: "application/vnd.api+json", expected: true},
 		{name: "custom +json with params", contentType: "application/vnd.api+json; charset=utf-8", expected: true},
 		{name: "uppercase +JSON suffix", contentType: "application/vnd.api+JSON", expected: true},
+		{name: "wildcard json", contentType: "*/json", expected: true},
 		{name: "xml is not json", contentType: ContentTypeXML, expected: false},
 		{name: "plain text is not json", contentType: ContentTypeTextPlain, expected: false},
 		{name: "empty string", contentType: "", expected: false},
@@ -78,6 +79,7 @@ func TestIsContentTypeXML(t *testing.T) {
 		contentType string
 		expected    bool
 	}{
+		{name: "wildcard", contentType: "*/xml", expected: true},
 		{name: "application/xml", contentType: ContentTypeXML, expected: true},
 		{name: "text/xml", contentType: ContentTypeTextXML, expected: true},
 		{name: "xml with charset", contentType: "application/xml; charset=utf-8", expected: true},
@@ -107,6 +109,7 @@ func TestIsContentTypeText(t *testing.T) {
 		contentType string
 		expected    bool
 	}{
+		{name: "wildcard", contentType: "text/*", expected: true},
 		{name: "text/plain", contentType: ContentTypeTextPlain, expected: true},
 		{name: "text/html", contentType: ContentTypeTextHTML, expected: true},
 		{name: "text/xml", contentType: ContentTypeTextXML, expected: true},
@@ -224,4 +227,13 @@ func TestGetHeaderValue(t *testing.T) {
 			}
 		})
 	}
+}
+
+func BenchmarkXxx(b *testing.B) {
+	contentType := "application/json; charset=utf-8"
+	b.Run("IsContentTypeJSON", func(b *testing.B) {
+		for b.Loop() {
+			IsContentTypeJSON(contentType)
+		}
+	})
 }
