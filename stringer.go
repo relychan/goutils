@@ -105,7 +105,12 @@ func HasStringPrefixFold(input string, prefix string) bool {
 		return false
 	}
 
-	return strings.EqualFold(input[:len(prefix)], prefix)
+	inputPrefix := input[:len(prefix)]
+	if inputPrefix == prefix {
+		return true
+	}
+
+	return strings.EqualFold(inputPrefix, prefix)
 }
 
 // HasStringSuffixFold checks if a string has a case-insensitive suffix.
@@ -114,5 +119,10 @@ func HasStringSuffixFold(input string, suffix string) bool {
 		return false
 	}
 
-	return strings.EqualFold(input[len(input)-len(suffix):], suffix)
+	inputSuffix := input[len(input)-len(suffix):]
+	if inputSuffix == suffix {
+		return true
+	}
+
+	return strings.EqualFold(inputSuffix, suffix)
 }

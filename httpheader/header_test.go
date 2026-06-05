@@ -56,10 +56,12 @@ func TestIsContentTypeJSON(t *testing.T) {
 		{name: "custom +json vendor type", contentType: "application/vnd.api+json", expected: true},
 		{name: "custom +json with params", contentType: "application/vnd.api+json; charset=utf-8", expected: true},
 		{name: "uppercase +JSON suffix", contentType: "application/vnd.api+JSON", expected: true},
+		{name: "wildcard json", contentType: "*/json", expected: true},
 		{name: "xml is not json", contentType: ContentTypeXML, expected: false},
 		{name: "plain text is not json", contentType: ContentTypeTextPlain, expected: false},
 		{name: "empty string", contentType: "", expected: false},
 		{name: "json substring in path", contentType: "text/html", expected: false},
+		{name: "malformed wildcard missing subtype", contentType: "*/", expected: false},
 	}
 
 	for _, tc := range tests {
@@ -78,6 +80,7 @@ func TestIsContentTypeXML(t *testing.T) {
 		contentType string
 		expected    bool
 	}{
+		{name: "wildcard", contentType: "*/xml", expected: true},
 		{name: "application/xml", contentType: ContentTypeXML, expected: true},
 		{name: "text/xml", contentType: ContentTypeTextXML, expected: true},
 		{name: "xml with charset", contentType: "application/xml; charset=utf-8", expected: true},
@@ -89,6 +92,7 @@ func TestIsContentTypeXML(t *testing.T) {
 		{name: "json is not xml", contentType: ContentTypeJSON, expected: false},
 		{name: "plain text is not xml", contentType: ContentTypeTextPlain, expected: false},
 		{name: "empty string", contentType: "", expected: false},
+		{name: "malformed wildcard missing subtype", contentType: "*/", expected: false},
 	}
 
 	for _, tc := range tests {
@@ -107,6 +111,7 @@ func TestIsContentTypeText(t *testing.T) {
 		contentType string
 		expected    bool
 	}{
+		{name: "wildcard", contentType: "text/*", expected: true},
 		{name: "text/plain", contentType: ContentTypeTextPlain, expected: true},
 		{name: "text/html", contentType: ContentTypeTextHTML, expected: true},
 		{name: "text/xml", contentType: ContentTypeTextXML, expected: true},
