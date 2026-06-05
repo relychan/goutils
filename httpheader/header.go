@@ -231,42 +231,36 @@ const (
 
 // IsContentTypeXML checks if the content type is XML.
 func IsContentTypeXML(contentType string) bool {
-	if contentType == ContentTypeXML || contentType == ContentTypeTextXML {
+	if isContentTypeWithPrefix(contentType, ContentTypeXML) ||
+		isContentTypeWithPrefix(contentType, ContentTypeTextXML) {
 		return true
 	}
 
 	mediaType := ExtractBaseMediaType(contentType)
-	if mediaType == ContentTypeXML || mediaType == ContentTypeTextXML {
-		return true
-	}
 
 	return isContentTypeWithSuffix(mediaType, "xml")
 }
 
 // IsContentTypeJSON checks if the content type is JSON.
 func IsContentTypeJSON(contentType string) bool {
-	if contentType == ContentTypeJSON || contentType == ContentTypeGraphQLResponseJSON {
+	if isContentTypeWithPrefix(contentType, ContentTypeJSON) ||
+		isContentTypeWithPrefix(contentType, ContentTypeGraphQLResponseJSON) {
 		return true
 	}
 
 	mediaType := ExtractBaseMediaType(contentType)
-	if mediaType == ContentTypeJSON || mediaType == ContentTypeGraphQLResponseJSON {
-		return true
-	}
 
 	return isContentTypeWithSuffix(mediaType, "json")
 }
 
 // IsContentTypeText checks if the content type relates to text.
 func IsContentTypeText(contentType string) bool {
-	// text/xml
 	return len(contentType) >= 5 &&
 		goutils.HasStringPrefixFold(contentType, "text/")
 }
 
 // IsContentTypeMultipartForm checks the content type relates to multipart form.
 func IsContentTypeMultipartForm(contentType string) bool {
-	// multipart/form
 	return len(contentType) >= 10 &&
 		goutils.HasStringPrefixFold(contentType, "multipart/")
 }
@@ -296,6 +290,17 @@ func GetHeaderValue(header http.Header, key string) string {
 	return ""
 }
 
+func isContentTypeWithPrefix(contentType string, prefix string) bool {
+	if !goutils.HasStringPrefixFold(contentType, prefix) {
+		return false
+	}
+
+	mtLength := len(contentType)
+	prefixLength := len(prefix)
+
+	return mtLength == prefixLength || contentType[prefixLength] == ';'
+}
+
 func isContentTypeWithSuffix(mediaType string, suffix string) bool {
 	slashIndex := strings.IndexRune(mediaType, '/')
 	if slashIndex <= 0 {
@@ -305,6 +310,11 @@ func isContentTypeWithSuffix(mediaType string, suffix string) bool {
 
 	mediaTypeLength := len(mediaType)
 	suffixLength := len(suffix)
+
+	if mediaTypeLength <= suffixLength {
+		return false
+	}
+
 	symbolChar := mediaType[mediaTypeLength-suffixLength-1]
 
 	return goutils.HasStringSuffixFold(mediaType, suffix) &&

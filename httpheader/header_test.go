@@ -61,6 +61,7 @@ func TestIsContentTypeJSON(t *testing.T) {
 		{name: "plain text is not json", contentType: ContentTypeTextPlain, expected: false},
 		{name: "empty string", contentType: "", expected: false},
 		{name: "json substring in path", contentType: "text/html", expected: false},
+		{name: "malformed wildcard missing subtype", contentType: "*/", expected: false},
 	}
 
 	for _, tc := range tests {
@@ -91,6 +92,7 @@ func TestIsContentTypeXML(t *testing.T) {
 		{name: "json is not xml", contentType: ContentTypeJSON, expected: false},
 		{name: "plain text is not xml", contentType: ContentTypeTextPlain, expected: false},
 		{name: "empty string", contentType: "", expected: false},
+		{name: "malformed wildcard missing subtype", contentType: "*/", expected: false},
 	}
 
 	for _, tc := range tests {
@@ -227,13 +229,4 @@ func TestGetHeaderValue(t *testing.T) {
 			}
 		})
 	}
-}
-
-func BenchmarkXxx(b *testing.B) {
-	contentType := "application/json; charset=utf-8"
-	b.Run("IsContentTypeJSON", func(b *testing.B) {
-		for b.Loop() {
-			IsContentTypeJSON(contentType)
-		}
-	})
 }
