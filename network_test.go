@@ -236,12 +236,12 @@ func TestExtractHeaders_EdgeCases(t *testing.T) {
 		}
 	})
 
-	t.Run("multiple values: first is kept", func(t *testing.T) {
+	t.Run("multiple values: last is kept", func(t *testing.T) {
 		result := ExtractHeaders(http.Header{
 			"Accept": []string{"text/html", "application/json"},
 		})
-		if result["accept"] != "text/html" {
-			t.Fatalf("expected first value text/html, got: %s", result["accept"])
+		if result["accept"] != "application/json" {
+			t.Fatalf("expected last value application/json, got: %s", result["accept"])
 		}
 	})
 }
