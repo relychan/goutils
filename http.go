@@ -17,6 +17,7 @@ package goutils
 import (
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -40,12 +41,12 @@ L:
 			continue
 		}
 
-		for i := len(header) - 1; i >= 0; i-- {
-			if header[i] == "" {
+		for _, v := range slices.Backward(header) {
+			if v == "" {
 				continue
 			}
 
-			result[strings.ToLower(key)] = header[i]
+			result[strings.ToLower(key)] = v
 
 			continue L
 		}
