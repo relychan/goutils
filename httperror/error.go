@@ -65,12 +65,10 @@ func NewHTTPError(httpStatus int, detail string) *HTTPError {
 type ValidationError struct { //nolint:recvcheck
 	// A granular description on the specific error related to a body property, query parameter, path parameters, and/or header.
 	Detail string `json:"detail"`
-	// A JSON Pointer to a specific request body property that is the source of error.
+	// A JSON Pointer to a specific property that is the source of error.
 	Pointer string `json:"pointer,omitempty"`
-	// The name of the query or path parameter that is the source of error.
-	Parameter string `json:"parameter,omitempty"`
-	// The name of the header that is the source of error.
-	Header string `json:"header,omitempty"`
+	// Location of the parameter that is the source of error.
+	Location string `json:"location,omitempty"`
 	// A string containing additional provider specific codes to identify the error context.
 	Code string `json:"code,omitempty"`
 	// A hint text to guide how to fix the issue.
@@ -82,7 +80,7 @@ func (ed ValidationError) Error() string {
 	var sb strings.Builder
 
 	sb.Grow(30 +
-		len(ed.Detail) + len(ed.Pointer) + len(ed.Parameter) + len(ed.Header) +
+		len(ed.Detail) + len(ed.Pointer) + len(ed.Location) +
 		len(ed.Code) + len(ed.Hint))
 
 	buildValidationErrorToString(&sb, ed, "")
@@ -332,8 +330,8 @@ func NewBusinessRuleViolationError(errors ...ValidationError) *HTTPError {
 	}
 }
 
-// NewValidationError occurs when the request is deemed unprocessable.
-func NewValidationError(errors ...ValidationError) *HTTPError {
+// NewHTTPValidationError occurs when the request is deemed unprocessable.
+func NewHTTPValidationError(errors ...ValidationError) *HTTPError {
 	return &HTTPError{
 		Type:   "https://problems-registry.smartbear.com/validation-error",
 		Title:  "Validation Error",
@@ -364,7 +362,7 @@ func NewHTTPErrorFromResponse(resp *http.Response) *HTTPError {
 	case http.StatusInternalServerError:
 		respError = NewServerError()
 	case http.StatusUnprocessableEntity:
-		respError = NewValidationError()
+		respError = NewHTTPValidationError()
 	case http.StatusServiceUnavailable:
 		respError = NewServiceUnavailableError()
 	default:
@@ -425,8 +423,7 @@ func buildValidationErrorToString(
 	writeField("detail", ed.Detail)
 	writeField("code", ed.Code)
 	writeField("pointer", ed.Pointer)
-	writeField("parameter", ed.Parameter)
-	writeField("header", ed.Header)
+	writeField("location", ed.Location)
 	writeField("hint", ed.Hint)
 }
 
