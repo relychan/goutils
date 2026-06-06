@@ -53,15 +53,11 @@
           },
           "pointer": {
             "type": "string",
-            "description": "A JSON Pointer to a specific request body property that is the source of error."
+            "description": "A JSON Pointer to a specific property that is the source of error."
           },
-          "parameter": {
+          "location": {
             "type": "string",
-            "description": "The name of the query or path parameter that is the source of error."
-          },
-          "header": {
-            "type": "string",
-            "description": "The name of the header that is the source of error."
+            "description": "Location of the parameter that is the source of error."
           },
           "code": {
             "type": "string",
