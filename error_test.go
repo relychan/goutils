@@ -87,7 +87,7 @@ func TestHTTPError(t *testing.T) {
 			Error: NewHTTPErrorWithExtensions(*httperror.NewMissingRequestParameterError(), nil),
 		},
 		{
-			Error: NewHTTPErrorWithExtensions(*httperror.NewValidationError(), map[string]any{
+			Error: NewHTTPErrorWithExtensions(*httperror.NewHTTPValidationError(), map[string]any{
 				"foo": "bar",
 			}),
 		},
