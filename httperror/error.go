@@ -67,7 +67,7 @@ type ValidationError struct { //nolint:recvcheck
 	Detail string `json:"detail"`
 	// A JSON Pointer to a specific property that is the source of error.
 	Pointer string `json:"pointer,omitempty"`
-	// Location of the parameter that is the source of error.
+	// Location indicates where the error occurred (e.g., body, query, path, header).
 	Location string `json:"location,omitempty"`
 	// A string containing additional provider specific codes to identify the error context.
 	Code string `json:"code,omitempty"`

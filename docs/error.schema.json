@@ -57,7 +57,7 @@
           },
           "location": {
             "type": "string",
-            "description": "Location of the parameter that is the source of error."
+            "description": "Location indicates where the error occurred (e.g., body, query, path, header)."
           },
           "code": {
             "type": "string",
