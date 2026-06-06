@@ -65,6 +65,8 @@ func NewHTTPError(httpStatus int, detail string) *HTTPError {
 type ValidationError struct { //nolint:recvcheck
 	// A granular description on the specific error related to a body property, query parameter, path parameters, and/or header.
 	Detail string `json:"detail"`
+	// Name of the query, path, header or cookie parameter that is the source of error.
+	Parameter string `json:"parameter,omitempty"`
 	// A JSON Pointer to a specific property that is the source of error.
 	Pointer string `json:"pointer,omitempty"`
 	// Location indicates where the error occurred (e.g., body, query, path, header).
@@ -81,7 +83,7 @@ func (ed ValidationError) Error() string {
 
 	sb.Grow(30 +
 		len(ed.Detail) + len(ed.Pointer) + len(ed.Location) +
-		len(ed.Code) + len(ed.Hint))
+		len(ed.Code) + len(ed.Hint) + len(ed.Parameter))
 
 	buildValidationErrorToString(&sb, ed, "")
 
@@ -422,6 +424,7 @@ func buildValidationErrorToString(
 
 	writeField("detail", ed.Detail)
 	writeField("code", ed.Code)
+	writeField("parameter", ed.Parameter)
 	writeField("pointer", ed.Pointer)
 	writeField("location", ed.Location)
 	writeField("hint", ed.Hint)

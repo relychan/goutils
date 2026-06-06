@@ -55,9 +55,13 @@
             "type": "string",
             "description": "A JSON Pointer to a specific property that is the source of error."
           },
+          "parameter": {
+            "type": "string",
+            "description": "Name of the query, path, header or cookie parameter that is the source of error."
+          },
           "location": {
             "type": "string",
-            "description": "Location indicates where the error occurred (e.g., body, query, path, header)."
+            "description": "Location indicates where the error occurred (e.g., body, query, path, header, or cookie)."
           },
           "code": {
             "type": "string",
