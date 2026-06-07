@@ -32,14 +32,16 @@ type Doer interface {
 
 // ExtractHeaders converts the http.Header to string map with lowercase header names.
 func ExtractHeaders(headers http.Header) map[string]string {
-	result := make(map[string]string)
+	result := make(map[string]string, len(headers))
 
-	for key, header := range headers {
-		if len(header) == 0 {
+	for key, values := range headers {
+		if len(values) == 0 {
 			continue
 		}
 
-		result[strings.ToLower(key)] = header[0]
+		lowerKey := strings.ToLower(key)
+
+		result[lowerKey] = normalizeHeaderValues(values)
 	}
 
 	return result
@@ -68,4 +70,17 @@ func CloseResponse(resp *http.Response) {
 	}
 
 	CatchWarnErrorFunc(resp.Body.Close)
+}
+
+func normalizeHeaderValues(values []string) string {
+	for i := len(values) - 1; i >= 0; i-- { //nolint:modernize,nolintlint
+		v := values[i]
+		if v == "" {
+			continue
+		}
+
+		return v
+	}
+
+	return ""
 }
