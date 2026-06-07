@@ -34,7 +34,6 @@ type Doer interface {
 func ExtractHeaders(headers http.Header) map[string]string {
 	result := make(map[string]string, len(headers))
 
-L:
 	for key, values := range headers {
 		if len(values) == 0 {
 			continue
@@ -42,18 +41,7 @@ L:
 
 		lowerKey := strings.ToLower(key)
 
-		for i := len(values) - 1; i >= 0; i-- {
-			v := values[i]
-			if v == "" {
-				continue
-			}
-
-			result[lowerKey] = v
-
-			continue L
-		}
-
-		result[lowerKey] = ""
+		result[lowerKey] = normalizeHeaderValues(values)
 	}
 
 	return result
@@ -82,4 +70,17 @@ func CloseResponse(resp *http.Response) {
 	}
 
 	CatchWarnErrorFunc(resp.Body.Close)
+}
+
+func normalizeHeaderValues(values []string) string {
+	for i := len(values) - 1; i >= 0; i-- { //nolint:modernize,nolintlint
+		v := values[i]
+		if v == "" {
+			continue
+		}
+
+		return v
+	}
+
+	return ""
 }

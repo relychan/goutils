@@ -79,9 +79,6 @@ linters:
       branch-max-lines: 2
     exhaustive:
       default-signifies-exhaustive: true
-    modernize:
-      disable:
-        - slicesbackward
 
     recvcheck:
       # Disables the built-in method exclusions:
