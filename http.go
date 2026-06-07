@@ -17,7 +17,6 @@ package goutils
 import (
 	"io"
 	"net/http"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -36,22 +35,25 @@ func ExtractHeaders(headers http.Header) map[string]string {
 	result := make(map[string]string, len(headers))
 
 L:
-	for key, header := range headers {
-		if len(header) == 0 {
+	for key, values := range headers {
+		if len(values) == 0 {
 			continue
 		}
 
-		for _, v := range slices.Backward(header) {
+		lowerKey := strings.ToLower(key)
+
+		for i := len(values) - 1; i >= 0; i-- {
+			v := values[i]
 			if v == "" {
 				continue
 			}
 
-			result[strings.ToLower(key)] = v
+			result[lowerKey] = v
 
 			continue L
 		}
 
-		result[strings.ToLower(key)] = ""
+		result[lowerKey] = ""
 	}
 
 	return result
