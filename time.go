@@ -412,7 +412,7 @@ func ParseDateTime[B []byte | string](input B) (Time, error) {
 func ParseDateTimeNative[B []byte | string](input B) (time.Time, error) {
 	// Parse the date and time.
 	if len(input) < dateLength {
-		return time.Time{}, fmt.Errorf("%w: %s", ErrInvalidDateTimeString, input)
+		return time.Time{}, fmt.Errorf("%w: %q", ErrInvalidDateTimeString, input)
 	}
 
 	year, month, day, err := parseDateString(input[:dateLength])
@@ -510,7 +510,7 @@ func ParseTimeNative[B []byte | string](input B) (time.Time, error) {
 
 func parseDateString[B []byte | string](s B) (int, int, int, error) {
 	if (len(s) != dateLength) || s[4] != '-' || s[7] != '-' {
-		return 0, 0, 0, fmt.Errorf("%w: %s", ErrInvalidDateString, s)
+		return 0, 0, 0, fmt.Errorf("%w: %q", ErrInvalidDateString, s)
 	}
 
 	year, err := ParseIntInRange(s[0:4], 0, 9999) // e.g., 2006
@@ -535,22 +535,22 @@ func parseTimeString[B []byte | string]( //nolint:cyclop
 	s B,
 ) (int, int, int, int, int, error) {
 	if len(s) < timeLength || s[2] != ':' || s[5] != ':' {
-		return 0, 0, 0, 0, 0, fmt.Errorf("%w: %s", ErrInvalidTimeString, s)
+		return 0, 0, 0, 0, 0, fmt.Errorf("%w: %q", ErrInvalidTimeString, s)
 	}
 
 	hour, err := ParseIntInRange(s[0:2], 0, 23) // e.g., 15
 	if err != nil {
-		return 0, 0, 0, 0, 0, fmt.Errorf("%w: hour %s", ErrInvalidTimeString, s)
+		return 0, 0, 0, 0, 0, fmt.Errorf("%w: hour %q", ErrInvalidTimeString, s)
 	}
 
 	minute, err := ParseIntInRange(s[3:5], 0, 59) // e.g., 04
 	if err != nil {
-		return 0, 0, 0, 0, 0, fmt.Errorf("%w: minute %s", ErrInvalidTimeString, s)
+		return 0, 0, 0, 0, 0, fmt.Errorf("%w: minute %q", ErrInvalidTimeString, s)
 	}
 
 	sec, err := ParseIntInRange(s[6:8], 0, 60) // e.g., 05
 	if err != nil {
-		return 0, 0, 0, 0, 0, fmt.Errorf("%w: second %s", ErrInvalidTimeString, s)
+		return 0, 0, 0, 0, 0, fmt.Errorf("%w: second %q", ErrInvalidTimeString, s)
 	}
 
 	// check leap second

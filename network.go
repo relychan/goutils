@@ -184,7 +184,7 @@ func parseIPRanges(ipRanges []string) ([]*net.IPNet, error) {
 	for i, rawIPRange := range ipRanges {
 		ip, err := ParseSubnet(rawIPRange)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse IP range %s: %w", rawIPRange, err)
+			return nil, fmt.Errorf("failed to parse IP range %q: %w", rawIPRange, err)
 		}
 
 		results[i] = ip
