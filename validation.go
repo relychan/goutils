@@ -29,6 +29,31 @@ import (
 
 var allDurationUnits = []string{"YMWD", "HMS"}
 
+const (
+	// ErrCodeInvalidJSONPointer represents an error code for invalid JSON pointer.
+	ErrCodeInvalidJSONPointer = "invalid_json_pointer"
+	// ErrCodeInvalidUUID represents an error code for invalid UUID string.
+	ErrCodeInvalidUUID = "invalid_uuid"
+	// ErrCodeInvalidDuration represents an error code for invalid duration.
+	ErrCodeInvalidDuration = "invalid_duration"
+	// ErrCodeInvalidDate represents an error code for invalid date.
+	ErrCodeInvalidDate = "invalid_date"
+	// ErrCodeInvalidTime represents an error code for invalid time.
+	ErrCodeInvalidTime = "invalid_time"
+	// ErrCodeInvalidDateTime represents an error code for invalid date time.
+	ErrCodeInvalidDateTime = "invalid_date_time"
+	// ErrCodeInvalidIPv4 represents an error code for invalid IPv4 string.
+	ErrCodeInvalidIPv4 = "invalid_ipv4"
+	// ErrCodeInvalidIPv6 represents an error code for invalid IPv6 string.
+	ErrCodeInvalidIPv6 = "invalid_ipv6"
+	// ErrCodeInvalidHostname represents an error code for invalid hostname.
+	ErrCodeInvalidHostname = "invalid_hostname"
+	// ErrCodeInvalidEmail represents an error code for invalid email.
+	ErrCodeInvalidEmail = "invalid_email"
+	// ErrCodeInvalidURI represents an error code for invalid URI.
+	ErrCodeInvalidURI = "invalid_uri"
+)
+
 // ValidateJSONPointer validates the JSON pointer string according to the [RFC 6901] specification.
 //
 // [RFC 6901]: https://www.rfc-editor.org/rfc/rfc6901#section-3
@@ -39,6 +64,7 @@ func ValidateJSONPointer(s string) *httperror.ValidationError {
 
 	if s[0] != '/' {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidJSONPointer,
 			Detail: "Invalid JSON pointer; the value is not starting with /",
 		}
 	}
@@ -58,6 +84,7 @@ func ValidateUUID(s string) *httperror.ValidationError {
 	err := uuid.Validate(s)
 	if err != nil {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidUUID,
 			Detail: err.Error(),
 		}
 	}
@@ -81,12 +108,14 @@ func ValidateDurationRFC3339( //nolint:gocognit,funlen
 	// must start with 'P'
 	if value == "" || value[0] != 'P' {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidDuration,
 			Detail: "Invalid duration; the string must start with P",
 		}
 	}
 
 	if len(value) == 1 {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidDuration,
 			Detail: "Invalid duration; nothing after P",
 		}
 	}
@@ -94,12 +123,14 @@ func ValidateDurationRFC3339( //nolint:gocognit,funlen
 	for i, s := range strings.Split(value[1:], "T") {
 		if i != 0 && s == "" {
 			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidDuration,
 				Detail: "Invalid duration; no time elements",
 			}
 		}
 
 		if i >= len(allDurationUnits) {
 			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidDuration,
 				Detail: "Invalid duration; more than one T",
 			}
 		}
@@ -119,6 +150,7 @@ func ValidateDurationRFC3339( //nolint:gocognit,funlen
 
 			if digitCount == 0 {
 				return &httperror.ValidationError{
+					Code:   ErrCodeInvalidDuration,
 					Detail: "Invalid duration; missing number",
 				}
 			}
@@ -126,6 +158,7 @@ func ValidateDurationRFC3339( //nolint:gocognit,funlen
 			s = s[digitCount:]
 			if s == "" {
 				return &httperror.ValidationError{
+					Code:   ErrCodeInvalidDuration,
 					Detail: "Invalid duration; missing unit",
 				}
 			}
@@ -136,11 +169,13 @@ func ValidateDurationRFC3339( //nolint:gocognit,funlen
 			if j == -1 {
 				if strings.IndexByte(allDurationUnits[i], unit) != -1 {
 					return &httperror.ValidationError{
+						Code:   ErrCodeInvalidDuration,
 						Detail: fmt.Sprintf("unit %q out of order", unit),
 					}
 				}
 
 				return &httperror.ValidationError{
+					Code:   ErrCodeInvalidDuration,
 					Detail: "invalid unit " + string(unit),
 				}
 			}
@@ -158,6 +193,7 @@ func ValidateIPV4(s string) *httperror.ValidationError {
 	ip := net.ParseIP(s)
 	if ip == nil || ip.To4() == nil || !strings.ContainsRune(s, '.') {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidIPv4,
 			Detail: "Invalid IPv4",
 		}
 	}
@@ -169,6 +205,7 @@ func ValidateIPV4(s string) *httperror.ValidationError {
 func ValidateIPV6(s string) *httperror.ValidationError {
 	if !strings.ContainsRune(s, ':') {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidIPv6,
 			Detail: "Invalid IPv6; missing colon",
 		}
 	}
@@ -176,12 +213,14 @@ func ValidateIPV6(s string) *httperror.ValidationError {
 	addr, err := netip.ParseAddr(s)
 	if err != nil {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidIPv6,
 			Detail: "Invalid IPv6; " + err.Error(),
 		}
 	}
 
 	if addr.Zone() != "" {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidIPv6,
 			Detail: "Invalid IPv6; zone id is not a part of ipv6 address",
 		}
 	}
@@ -197,6 +236,7 @@ func ValidateHostname(s string) *httperror.ValidationError {
 	s = strings.TrimSuffix(s, ".")
 	if len(s) > 253 {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidHostname,
 			Detail: "Hostname must not be more than 253 characters long",
 		}
 	}
@@ -206,6 +246,7 @@ func ValidateHostname(s string) *httperror.ValidationError {
 		// Each label must be from 1 to 63 characters long
 		if len(label) < 1 || len(label) > 63 {
 			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidHostname,
 				Detail: "Invalid hostname; label must be 1 to 63 characters long",
 			}
 		}
@@ -213,12 +254,14 @@ func ValidateHostname(s string) *httperror.ValidationError {
 		// labels must not start or end with a hyphen
 		if strings.HasPrefix(label, "-") {
 			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidHostname,
 				Detail: "Invalid hostname; label must not start with hyphen",
 			}
 		}
 
 		if strings.HasSuffix(label, "-") {
 			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidHostname,
 				Detail: "Invalid hostname; label must not end with hyphen",
 			}
 		}
@@ -228,6 +271,7 @@ func ValidateHostname(s string) *httperror.ValidationError {
 		for _, c := range label {
 			if c != '-' && !IsDigit(c) && !IsLowerAlphabet(c) && !IsUpperAlphabet(c) {
 				return &httperror.ValidationError{
+					Code:   ErrCodeInvalidHostname,
 					Detail: "Invalid hostname; invalid character " + string(c),
 				}
 			}
@@ -244,6 +288,7 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 	// entire email address to be no more than 254 characters long
 	if len(s) > 254 {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidEmail,
 			Detail: "Email must not be more than 254 characters long",
 		}
 	}
@@ -252,6 +297,7 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 	at := strings.LastIndexByte(s, '@')
 	if at == -1 {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidEmail,
 			Detail: "Invalid email; @ character must exist",
 		}
 	}
@@ -261,6 +307,7 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 	// local part may be up to 64 characters long
 	if len(local) > 64 {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidEmail,
 			Detail: "Invalid email; local part must not be more than 64 characters long",
 		}
 	}
@@ -270,6 +317,7 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 		local := local[1 : len(local)-1]
 		if strings.IndexByte(local, '\\') != -1 || strings.IndexByte(local, '"') != -1 {
 			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidEmail,
 				Detail: "Invalid email; backslash and quote are not allowed within quoted local part",
 			}
 		}
@@ -277,12 +325,14 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 		// unquoted
 		if strings.HasPrefix(local, ".") {
 			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidEmail,
 				Detail: "Email must not start with dot",
 			}
 		}
 
 		if strings.HasSuffix(local, ".") {
 			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidEmail,
 				Detail: "Email must not end with dot",
 			}
 		}
@@ -290,6 +340,7 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 		// consecutive dots not allowed
 		if strings.Contains(local, "..") {
 			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidEmail,
 				Detail: "Email must not contain consecutive dots",
 			}
 		}
@@ -299,6 +350,7 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 			if !IsDigit(c) && !IsLowerAlphabet(c) && !IsUpperAlphabet(c) &&
 				!strings.ContainsRune(".!#$%&'*+-/=?^_`{|}~", c) {
 				return &httperror.ValidationError{
+					Code:   ErrCodeInvalidEmail,
 					Detail: "Invalid email; invalid character " + string(c),
 				}
 			}
@@ -313,7 +365,8 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 		if ok {
 			err := ValidateIPV6(rem)
 			if err != nil {
-				err.Detail = "Invalid email address: " + err.Error()
+				err.Code = ErrCodeInvalidEmail
+				err.Detail = "Invalid email address: " + err.Detail
 
 				return err
 			}
@@ -323,7 +376,8 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 
 		err := ValidateIPV4(domain)
 		if err != nil {
-			err.Detail = "Invalid email address: " + err.Error()
+			err.Code = ErrCodeInvalidEmail
+			err.Detail = "Invalid email address: " + err.Detail
 
 			return err
 		}
@@ -334,7 +388,8 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 	// domain must match the requirements for a hostname
 	err := ValidateHostname(domain)
 	if err != nil {
-		err.Detail = "Invalid email address: " + err.Error()
+		err.Code = ErrCodeInvalidEmail
+		err.Detail = "Invalid email address: " + err.Detail
 
 		return err
 	}
@@ -347,6 +402,7 @@ func ValidateDate(s string) *httperror.ValidationError {
 	_, _, _, err := parseDateString(s) //nolint:dogsled
 	if err != nil {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidDate,
 			Detail: err.Error(),
 		}
 	}
@@ -361,6 +417,7 @@ func ValidateTime(str string) *httperror.ValidationError {
 	_, _, _, _, _, err := parseTimeString(str) //nolint:dogsled
 	if err != nil {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidTime,
 			Detail: err.Error(),
 		}
 	}
@@ -374,6 +431,7 @@ func ValidateTime(str string) *httperror.ValidationError {
 func ValidateDateTime(input string) *httperror.ValidationError {
 	if len(input) < dateTimeLength {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidDateTime,
 			Detail: ErrInvalidDateTimeString.Error(),
 		}
 	}
@@ -381,12 +439,14 @@ func ValidateDateTime(input string) *httperror.ValidationError {
 	_, _, _, err := parseDateString(input[:dateLength]) //nolint:dogsled
 	if err != nil {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidDateTime,
 			Detail: err.Error(),
 		}
 	}
 
 	if input[10] != 't' && input[10] != 'T' && input[10] != ' ' {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidDateTime,
 			Detail: "Invalid date time format. Missing T between date and time",
 		}
 	}
@@ -394,6 +454,7 @@ func ValidateDateTime(input string) *httperror.ValidationError {
 	_, _, _, _, _, err = parseTimeString(input[11:]) //nolint:dogsled
 	if err != nil {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidDateTime,
 			Detail: err.Error(),
 		}
 	}
@@ -406,12 +467,14 @@ func ValidateURI(s string) *httperror.ValidationError {
 	u, err := ParseURL(s)
 	if err != nil {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidURI,
 			Detail: err.Error(),
 		}
 	}
 
 	if !u.IsAbs() {
 		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidURI,
 			Detail: "Relative URL is not allowed",
 		}
 	}
@@ -587,7 +650,7 @@ func validateURLScheme(uri *url.URL, allowedSchemes []string) error {
 		return strings.EqualFold(item, uri.Scheme)
 	}) {
 		return fmt.Errorf(
-			"%w. Accept one of %v, got: %s",
+			"%w. Accept one of %v, got: %q",
 			ErrInvalidURLScheme,
 			allowedSchemes,
 			uri.Scheme,
@@ -606,6 +669,7 @@ func validateJSONPointerToken(tok string) *httperror.ValidationError {
 
 			if ch != '0' && ch != '1' {
 				return &httperror.ValidationError{
+					Code:   ErrCodeInvalidJSONPointer,
 					Detail: "Invalid JSON pointer; ~ must be followed by 0 or 1",
 				}
 			}

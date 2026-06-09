@@ -229,10 +229,36 @@ const (
 	ContentTypeGraphQLResponseJSON = "application/graphql-response+json"
 )
 
+// IsContentType checks if the input string matches the expected content type.
+func IsContentType(target string, expected string) bool {
+	if expected == "" || !goutils.HasStringPrefixFold(target, expected) {
+		return false
+	}
+
+	targetLength := len(target)
+
+	expectedLength := len(expected)
+	if targetLength == expectedLength {
+		return true
+	}
+
+	for i := expectedLength; i < targetLength; i++ {
+		switch target[i] {
+		case ' ', '\t':
+		case ';':
+			return true
+		default:
+			return false
+		}
+	}
+
+	return true
+}
+
 // IsContentTypeXML checks if the content type is XML.
 func IsContentTypeXML(contentType string) bool {
-	if isContentTypeWithPrefix(contentType, ContentTypeXML) ||
-		isContentTypeWithPrefix(contentType, ContentTypeTextXML) {
+	if IsContentType(contentType, ContentTypeXML) ||
+		IsContentType(contentType, ContentTypeTextXML) {
 		return true
 	}
 
@@ -243,8 +269,8 @@ func IsContentTypeXML(contentType string) bool {
 
 // IsContentTypeJSON checks if the content type is JSON.
 func IsContentTypeJSON(contentType string) bool {
-	if isContentTypeWithPrefix(contentType, ContentTypeJSON) ||
-		isContentTypeWithPrefix(contentType, ContentTypeGraphQLResponseJSON) {
+	if IsContentType(contentType, ContentTypeJSON) ||
+		IsContentType(contentType, ContentTypeGraphQLResponseJSON) {
 		return true
 	}
 
@@ -288,17 +314,6 @@ func GetHeaderValue(header http.Header, key string) string {
 	}
 
 	return ""
-}
-
-func isContentTypeWithPrefix(contentType string, prefix string) bool {
-	if !goutils.HasStringPrefixFold(contentType, prefix) {
-		return false
-	}
-
-	mtLength := len(contentType)
-	prefixLength := len(prefix)
-
-	return mtLength == prefixLength || contentType[prefixLength] == ';'
 }
 
 func isContentTypeWithSuffix(mediaType string, suffix string) bool {
