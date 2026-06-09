@@ -879,7 +879,7 @@ func TestUnmarshalInvalidTimes(t *testing.T) {
 		in   string
 		want string
 	}{
-		{`"2000-01-01T1:12:34Z"`, `invalid time format: 1:12:34Z`},
+		{`"2000-01-01T1:12:34Z"`, `invalid time format: "1:12:34Z"`},
 		{`"2000-01-01T00:00:00,000Z"`, `invalid time format: offset must begin with Z, plus or minus`},
 		{`"2000-01-01T00:00:00+24:00"`, `invalid time format: hour offset value out of range`},
 		{`"2000-01-01T00:00:00+00:60"`, `invalid time format: minute offset value out of range`},

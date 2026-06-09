@@ -141,7 +141,7 @@ func TestParseHttpURL(t *testing.T) {
 		},
 		{
 			URL:   "postgresql://localhost:8080/hello?foo=bar#about",
-			Error: "invalid url scheme. Accept one of [http https], got: postgresql",
+			Error: "invalid url scheme. Accept one of [http https], got: \"postgresql\"",
 		},
 		{
 			URL:   "!@#$$%",
