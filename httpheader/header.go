@@ -231,7 +231,7 @@ const (
 
 // IsContentType checks if the input string matches the expected content type.
 func IsContentType(target string, expected string) bool {
-	if !goutils.HasStringPrefixFold(target, expected) {
+	if expected == "" || !goutils.HasStringPrefixFold(target, expected) {
 		return false
 	}
 

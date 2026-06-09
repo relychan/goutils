@@ -388,8 +388,8 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 	// domain must match the requirements for a hostname
 	err := ValidateHostname(domain)
 	if err != nil {
-	err.Code = ErrCodeInvalidEmail
-	err.Detail = "Invalid email address: " + err.Detail
+		err.Code = ErrCodeInvalidEmail
+		err.Detail = "Invalid email address: " + err.Detail
 
 		return err
 	}
