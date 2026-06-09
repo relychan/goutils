@@ -366,7 +366,7 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 			err := ValidateIPV6(rem)
 			if err != nil {
 				err.Code = ErrCodeInvalidEmail
-				err.Detail = "Invalid email address: " + err.Error()
+				err.Detail = "Invalid email address: " + err.Detail
 
 				return err
 			}
@@ -377,7 +377,7 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 		err := ValidateIPV4(domain)
 		if err != nil {
 			err.Code = ErrCodeInvalidEmail
-			err.Detail = "Invalid email address: " + err.Error()
+			err.Detail = "Invalid email address: " + err.Detail
 
 			return err
 		}
@@ -388,8 +388,8 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 	// domain must match the requirements for a hostname
 	err := ValidateHostname(domain)
 	if err != nil {
-		err.Code = ErrCodeInvalidEmail
-		err.Detail = "Invalid email address: " + err.Error()
+	err.Code = ErrCodeInvalidEmail
+	err.Detail = "Invalid email address: " + err.Detail
 
 		return err
 	}
