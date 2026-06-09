@@ -244,7 +244,7 @@ func IsContentType(target string, expected string) bool {
 
 	for i := expectedLength; i < targetLength; i++ {
 		switch target[i] {
-		case ' ':
+		case ' ', '\t':
 		case ';':
 			return true
 		default:
