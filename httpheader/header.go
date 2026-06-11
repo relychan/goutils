@@ -230,29 +230,16 @@ const (
 )
 
 // IsContentType checks if the input string matches the expected content type.
+// Ignores any media type parameters (e.g. charset) during comparison.
 func IsContentType(target string, expected string) bool {
-	if expected == "" || !goutils.HasStringPrefixFold(target, expected) {
+	targetContentType := ExtractBaseMediaType(target)
+	expectedContentType := ExtractBaseMediaType(expected)
+
+	if targetContentType == "" || expectedContentType == "" {
 		return false
 	}
 
-	targetLength := len(target)
-
-	expectedLength := len(expected)
-	if targetLength == expectedLength {
-		return true
-	}
-
-	for i := expectedLength; i < targetLength; i++ {
-		switch target[i] {
-		case ' ', '\t':
-		case ';':
-			return true
-		default:
-			return false
-		}
-	}
-
-	return true
+	return strings.EqualFold(targetContentType, expectedContentType)
 }
 
 // IsContentTypeXML checks if the content type is XML.
