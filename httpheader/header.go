@@ -230,10 +230,14 @@ const (
 )
 
 // IsContentType checks if the input string matches the expected content type.
-// Ignore other parameters if exists.
+// Ignores any media type parameters (e.g. charset) during comparison.
 func IsContentType(target string, expected string) bool {
 	targetContentType := ExtractBaseMediaType(target)
 	expectedContentType := ExtractBaseMediaType(expected)
+
+	if targetContentType == "" || expectedContentType == "" {
+		return false
+	}
 
 	return strings.EqualFold(targetContentType, expectedContentType)
 }
