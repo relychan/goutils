@@ -53,10 +53,24 @@ func ParsePathOrURL(input string) (*url.URL, error) {
 	}
 
 	schemeIndex := strings.IndexRune(input, ':')
-	if schemeIndex >= 0 {
-		if schemeIndex == 0 || len(input)-schemeIndex < 2 ||
-			input[schemeIndex+1:schemeIndex+3] != "//" {
-			// the authority could be missing because of missing slashes.
+	if schemeIndex > 0 {
+		// If ':' appears after a path/query/fragment delimiter, it's part of the path, not a scheme.
+		if delim := strings.IndexAny(input, "/?#"); delim != -1 && delim < schemeIndex {
+			schemeIndex = -1
+		}
+	}
+
+	if schemeIndex > 0 {
+		// Treat Windows drive paths (e.g. C:\\path or C:/path) as paths, not URL schemes.
+		if len(input) >= 3 && schemeIndex == 1 && (input[2] == '\\' || input[2] == '/') &&
+			((input[0] >= 'A' && input[0] <= 'Z') || (input[0] >= 'a' && input[0] <= 'z')) {
+			schemeIndex = -1
+		}
+	}
+
+	if schemeIndex > 0 {
+		if !strings.HasPrefix(input[schemeIndex+1:], "//") {
+			// The authority could be missing because of missing slashes.
 			return nil, ErrInvalidURLScheme
 		}
 
