@@ -127,7 +127,7 @@ func HasStringSuffixFold(input string, suffix string) bool {
 	return strings.EqualFold(inputSuffix, suffix)
 }
 
-// StringAllRune checks if all characters in the string is are repeated with the same character.
+// StringAllRune checks whether all characters in the string are the same rune.
 func StringAllRune(input string, char rune) bool {
 	for _, c := range input {
 		if c != char {

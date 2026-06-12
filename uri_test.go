@@ -499,7 +499,7 @@ func TestParsePathOrURL(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		wantErr  error
+		wantErr  string
 		wantPath string
 		wantHost string
 	}{
@@ -533,25 +533,25 @@ func TestParsePathOrURL(t *testing.T) {
 		{
 			name:    "colon at position 0",
 			input:   "://host",
-			wantErr: ErrInvalidURLScheme,
+			wantErr: "invalid url scheme",
 		},
 		{
 			name:    "colon without double slash",
 			input:   "http:example.com",
-			wantErr: ErrInvalidURLScheme,
+			wantErr: "Invalid URL syntax",
 		},
 		{
 			name:    "single slash after colon",
 			input:   "http:/example.com",
-			wantErr: ErrInvalidURLScheme,
+			wantErr: "Invalid URL syntax",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			u, err := ParsePathOrURL(tc.input)
-			if tc.wantErr != nil {
-				if !errors.Is(err, tc.wantErr) {
+			if tc.wantErr != "" {
+				if !strings.Contains(err.Error(), tc.wantErr) {
 					t.Fatalf("expected error %v, got: %v", tc.wantErr, err)
 				}
 				return

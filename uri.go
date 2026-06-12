@@ -47,34 +47,19 @@ func ParsePathOrHTTPURL(input string) (*url.URL, error) {
 
 // ParsePathOrURL validates and parses a path or URL.
 func ParsePathOrURL(input string) (*url.URL, error) {
+	schemeIndex := strings.IndexRune(input, ':')
+	if schemeIndex == 0 {
+		// The authority could be missing because of missing slashes.
+		return nil, ErrInvalidURLScheme
+	}
+
+	if schemeIndex > 0 {
+		return ParseURL(input)
+	}
+
 	input = strings.TrimSpace(input)
 	if input == "" {
 		return new(url.URL), nil
-	}
-
-	schemeIndex := strings.IndexRune(input, ':')
-	if schemeIndex > 0 {
-		// If ':' appears after a path/query/fragment delimiter, it's part of the path, not a scheme.
-		if delim := strings.IndexAny(input, "/?#"); delim != -1 && delim < schemeIndex {
-			schemeIndex = -1
-		}
-	}
-
-	if schemeIndex > 0 {
-		// Treat Windows drive paths (e.g. C:\\path or C:/path) as paths, not URL schemes.
-		if len(input) >= 3 && schemeIndex == 1 && (input[2] == '\\' || input[2] == '/') &&
-			((input[0] >= 'A' && input[0] <= 'Z') || (input[0] >= 'a' && input[0] <= 'z')) {
-			schemeIndex = -1
-		}
-	}
-
-	if schemeIndex > 0 {
-		if !strings.HasPrefix(input[schemeIndex+1:], "//") {
-			// The authority could be missing because of missing slashes.
-			return nil, ErrInvalidURLScheme
-		}
-
-		return ParseURL(input)
 	}
 
 	if StringContainsCTLByte(input) {
@@ -181,6 +166,8 @@ type ValidateHTTPURLOptions struct {
 }
 
 // ValidateURLWithOptions parses and validates URL with options.
+// Make sure that the options field is not null.
+// Otherwise, the validation is skipped.
 func ValidateURLWithOptions(
 	ctx context.Context,
 	uri *url.URL,
@@ -240,7 +227,7 @@ func parseAndValidateURI(s string) (*url.URL, *httperror.ValidationError) {
 		}
 	}
 
-	uri, _, err := parseURIAndHostname(s)
+	uri, _, err := parseURIAndHostname(input)
 
 	return uri, err
 }
@@ -343,9 +330,9 @@ func parseURIAndHostname(input string) (*url.URL, string, *httperror.ValidationE
 	return parsedURI, hostname, nil
 }
 
-func parseAndValidateURL(input string) (*url.URL, *httperror.ValidationError) { //nolint:funlen
-	uriStr := strings.TrimSpace(input)
-	if uriStr == "" {
+func parseAndValidateURL(s string) (*url.URL, *httperror.ValidationError) { //nolint:funlen
+	input := strings.TrimSpace(s)
+	if input == "" {
 		return nil, &httperror.ValidationError{
 			Code:   ErrCodeInvalidURI,
 			Detail: "Invalid URL. The input string is empty",
@@ -353,7 +340,7 @@ func parseAndValidateURL(input string) (*url.URL, *httperror.ValidationError) { 
 	}
 
 	schemeIndex := strings.Index(input, "://")
-	if schemeIndex <= 0 || len(uriStr)-schemeIndex <= 1 {
+	if schemeIndex <= 0 || len(input)-schemeIndex <= 1 {
 		return nil, &httperror.ValidationError{
 			Code:   ErrCodeInvalidURI,
 			Detail: "Invalid URL syntax",
