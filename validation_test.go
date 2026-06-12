@@ -11,7 +11,7 @@ import (
 
 func TestValidateURL_AllowedSchemes(t *testing.T) {
 	t.Run("scheme in allowed list passes", func(t *testing.T) {
-		u := &url.URL{Scheme: "https", Host: "127.0.0.1"}
+		u := &url.URL{Scheme: "https", Host: "1z27.0.0.1"}
 		err := ValidateURLWithOptions(context.Background(), u, &ValidateHTTPURLOptions{
 			AllowedSchemes: []string{"http", "https"},
 		})

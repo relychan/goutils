@@ -323,13 +323,13 @@ func parseURIAndHostname(input string) (*url.URL, string, *httperror.ValidationE
 
 	validatedError := ValidateHostname(hostname)
 	if validatedError != nil {
-		return parsedURI, hostname, validatedError
+		return nil, "", validatedError
 	}
 
 	return parsedURI, hostname, nil
 }
 
-func parseAndValidateURL(input string) (*url.URL, *httperror.ValidationError) {
+func parseAndValidateURL(input string) (*url.URL, *httperror.ValidationError) { //nolint:funlen
 	uriStr := strings.TrimSpace(input)
 	if uriStr == "" {
 		return nil, &httperror.ValidationError{
@@ -356,6 +356,46 @@ func parseAndValidateURL(input string) (*url.URL, *httperror.ValidationError) {
 			Code:   ErrCodeInvalidURI,
 			Detail: "Invalid URL. Hostname is empty",
 		}
+	}
+
+	if parsedURI.Path == "" || parsedURI.Path == "/" {
+		return parsedURI, nil
+	}
+
+	// validate invalid path patterns
+	uriPath := parsedURI.Path
+	if uriPath[0] == '/' {
+		uriPath = uriPath[1:]
+	}
+
+	for uriPath != "" {
+		slashIndex := strings.IndexByte(uriPath, '/')
+		if slashIndex == 0 {
+			return nil, &httperror.ValidationError{
+				Code:   ErrCodeInvalidURI,
+				Detail: "Invalid double slashes in the URL path syntax",
+			}
+		}
+
+		part := uriPath
+
+		if slashIndex != -1 {
+			part = uriPath[:slashIndex]
+			uriPath = uriPath[slashIndex+1:]
+		} else {
+			uriPath = ""
+		}
+
+		if part == "*" || StringAllRune(part, '.') {
+			return nil, &httperror.ValidationError{
+				Code:   ErrCodeInvalidURI,
+				Detail: "Invalid URL path syntax",
+			}
+		}
+	}
+
+	if parsedURI.Path[0] != '/' {
+		parsedURI.Path = "/" + parsedURI.Path
 	}
 
 	return parsedURI, nil
