@@ -171,7 +171,7 @@ func fileReaderFromURL(
 	options *downloadFileOptions,
 ) (io.ReadCloser, string, error) {
 	if len(options.AllowedHosts) > 0 || len(options.BlockedHosts) > 0 {
-		err := validateHost(fileURL.Host, fileURL.Hostname(), &ValidateHTTPURLOptions{
+		err := validateHostWithOptions(fileURL.Host, fileURL.Hostname(), &ValidateHTTPURLOptions{
 			AllowedHosts: options.AllowedHosts,
 			BlockedHosts: options.BlockedHosts,
 		})

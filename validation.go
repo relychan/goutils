@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
-	"net/url"
-	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -462,83 +460,6 @@ func ValidateDateTime(input string) *httperror.ValidationError {
 	return nil
 }
 
-// ValidateURI checks if the input string is a valid URI.
-func ValidateURI(s string) *httperror.ValidationError {
-	u, err := ParseURL(s)
-	if err != nil {
-		return &httperror.ValidationError{
-			Code:   ErrCodeInvalidURI,
-			Detail: err.Error(),
-		}
-	}
-
-	if !u.IsAbs() {
-		return &httperror.ValidationError{
-			Code:   ErrCodeInvalidURI,
-			Detail: "Relative URL is not allowed",
-		}
-	}
-
-	return nil
-}
-
-// ValidateHTTPURLOptions represent URL validation options.
-type ValidateHTTPURLOptions struct {
-	AllowedSchemes  []string
-	AllowedHosts    []string
-	BlockedHosts    []string
-	PublicIPOnly    bool
-	AllowedIPRanges []string
-	BlockedIPRanges []string
-	// Custom lookup IP function.
-	LookupIP func(ctx context.Context, host string) ([]net.IP, error)
-}
-
-// ValidateURLWithOptions parses and validates URL with options.
-func ValidateURLWithOptions(
-	ctx context.Context,
-	uri *url.URL,
-	options ValidateHTTPURLOptions,
-) error {
-	err := validateURLScheme(uri, options.AllowedSchemes)
-	if err != nil {
-		return err
-	}
-
-	// Extract hostname without port
-	hostname := uri.Hostname()
-	if hostname == "" {
-		return ErrInvalidURI
-	}
-
-	err = validateHost(uri.Host, hostname, &options)
-	if err != nil {
-		return err
-	}
-
-	if !options.PublicIPOnly &&
-		len(options.AllowedIPRanges) == 0 && len(options.BlockedIPRanges) == 0 {
-		return nil
-	}
-
-	allowedIPRanges, err := parseIPRanges(options.AllowedIPRanges)
-	if err != nil {
-		return err
-	}
-
-	blockedIPRanges, err := parseIPRanges(options.BlockedIPRanges)
-	if err != nil {
-		return err
-	}
-
-	return ValidateIPOrDomain(ctx, hostname, ValidateIPOptions{
-		PublicIPOnly:    options.PublicIPOnly,
-		AllowedIPRanges: allowedIPRanges,
-		BlockedIPRanges: blockedIPRanges,
-		LookupIP:        options.LookupIP,
-	})
-}
-
 // ValidateIPOptions represent URL validation options.
 type ValidateIPOptions struct {
 	// Block all private IPs.
@@ -613,51 +534,6 @@ func ValidateIP(ip net.IP, options ValidateIPOptions) error {
 	}
 
 	return ErrBlockedIP
-}
-
-func validateHost(host, hostname string, options *ValidateHTTPURLOptions) error {
-	for _, expr := range options.BlockedHosts {
-		re, err := NewRegexpMatcher(expr)
-		if err != nil {
-			return fmt.Errorf("failed to parse blocked host rule: %w", err)
-		}
-
-		if re.MatchString(hostname) || re.MatchString(host) {
-			return fmt.Errorf("%w: host is blocked", ErrInvalidURI)
-		}
-	}
-
-	if len(options.AllowedHosts) == 0 {
-		return nil
-	}
-
-	for _, expr := range options.AllowedHosts {
-		re, err := NewRegexpMatcher(expr)
-		if err != nil {
-			return fmt.Errorf("failed to parse allowed host rule: %w", err)
-		}
-
-		if re.MatchString(hostname) || re.MatchString(host) {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%w: host is not allowed", ErrInvalidURI)
-}
-
-func validateURLScheme(uri *url.URL, allowedSchemes []string) error {
-	if len(allowedSchemes) > 0 && !slices.ContainsFunc(allowedSchemes, func(item string) bool {
-		return strings.EqualFold(item, uri.Scheme)
-	}) {
-		return fmt.Errorf(
-			"%w. Accept one of %v, got: %q",
-			ErrInvalidURLScheme,
-			allowedSchemes,
-			uri.Scheme,
-		)
-	}
-
-	return nil
 }
 
 func validateJSONPointerToken(tok string) *httperror.ValidationError {

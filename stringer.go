@@ -126,3 +126,14 @@ func HasStringSuffixFold(input string, suffix string) bool {
 
 	return strings.EqualFold(inputSuffix, suffix)
 }
+
+// StringAllRune checks whether all characters in the string are the same rune.
+func StringAllRune(input string, char rune) bool {
+	for _, c := range input {
+		if c != char {
+			return false
+		}
+	}
+
+	return true
+}
