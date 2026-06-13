@@ -306,7 +306,7 @@ func AppendURL(uri *url.URL, uriPath string) error { //nolint:cyclop
 	}
 
 	if path != "" && path != "/" {
-		err := ValidateURIPath(path)
+		err := ValidateURLPath(path)
 		if err != nil {
 			return err
 		}
@@ -331,10 +331,17 @@ func AppendURL(uri *url.URL, uriPath string) error { //nolint:cyclop
 	return nil
 }
 
-// ValidateURIPath checks if the URI path is valid.
-func ValidateURIPath(input string) *httperror.ValidationError {
+// ValidateURLPath checks if the URL path is valid.
+func ValidateURLPath(input string) *httperror.ValidationError {
 	if input == "" || input == "/" {
 		return nil
+	}
+
+	if strings.Contains(input, "://") {
+		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidPath,
+			Detail: "The URL path must be relative",
+		}
 	}
 
 	// validate invalid path patterns
@@ -346,7 +353,7 @@ func ValidateURIPath(input string) *httperror.ValidationError {
 		slashIndex := strings.IndexByte(input, '/')
 		if slashIndex == 0 {
 			return &httperror.ValidationError{
-				Code:   ErrCodeInvalidURI,
+				Code:   ErrCodeInvalidPath,
 				Detail: "Invalid double slashes in the URL path syntax",
 			}
 		}
@@ -362,8 +369,15 @@ func ValidateURIPath(input string) *httperror.ValidationError {
 
 		if part == "*" || StringAllRune(part, '.') || StringContainsCTLByte(part) {
 			return &httperror.ValidationError{
-				Code:   ErrCodeInvalidURI,
-				Detail: "Invalid URL path syntax",
+				Code:   ErrCodeInvalidPath,
+				Detail: "Wildcard and traversal paths are not allowed in URL path",
+			}
+		}
+
+		if StringContainsCTLByte(part) {
+			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidPath,
+				Detail: "URL path contains invalid characters",
 			}
 		}
 	}
@@ -523,7 +537,7 @@ func parseNormalizedURL(input string) (*url.URL, *httperror.ValidationError) {
 		}
 	}
 
-	err = ValidateURIPath(parsedURI.Path)
+	err = ValidateURLPath(parsedURI.Path)
 	if err != nil {
 		return nil, err
 	}
