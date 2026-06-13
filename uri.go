@@ -50,6 +50,7 @@ func ParsePathOrHTTPURL(input string) (*url.URL, error) {
 
 // ParsePathOrURL validates and parses a path or URL.
 func ParsePathOrURL(input string) (*url.URL, error) {
+	input = strings.TrimSpace(input)
 	if input == "" {
 		return new(url.URL), nil
 	}
@@ -86,7 +87,6 @@ func ParsePathOrURL(input string) (*url.URL, error) {
 
 // SplitPathQueryFragment splits path, query and fragment from string.
 func SplitPathQueryFragment(input string) (string, string, string) {
-	input = strings.TrimSpace(input)
 	if input == "" {
 		return "", "", ""
 	}
