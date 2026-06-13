@@ -306,6 +306,8 @@ func AppendURL(uri *url.URL, uriPath string) error {
 			return err
 		}
 
+		uri.Path = strings.TrimRight(uri.Path, "/")
+
 		switch {
 		case uri.Path == "" || uri.Path == "/":
 			uri.Path = path

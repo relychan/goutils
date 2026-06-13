@@ -776,7 +776,7 @@ func TestAppendURL(t *testing.T) {
 			name:    "absolute path appended to base with trailing slash",
 			base:    "https://example.com/api/",
 			uriPath: "/v2/items",
-			wantURL: "https://example.com/api//v2/items",
+			wantURL: "https://example.com/api/v2/items",
 		},
 
 		// Base URL with existing query
