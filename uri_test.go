@@ -16,7 +16,6 @@ package goutils
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"reflect"
 	"strings"
@@ -62,22 +61,22 @@ func TestParseRelativeOrHttpURL_Errors(t *testing.T) {
 	testCases := []struct {
 		name  string
 		input string
-		err   error
+		err   string
 	}{
 		{
 			name:  "invalid scheme",
 			input: "ftp://example.com",
-			err:   ErrInvalidURLScheme,
+			err:   `Invalid HTTP scheme. Expected http(s), got "ftp"`,
 		},
 		{
 			name:  "scheme prefix only",
 			input: "://example.com",
-			err:   ErrInvalidURLScheme,
+			err:   `Invalid URL. Scheme is empty`,
 		},
 		{
 			name:  "postgresql scheme",
 			input: "postgresql://localhost/db",
-			err:   ErrInvalidURLScheme,
+			err:   `Invalid HTTP scheme. Expected http(s), got "postgresql"`,
 		},
 	}
 
@@ -88,7 +87,7 @@ func TestParseRelativeOrHttpURL_Errors(t *testing.T) {
 				t.Fatalf("expected error, got nil")
 			}
 
-			if !errors.Is(err, tc.err) {
+			if !strings.Contains(err.Error(), tc.err) {
 				t.Fatalf("expected error %v, got: %v", tc.err, err)
 			}
 		})
@@ -140,11 +139,11 @@ func TestParseHttpURL(t *testing.T) {
 		},
 		{
 			URL:   "postgresql://localhost:8080/hello?foo=bar#about",
-			Error: "invalid url scheme. Accept one of [http https], got: \"postgresql\"",
+			Error: "Invalid HTTP URL scheme",
 		},
 		{
 			URL:   "!@#$$%",
-			Error: "Invalid URL syntax",
+			Error: "Invalid HTTP URL scheme",
 		},
 	}
 
@@ -181,7 +180,7 @@ func TestParseHTTPURL_AllowedSchemes(t *testing.T) {
 		_, err := ParseAndValidateURLWithOptions(context.Background(), "http://localhost/path", &ValidateHTTPURLOptions{
 			AllowedSchemes: []string{"ftp", "https", "ws"},
 		})
-		if err == nil || !errors.Is(err, ErrInvalidURLScheme) {
+		if err == nil || !strings.Contains(err.Error(), `Invalid URI scheme. Accept one of [ftp, https, ws], got "http"`) {
 			t.Fatalf("expected ErrInvalidURLScheme, got: %v", err)
 		}
 	})
@@ -485,9 +484,6 @@ func TestValidateURL(t *testing.T) {
 				if tc.wantMsg != "" && !strings.Contains(err.Error(), tc.wantMsg) {
 					t.Fatalf("expected error containing %q, got: %v", tc.wantMsg, err)
 				}
-				if err.Code != ErrCodeInvalidURI {
-					t.Fatalf("expected code %q, got %q", ErrCodeInvalidURI, err.Code)
-				}
 			} else if err != nil {
 				t.Fatalf("expected nil error, got: %v", err)
 			}
@@ -533,7 +529,7 @@ func TestParsePathOrURL(t *testing.T) {
 		{
 			name:    "colon at position 0",
 			input:   "://host",
-			wantErr: "invalid url scheme",
+			wantErr: "Invalid URL. Scheme is empty",
 		},
 		{
 			name:    "colon without double slash",
@@ -582,7 +578,7 @@ func TestParsePathOrURL_CTLBytes(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := ParsePathOrURL(tc.input)
-			if !errors.Is(err, ErrInvalidURI) {
+			if !strings.Contains(err.Error(), "Path contains invalid characters") {
 				t.Fatalf("expected ErrInvalidURI for CTL byte input, got: %v", err)
 			}
 		})

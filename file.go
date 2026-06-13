@@ -24,7 +24,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/relychan/goutils/httperror"
@@ -145,9 +144,7 @@ func FileReaderFromPath(
 		return nil, "", err
 	}
 
-	if slices.ContainsFunc(httpSchemes, func(scheme string) bool {
-		return strings.EqualFold(fileURL.Scheme, scheme)
-	}) {
+	if strings.EqualFold(fileURL.Scheme, "http") || strings.EqualFold(fileURL.Scheme, "https") {
 		return fileReaderFromURL(ctx, fileURL, filePath, defaultOptions)
 	}
 

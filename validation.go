@@ -50,6 +50,12 @@ const (
 	ErrCodeInvalidEmail = "invalid_email"
 	// ErrCodeInvalidURI represents an error code for invalid URI.
 	ErrCodeInvalidURI = "invalid_uri"
+	// ErrCodeInvalidURL represents an error code for invalid URL.
+	ErrCodeInvalidURL = "invalid_url"
+	// ErrCodeInvalidPath represents an error code for invalid path.
+	ErrCodeInvalidPath = "invalid_path"
+	// ErrCodeInvalidURIScheme represents an error code for invalid URI scheme.
+	ErrCodeInvalidURIScheme = "invalid_uri_scheme"
 )
 
 // ValidateJSONPointer validates the JSON pointer string according to the [RFC 6901] specification.
