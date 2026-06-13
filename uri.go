@@ -436,7 +436,7 @@ func parseNormalizedURL(input string) (*url.URL, *httperror.ValidationError) {
 	return parsedURI, nil
 }
 
-// IsURLSchemePrefixHTTP checks if the input string has the http(s) scheme.
+// IsURLSchemePrefixHTTP reports whether input begins with "http://" or "https://" (case-insensitive for the scheme).
 func IsURLSchemePrefixHTTP(input string) bool {
 	if len(input) < 7 || !strings.EqualFold(input[:4], "http") {
 		return false
