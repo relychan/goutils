@@ -793,7 +793,10 @@ func TestAppendURL(t *testing.T) {
 			base := mustParseURL(tc.base)
 			err := AppendURL(base, tc.uriPath)
 			if err != nil {
-				t.Errorf("expected nil error, got: %s", err)
+				t.Fatalf("expected nil error, got: %v", err)
+			}
+			if got := base.String(); got != tc.wantURL {
+				t.Fatalf("unexpected URL: got %q, want %q", got, tc.wantURL)
 			}
 		})
 	}
