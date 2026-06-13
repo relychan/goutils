@@ -25,8 +25,8 @@ func TestValidateURL_AllowedSchemes(t *testing.T) {
 		err := ValidateURLWithOptions(context.Background(), u, &ValidateHTTPURLOptions{
 			AllowedSchemes: []string{"http", "https"},
 		})
-		if !strings.Contains(err.Error(), "Invalid URI scheme") {
-			t.Fatalf("expected ErrInvalidURLScheme, got: %v", err)
+		if err == nil || !strings.Contains(err.Error(), "Invalid URI scheme") {
+			t.Fatalf("expected invalid scheme error, got: %v", err)
 		}
 	})
 
@@ -35,8 +35,8 @@ func TestValidateURL_AllowedSchemes(t *testing.T) {
 		// No scheme restriction — only IP validation matters; 127.0.0.1 resolves so no DNS error
 		err := ValidateURLWithOptions(context.Background(), u, &ValidateHTTPURLOptions{})
 		// Should not get ErrInvalidURLScheme (may get ErrBlockedIP or nil depending on IP rules)
-		if err != nil && strings.Contains(err.Error(), "Invalid URL scheme") {
-			t.Fatalf("did not expect ErrInvalidURLScheme, got: %v", err)
+		if err != nil {
+			t.Fatalf("expected nil error, got: %v", err)
 		}
 	})
 }

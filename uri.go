@@ -118,14 +118,14 @@ func ParseHTTPURL(s string) (*url.URL, error) {
 	input := strings.TrimSpace(s)
 	if input == "" {
 		return nil, &httperror.ValidationError{
-			Code:   ErrCodeInvalidURI,
+			Code:   ErrCodeInvalidURL,
 			Detail: "Invalid HTTP URL. The input string is empty",
 		}
 	}
 
 	if !hasHTTPSchemePrefix(input) {
 		return nil, &httperror.ValidationError{
-			Code:   ErrCodeInvalidURI,
+			Code:   ErrCodeInvalidURIScheme,
 			Detail: "Invalid HTTP URL scheme",
 		}
 	}
