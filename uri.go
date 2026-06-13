@@ -268,7 +268,7 @@ func IsURLSchemePrefixHTTP(input string) bool {
 
 // AppendURL appends uriPath's path, query, and fragment components to uri in-place.
 // uriPath may contain a path with optional ?query and #fragment.
-func AppendURL(uri *url.URL, uriPath string) error {
+func AppendURL(uri *url.URL, uriPath string) error { //nolint:cyclop
 	uriPath = strings.TrimSpace(uriPath)
 	if uriPath == "" || uriPath == "/" {
 		return nil
@@ -295,9 +295,12 @@ func AppendURL(uri *url.URL, uriPath string) error {
 			}
 		}
 
-		if uri.RawQuery == "" {
+		switch {
+		case uri.RawQuery == "":
 			uri.RawQuery = query
-		} else {
+		case strings.HasSuffix(uri.RawQuery, "&") || strings.HasPrefix(query, "&"):
+			uri.RawQuery += query
+		default:
 			uri.RawQuery += "&" + query
 		}
 	}
@@ -317,6 +320,11 @@ func AppendURL(uri *url.URL, uriPath string) error {
 			uri.Path += path
 		default:
 			uri.Path += "/" + path
+		}
+
+		// Keep url.URL.Path normalized for absolute URLs.
+		if uri.Host != "" && uri.Path != "" && uri.Path[0] != '/' {
+			uri.Path = "/" + uri.Path
 		}
 	}
 
