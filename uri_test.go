@@ -17,6 +17,7 @@ package goutils
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -657,5 +658,180 @@ func TestParseAndValidateURLWithOptions_InvalidURL(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "Invalid URL syntax") {
 		t.Fatalf("expected 'Invalid URL syntax', got: %v", err)
+	}
+}
+
+func mustParseURL(raw string) *url.URL {
+	u, err := url.Parse(raw)
+	if err != nil {
+		panic(err)
+	}
+
+	return u
+}
+
+func TestAppendURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		base    string
+		uriPath string
+		wantURL string
+		wantErr string
+	}{
+
+		// No-op cases
+		{
+			name:    "empty path returns base unchanged",
+			base:    "https://example.com/api",
+			uriPath: "",
+			wantURL: "https://example.com/api",
+		},
+		{
+			name:    "slash-only path returns base unchanged",
+			base:    "https://example.com/api",
+			uriPath: "/",
+			wantURL: "https://example.com/api",
+		},
+
+		// Path-only cases
+		{
+			name:    "absolute path appended to empty base path",
+			base:    "https://example.com",
+			uriPath: "/users",
+			wantURL: "https://example.com/users",
+		},
+		{
+			name:    "absolute path appended to root base path",
+			base:    "https://example.com/",
+			uriPath: "/users",
+			wantURL: "https://example.com/users",
+		},
+		{
+			name:    "absolute path appended to existing base path",
+			base:    "https://example.com/api",
+			uriPath: "/v1/users",
+			wantURL: "https://example.com/api/v1/users",
+		},
+		{
+			name:    "relative path appended with separator",
+			base:    "https://example.com/api",
+			uriPath: "v1/users",
+			wantURL: "https://example.com/api/v1/users",
+		},
+		{
+			name:    "relative path appended to empty base path",
+			base:    "https://example.com",
+			uriPath: "users",
+			wantURL: "https://example.com/users",
+		},
+
+		// Query-only cases
+		{
+			name:    "query appended to base with no query",
+			base:    "https://example.com/api",
+			uriPath: "?limit=10",
+			wantURL: "https://example.com/api?limit=10",
+		},
+		{
+			name:    "query merged with existing base query",
+			base:    "https://example.com/api?page=1",
+			uriPath: "?limit=10",
+			wantURL: "https://example.com/api?page=1&limit=10",
+		},
+
+		// Fragment cases
+		{
+			name:    "fragment set from uri path",
+			base:    "https://example.com/api",
+			uriPath: "#section",
+			wantURL: "https://example.com/api#section",
+		},
+
+		// Combined cases
+		{
+			name:    "path and query combined",
+			base:    "https://example.com/api",
+			uriPath: "/v1/users?limit=10",
+			wantURL: "https://example.com/api/v1/users?limit=10",
+		},
+		{
+			name:    "path, query, and fragment combined",
+			base:    "https://example.com/api",
+			uriPath: "/v1/users?limit=10#section",
+			wantURL: "https://example.com/api/v1/users?limit=10#section",
+		},
+		{
+			name:    "path and fragment without query",
+			base:    "https://example.com/api",
+			uriPath: "/v1/users#section",
+			wantURL: "https://example.com/api/v1/users#section",
+		},
+		{
+			name:    "query merged and fragment set",
+			base:    "https://example.com/api?page=1",
+			uriPath: "?limit=10#section",
+			wantURL: "https://example.com/api?page=1&limit=10#section",
+		},
+
+		// Base URL with trailing slash
+		{
+			name:    "absolute path appended to base with trailing slash",
+			base:    "https://example.com/api/",
+			uriPath: "/v2/items",
+			wantURL: "https://example.com/api/v2/items",
+		},
+
+		// Base URL with existing query
+		{
+			name:    "path appended and base query preserved",
+			base:    "https://example.com/api?version=2",
+			uriPath: "/users",
+			wantURL: "https://example.com/api/users?version=2",
+		},
+		{
+			name:    "invalid path segment returns error",
+			base:    "https://example.com/api",
+			uriPath: "/..",
+			wantErr: "Invalid URL path syntax",
+		},
+		{
+			name:    "invalid double slashes in appended path returns error",
+			base:    "https://example.com/api",
+			uriPath: "/v1//users",
+			wantErr: "Invalid double slashes",
+		},
+		{
+			name:    "invalid CTL byte in query returns error",
+			base:    "https://example.com/api",
+			uriPath: "?a=\x00",
+			wantErr: "Invalid URL query syntax",
+		},
+		{
+			name:    "invalid CTL byte in fragment returns error",
+			base:    "https://example.com/api",
+			uriPath: "#\x7f",
+			wantErr: "Invalid URL fragment syntax",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			base := mustParseURL(tc.base)
+			err := AppendURL(base, tc.uriPath)
+
+			if tc.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+					t.Fatalf("expected error containing %q, got: %v", tc.wantErr, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("expected nil error, got: %v", err)
+			}
+			if got := base.String(); got != tc.wantURL {
+				t.Fatalf("unexpected URL: got %q, want %q", got, tc.wantURL)
+			}
+		})
 	}
 }
