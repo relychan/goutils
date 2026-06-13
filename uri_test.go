@@ -676,7 +676,9 @@ func TestAppendURL(t *testing.T) {
 		base    string
 		uriPath string
 		wantURL string
+		wantErr string
 	}{
+
 		// No-op cases
 		{
 			name:    "empty path returns base unchanged",
@@ -786,12 +788,44 @@ func TestAppendURL(t *testing.T) {
 			uriPath: "/users",
 			wantURL: "https://example.com/api/users?version=2",
 		},
+		{
+			name:    "invalid path segment returns error",
+			base:    "https://example.com/api",
+			uriPath: "/..",
+			wantErr: "Invalid URL path syntax",
+		},
+		{
+			name:    "invalid double slashes in appended path returns error",
+			base:    "https://example.com/api",
+			uriPath: "/v1//users",
+			wantErr: "Invalid double slashes",
+		},
+		{
+			name:    "invalid CTL byte in query returns error",
+			base:    "https://example.com/api",
+			uriPath: "?a=\x00",
+			wantErr: "Invalid URL query syntax",
+		},
+		{
+			name:    "invalid CTL byte in fragment returns error",
+			base:    "https://example.com/api",
+			uriPath: "#\x7f",
+			wantErr: "Invalid URL fragment syntax",
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			base := mustParseURL(tc.base)
 			err := AppendURL(base, tc.uriPath)
+
+			if tc.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+					t.Fatalf("expected error containing %q, got: %v", tc.wantErr, err)
+				}
+				return
+			}
+
 			if err != nil {
 				t.Fatalf("expected nil error, got: %v", err)
 			}
