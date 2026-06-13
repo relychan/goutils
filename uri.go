@@ -340,7 +340,7 @@ func ValidateURLPath(input string) *httperror.ValidationError {
 	if strings.Contains(input, "://") {
 		return &httperror.ValidationError{
 			Code:   ErrCodeInvalidPath,
-			Detail: "The URL path must be relative",
+			Detail: "URL path must not be an absolute URL",
 		}
 	}
 
