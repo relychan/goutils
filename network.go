@@ -20,11 +20,8 @@ import (
 	"strings"
 )
 
-var (
-	// RFC6598 Carrier-Grade NAT.
-	cgNATSubnet = mustParseCIDR("100.64.0.0/10")
-	httpSchemes = []string{"http", "https"}
-)
+// RFC6598 Carrier-Grade NAT.
+var cgNATSubnet = mustParseCIDR("100.64.0.0/10")
 
 // ParseSubnet parses the subnet from a raw string.
 func ParseSubnet(value string) (*net.IPNet, error) {

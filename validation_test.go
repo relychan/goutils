@@ -25,18 +25,18 @@ func TestValidateURL_AllowedSchemes(t *testing.T) {
 		err := ValidateURLWithOptions(context.Background(), u, &ValidateHTTPURLOptions{
 			AllowedSchemes: []string{"http", "https"},
 		})
-		if !errors.Is(err, ErrInvalidURLScheme) {
-			t.Fatalf("expected ErrInvalidURLScheme, got: %v", err)
+		if err == nil || !strings.Contains(err.Error(), "Invalid URI scheme") {
+			t.Fatalf("expected invalid scheme error, got: %v", err)
 		}
 	})
 
 	t.Run("empty AllowedSchemes skips scheme check", func(t *testing.T) {
 		u := &url.URL{Scheme: "ftp", Host: "127.0.0.1"}
-		// No scheme restriction — only IP validation matters; 127.0.0.1 resolves so no DNS error
+		// No scheme restriction — and with default options, IP validation is skipped.
 		err := ValidateURLWithOptions(context.Background(), u, &ValidateHTTPURLOptions{})
-		// Should not get ErrInvalidURLScheme (may get ErrBlockedIP or nil depending on IP rules)
-		if errors.Is(err, ErrInvalidURLScheme) {
-			t.Fatalf("did not expect ErrInvalidURLScheme, got: %v", err)
+		// Should not fail due to scheme validation or IP validation under default options.
+		if err != nil {
+			t.Fatalf("expected nil error, got: %v", err)
 		}
 	})
 }
@@ -44,8 +44,8 @@ func TestValidateURL_AllowedSchemes(t *testing.T) {
 func TestValidateURL_EmptyHost(t *testing.T) {
 	u := &url.URL{Scheme: "https", Host: ""}
 	err := ValidateURLWithOptions(context.Background(), u, &ValidateHTTPURLOptions{})
-	if !strings.Contains(err.Error(), "invalid URI") {
-		t.Fatalf("invalid URI, got: %v", err)
+	if !strings.Contains(err.Error(), "Invalid URL. Hostname is empty") {
+		t.Fatalf("expected invalid URL (empty hostname), got: %v", err)
 	}
 }
 
@@ -65,7 +65,7 @@ func TestValidateURL_AllowedHosts(t *testing.T) {
 		err := ValidateURLWithOptions(context.Background(), u, &ValidateHTTPURLOptions{
 			AllowedHosts: []string{"example.com"},
 		})
-		if !errors.Is(err, ErrInvalidURI) {
+		if !strings.Contains(err.Error(), "Hostname is not allowed") {
 			t.Fatalf("expected ErrInvalidURI, got: %v", err)
 		}
 	})
@@ -87,7 +87,7 @@ func TestValidateURL_BlockedHosts(t *testing.T) {
 		err := ValidateURLWithOptions(context.Background(), u, &ValidateHTTPURLOptions{
 			BlockedHosts: []string{"127.0.0.1"},
 		})
-		if !errors.Is(err, ErrInvalidURI) {
+		if !strings.Contains(err.Error(), "Hostname is blocked") {
 			t.Fatalf("expected ErrInvalidURI, got: %v", err)
 		}
 	})
@@ -98,7 +98,7 @@ func TestValidateURL_BlockedHosts(t *testing.T) {
 			BlockedHosts: []string{"evil.com"},
 		})
 		// Not blocked by host rule; result depends on IP validation
-		if errors.Is(err, ErrInvalidURI) {
+		if err != nil {
 			t.Fatalf("unexpected ErrInvalidURI from host block rule, got: %v", err)
 		}
 	})

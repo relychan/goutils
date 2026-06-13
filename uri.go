@@ -20,6 +20,7 @@ import (
 	"net"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/relychan/goutils/httperror"
@@ -37,9 +38,11 @@ func ParsePathOrHTTPURL(input string) (*url.URL, error) {
 		return parsedURL, nil
 	}
 
-	err = validateURLScheme(parsedURL, httpSchemes)
-	if err != nil {
-		return nil, err
+	if !isHTTPScheme(parsedURL.Scheme) {
+		return nil, &httperror.ValidationError{
+			Code:   ErrCodeInvalidURIScheme,
+			Detail: "Invalid HTTP scheme. Expected http(s), got " + strconv.Quote(parsedURL.Scheme),
+		}
 	}
 
 	return parsedURL, nil
@@ -50,7 +53,10 @@ func ParsePathOrURL(input string) (*url.URL, error) {
 	schemeIndex := strings.IndexRune(input, ':')
 	if schemeIndex == 0 {
 		// The authority could be missing because of missing slashes.
-		return nil, ErrInvalidURLScheme
+		return nil, &httperror.ValidationError{
+			Code:   ErrCodeInvalidURIScheme,
+			Detail: "Invalid URL. Scheme is empty",
+		}
 	}
 
 	if schemeIndex > 0 {
@@ -63,7 +69,10 @@ func ParsePathOrURL(input string) (*url.URL, error) {
 	}
 
 	if StringContainsCTLByte(input) {
-		return nil, ErrInvalidURI
+		return nil, &httperror.ValidationError{
+			Code:   ErrCodeInvalidPath,
+			Detail: "Path contains invalid characters",
+		}
 	}
 
 	u, frag, _ := strings.Cut(input, "#")
@@ -105,13 +114,23 @@ func ParseURL(input string) (*url.URL, error) {
 }
 
 // ParseHTTPURL parses and validate the input string to be a valid URI and have http(s) scheme.
-func ParseHTTPURL(input string) (*url.URL, error) {
-	parsedURL, err := ParseURL(input)
-	if err != nil {
-		return nil, err
+func ParseHTTPURL(s string) (*url.URL, error) {
+	input := strings.TrimSpace(s)
+	if input == "" {
+		return nil, &httperror.ValidationError{
+			Code:   ErrCodeInvalidURI,
+			Detail: "Invalid HTTP URL. The input string is empty",
+		}
 	}
 
-	err = validateURLScheme(parsedURL, httpSchemes)
+	if !hasHTTPSchemePrefix(input) {
+		return nil, &httperror.ValidationError{
+			Code:   ErrCodeInvalidURI,
+			Detail: "Invalid HTTP URL scheme",
+		}
+	}
+
+	parsedURL, err := parseNormalizedURL(input)
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +168,9 @@ func ValidateURI(s string) *httperror.ValidationError {
 // ValidateURL checks if the input string is a valid URL.
 func ValidateURL(s string) *httperror.ValidationError {
 	_, err := parseAndValidateURL(s)
+	if err != nil && err.Code == ErrCodeInvalidURI {
+		err.Code = ErrCodeInvalidURL
+	}
 
 	return err
 }
@@ -185,7 +207,10 @@ func ValidateURLWithOptions(
 	// Extract hostname without port
 	hostname := uri.Hostname()
 	if hostname == "" {
-		return ErrInvalidURI
+		return &httperror.ValidationError{
+			Code:   ErrCodeInvalidHostname,
+			Detail: "Invalid URL. Hostname is empty",
+		}
 	}
 
 	err = validateHostWithOptions(uri.Host, hostname, options)
@@ -245,7 +270,10 @@ func validateHostWithOptions(host, hostname string, options *ValidateHTTPURLOpti
 		}
 
 		if re.MatchString(hostname) || re.MatchString(host) {
-			return fmt.Errorf("%w: host is blocked", ErrInvalidURI)
+			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidHostname,
+				Detail: "Hostname is blocked",
+			}
 		}
 	}
 
@@ -264,19 +292,21 @@ func validateHostWithOptions(host, hostname string, options *ValidateHTTPURLOpti
 		}
 	}
 
-	return fmt.Errorf("%w: host is not allowed", ErrInvalidURI)
+	return &httperror.ValidationError{
+		Code:   ErrCodeInvalidHostname,
+		Detail: "Hostname is not allowed",
+	}
 }
 
 func validateURLScheme(uri *url.URL, allowedSchemes []string) error {
 	if len(allowedSchemes) > 0 && !slices.ContainsFunc(allowedSchemes, func(item string) bool {
 		return strings.EqualFold(item, uri.Scheme)
 	}) {
-		return fmt.Errorf(
-			"%w. Accept one of %v, got: %q",
-			ErrInvalidURLScheme,
-			allowedSchemes,
-			uri.Scheme,
-		)
+		return &httperror.ValidationError{
+			Code: ErrCodeInvalidURIScheme,
+			Detail: "Invalid URI scheme. Accept one of [" + strings.Join(allowedSchemes, ", ") +
+				"], got " + strconv.Quote(uri.Scheme),
+		}
 	}
 
 	return nil
@@ -298,7 +328,7 @@ func parseURIAndHostname(input string) (*url.URL, string, *httperror.ValidationE
 	hostname := parsedURI.Hostname()
 	if hostname == "" {
 		return nil, "", &httperror.ValidationError{
-			Code:   ErrCodeInvalidURI,
+			Code:   ErrCodeInvalidHostname,
 			Detail: "Invalid URI. Hostname is empty",
 		}
 	}
@@ -330,11 +360,11 @@ func parseURIAndHostname(input string) (*url.URL, string, *httperror.ValidationE
 	return parsedURI, hostname, nil
 }
 
-func parseAndValidateURL(s string) (*url.URL, *httperror.ValidationError) { //nolint:funlen
+func parseAndValidateURL(s string) (*url.URL, *httperror.ValidationError) {
 	input := strings.TrimSpace(s)
 	if input == "" {
 		return nil, &httperror.ValidationError{
-			Code:   ErrCodeInvalidURI,
+			Code:   ErrCodeInvalidURL,
 			Detail: "Invalid URL. The input string is empty",
 		}
 	}
@@ -342,11 +372,15 @@ func parseAndValidateURL(s string) (*url.URL, *httperror.ValidationError) { //no
 	schemeIndex := strings.Index(input, "://")
 	if schemeIndex <= 0 || len(input)-schemeIndex <= 1 {
 		return nil, &httperror.ValidationError{
-			Code:   ErrCodeInvalidURI,
+			Code:   ErrCodeInvalidURL,
 			Detail: "Invalid URL syntax",
 		}
 	}
 
+	return parseNormalizedURL(input)
+}
+
+func parseNormalizedURL(input string) (*url.URL, *httperror.ValidationError) {
 	parsedURI, hostname, err := parseURIAndHostname(input)
 	if err != nil {
 		return nil, err
@@ -354,7 +388,7 @@ func parseAndValidateURL(s string) (*url.URL, *httperror.ValidationError) { //no
 
 	if hostname == "" {
 		return nil, &httperror.ValidationError{
-			Code:   ErrCodeInvalidURI,
+			Code:   ErrCodeInvalidHostname,
 			Detail: "Invalid URL. Hostname is empty",
 		}
 	}
@@ -400,4 +434,30 @@ func parseAndValidateURL(s string) (*url.URL, *httperror.ValidationError) { //no
 	}
 
 	return parsedURI, nil
+}
+
+func hasHTTPSchemePrefix(input string) bool {
+	if len(input) < 7 || !strings.EqualFold(input[:4], "http") {
+		return false
+	}
+
+	switch input[4] {
+	case 's', 'S':
+		return len(input) >= 8 && input[5:8] == "://"
+	case ':':
+		return input[5:7] == "//"
+	default:
+		return false
+	}
+}
+
+func isHTTPScheme(scheme string) bool {
+	switch len(scheme) {
+	case 4:
+		return strings.EqualFold(scheme, "http")
+	case 5:
+		return strings.EqualFold(scheme, "https")
+	default:
+		return false
+	}
 }
