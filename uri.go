@@ -123,7 +123,7 @@ func ParseHTTPURL(s string) (*url.URL, error) {
 		}
 	}
 
-	if !hasHTTPSchemePrefix(input) {
+	if !IsURLSchemePrefixHTTP(input) {
 		return nil, &httperror.ValidationError{
 			Code:   ErrCodeInvalidURI,
 			Detail: "Invalid HTTP URL scheme",
@@ -436,7 +436,8 @@ func parseNormalizedURL(input string) (*url.URL, *httperror.ValidationError) {
 	return parsedURI, nil
 }
 
-func hasHTTPSchemePrefix(input string) bool {
+// IsURLSchemePrefixHTTP reports whether input begins with "http://" or "https://" (case-insensitive for the scheme).
+func IsURLSchemePrefixHTTP(input string) bool {
 	if len(input) < 7 || !strings.EqualFold(input[:4], "http") {
 		return false
 	}
