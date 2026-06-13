@@ -471,8 +471,8 @@ func TestValidateURL(t *testing.T) {
 		{name: "scheme missing slashes", input: "http:example.com", wantErr: true, wantMsg: "Invalid URL syntax"},
 		{name: "no host after scheme", input: "http:///path", wantErr: true, wantMsg: "Hostname is empty"},
 		{name: "no double slashes", input: "http://example.com//path", wantErr: true, wantMsg: "Invalid double slashes in the URL path syntax"},
-		{name: "wildcard", input: "http://example.com/*", wantErr: true, wantMsg: "Invalid URL path syntax"},
-		{name: "traversal", input: "http://example.com/foo/../bar", wantErr: true, wantMsg: "Invalid URL path syntax"},
+		{name: "wildcard", input: "http://example.com/*", wantErr: true, wantMsg: "Wildcard and traversal paths are not allowed in URL path"},
+		{name: "traversal", input: "http://example.com/foo/../bar", wantErr: true, wantMsg: "Wildcard and traversal paths are not allowed in URL path"},
 	}
 
 	for _, tc := range tests {
@@ -678,7 +678,6 @@ func TestAppendURL(t *testing.T) {
 		wantURL string
 		wantErr string
 	}{
-
 		// No-op cases
 		{
 			name:    "empty path returns base unchanged",
@@ -792,7 +791,7 @@ func TestAppendURL(t *testing.T) {
 			name:    "invalid path segment returns error",
 			base:    "https://example.com/api",
 			uriPath: "/..",
-			wantErr: "Invalid URL path syntax",
+			wantErr: "Wildcard and traversal paths are not allowed in URL path",
 		},
 		{
 			name:    "invalid double slashes in appended path returns error",
