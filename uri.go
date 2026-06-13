@@ -266,8 +266,10 @@ func IsURLSchemePrefixHTTP(input string) bool {
 	}
 }
 
-// AppendURL parses the URI path and appends it to the existing URL.
+// AppendURL appends uriPath's path, query, and fragment components to uri in-place.
+// uriPath may contain a path with optional ?query and #fragment.
 func AppendURL(uri *url.URL, uriPath string) error {
+	uriPath = strings.TrimSpace(uriPath)
 	if uriPath == "" || uriPath == "/" {
 		return nil
 	}
