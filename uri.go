@@ -367,7 +367,7 @@ func ValidateURLPath(input string) *httperror.ValidationError {
 			input = ""
 		}
 
-		if part == "*" || StringAllRune(part, '.') || StringContainsCTLByte(part) {
+		if part == "*" || StringAllRune(part, '.') {
 			return &httperror.ValidationError{
 				Code:   ErrCodeInvalidPath,
 				Detail: "Wildcard and traversal paths are not allowed in URL path",
