@@ -266,6 +266,59 @@ func IsURLSchemePrefixHTTP(input string) bool {
 	}
 }
 
+// AppendURL parses the URI path and appends it to the existing URL.
+func AppendURL(uri *url.URL, uriPath string) error {
+	if uriPath == "" || uriPath == "/" {
+		return nil
+	}
+
+	path, query, fragment := SplitPathQueryFragment(uriPath)
+
+	if fragment != "" {
+		if StringContainsCTLByte(fragment) {
+			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidURI,
+				Detail: "Invalid URL fragment syntax",
+			}
+		}
+
+		uri.Fragment = fragment
+	}
+
+	if query != "" {
+		if StringContainsCTLByte(query) {
+			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidURI,
+				Detail: "Invalid URL query syntax",
+			}
+		}
+
+		if uri.RawQuery == "" {
+			uri.RawQuery = query
+		} else {
+			uri.RawQuery += "&" + query
+		}
+	}
+
+	if path != "" && path != "/" {
+		err := ValidateURIPath(path)
+		if err != nil {
+			return err
+		}
+
+		switch {
+		case uri.Path == "" || uri.Path == "/":
+			uri.Path = path
+		case path[0] == '/':
+			uri.Path += path
+		default:
+			uri.Path += "/" + path
+		}
+	}
+
+	return nil
+}
+
 // ValidateURIPath checks if the URI path is valid.
 func ValidateURIPath(input string) *httperror.ValidationError {
 	if input == "" || input == "/" {
