@@ -599,9 +599,6 @@ func TestParsePathOrURL_QueryFragment(t *testing.T) {
 	if u.Fragment != "section" {
 		t.Fatalf("expected fragment section, got %q", u.Fragment)
 	}
-	if !u.ForceQuery {
-		t.Fatal("expected ForceQuery to be true when query is present")
-	}
 }
 
 func TestParseURL_IPv6(t *testing.T) {

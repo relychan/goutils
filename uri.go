@@ -50,6 +50,10 @@ func ParsePathOrHTTPURL(input string) (*url.URL, error) {
 
 // ParsePathOrURL validates and parses a path or URL.
 func ParsePathOrURL(input string) (*url.URL, error) {
+	if input == "" {
+		return new(url.URL), nil
+	}
+
 	schemeIndex := strings.IndexRune(input, ':')
 	if schemeIndex == 0 {
 		// The authority could be missing because of missing slashes.
@@ -63,11 +67,6 @@ func ParsePathOrURL(input string) (*url.URL, error) {
 		return ParseURL(input)
 	}
 
-	input = strings.TrimSpace(input)
-	if input == "" {
-		return new(url.URL), nil
-	}
-
 	if StringContainsCTLByte(input) {
 		return nil, &httperror.ValidationError{
 			Code:   ErrCodeInvalidPath,
@@ -75,17 +74,27 @@ func ParsePathOrURL(input string) (*url.URL, error) {
 		}
 	}
 
-	u, frag, _ := strings.Cut(input, "#")
-	urlPath, query, _ := strings.Cut(u, "?")
-
+	urlPath, query, frag := SplitPathQueryFragment(input)
 	result := &url.URL{
-		Path:       urlPath,
-		RawQuery:   query,
-		ForceQuery: query != "",
-		Fragment:   frag,
+		Path:     urlPath,
+		RawQuery: query,
+		Fragment: frag,
 	}
 
 	return result, nil
+}
+
+// SplitPathQueryFragment splits path, query and fragment from string.
+func SplitPathQueryFragment(input string) (string, string, string) {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return "", "", ""
+	}
+
+	u, fragment, _ := strings.Cut(input, "#")
+	uriPath, query, _ := strings.Cut(u, "?")
+
+	return uriPath, query, fragment
 }
 
 // ParseURI parses and validate the input string to be a valid URI.
@@ -241,6 +250,62 @@ func ValidateURLWithOptions(
 	})
 }
 
+// IsURLSchemePrefixHTTP reports whether input begins with "http://" or "https://" (case-insensitive for the scheme).
+func IsURLSchemePrefixHTTP(input string) bool {
+	if len(input) < 7 || !strings.EqualFold(input[:4], "http") {
+		return false
+	}
+
+	switch input[4] {
+	case 's', 'S':
+		return len(input) >= 8 && input[5:8] == "://"
+	case ':':
+		return input[5:7] == "//"
+	default:
+		return false
+	}
+}
+
+// ValidateURIPath checks if the URI path is valid.
+func ValidateURIPath(input string) *httperror.ValidationError {
+	if input == "" || input == "/" {
+		return nil
+	}
+
+	// validate invalid path patterns
+	if input[0] == '/' {
+		input = input[1:]
+	}
+
+	for input != "" {
+		slashIndex := strings.IndexByte(input, '/')
+		if slashIndex == 0 {
+			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidURI,
+				Detail: "Invalid double slashes in the URL path syntax",
+			}
+		}
+
+		part := input
+
+		if slashIndex != -1 {
+			part = input[:slashIndex]
+			input = input[slashIndex+1:]
+		} else {
+			input = ""
+		}
+
+		if part == "*" || StringAllRune(part, '.') || StringContainsCTLByte(part) {
+			return &httperror.ValidationError{
+				Code:   ErrCodeInvalidURI,
+				Detail: "Invalid URL path syntax",
+			}
+		}
+	}
+
+	return nil
+}
+
 func parseAndValidateURI(s string) (*url.URL, *httperror.ValidationError) {
 	input := strings.TrimSpace(s)
 
@@ -393,63 +458,16 @@ func parseNormalizedURL(input string) (*url.URL, *httperror.ValidationError) {
 		}
 	}
 
-	if parsedURI.Path == "" || parsedURI.Path == "/" {
-		return parsedURI, nil
+	err = ValidateURIPath(parsedURI.Path)
+	if err != nil {
+		return nil, err
 	}
 
-	// validate invalid path patterns
-	uriPath := parsedURI.Path
-	if uriPath[0] == '/' {
-		uriPath = uriPath[1:]
-	}
-
-	for uriPath != "" {
-		slashIndex := strings.IndexByte(uriPath, '/')
-		if slashIndex == 0 {
-			return nil, &httperror.ValidationError{
-				Code:   ErrCodeInvalidURI,
-				Detail: "Invalid double slashes in the URL path syntax",
-			}
-		}
-
-		part := uriPath
-
-		if slashIndex != -1 {
-			part = uriPath[:slashIndex]
-			uriPath = uriPath[slashIndex+1:]
-		} else {
-			uriPath = ""
-		}
-
-		if part == "*" || StringAllRune(part, '.') {
-			return nil, &httperror.ValidationError{
-				Code:   ErrCodeInvalidURI,
-				Detail: "Invalid URL path syntax",
-			}
-		}
-	}
-
-	if parsedURI.Path[0] != '/' {
+	if parsedURI.Path != "" && parsedURI.Path[0] != '/' {
 		parsedURI.Path = "/" + parsedURI.Path
 	}
 
 	return parsedURI, nil
-}
-
-// IsURLSchemePrefixHTTP reports whether input begins with "http://" or "https://" (case-insensitive for the scheme).
-func IsURLSchemePrefixHTTP(input string) bool {
-	if len(input) < 7 || !strings.EqualFold(input[:4], "http") {
-		return false
-	}
-
-	switch input[4] {
-	case 's', 'S':
-		return len(input) >= 8 && input[5:8] == "://"
-	case ':':
-		return input[5:7] == "//"
-	default:
-		return false
-	}
 }
 
 func isHTTPScheme(scheme string) bool {
