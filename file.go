@@ -144,7 +144,7 @@ func FileReaderFromPath(
 		return nil, "", err
 	}
 
-	if strings.EqualFold(fileURL.Scheme, "http") || strings.EqualFold(fileURL.Scheme, "https") {
+	if isHTTPScheme(fileURL.Scheme) {
 		return fileReaderFromURL(ctx, fileURL, filePath, defaultOptions)
 	}
 

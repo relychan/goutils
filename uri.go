@@ -38,9 +38,8 @@ func ParsePathOrHTTPURL(input string) (*url.URL, error) {
 		return parsedURL, nil
 	}
 
-	if !isHTTPScheme(parsedURL.Scheme) {
 		return nil, &httperror.ValidationError{
-			Code:   ErrCodeInvalidURL,
+			Code:   ErrCodeInvalidURIScheme,
 			Detail: "Invalid HTTP scheme. Expected http(s), got " + strconv.Quote(parsedURL.Scheme),
 		}
 	}

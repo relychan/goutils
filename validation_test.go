@@ -32,9 +32,9 @@ func TestValidateURL_AllowedSchemes(t *testing.T) {
 
 	t.Run("empty AllowedSchemes skips scheme check", func(t *testing.T) {
 		u := &url.URL{Scheme: "ftp", Host: "127.0.0.1"}
-		// No scheme restriction — only IP validation matters; 127.0.0.1 resolves so no DNS error
+		// No scheme restriction — and with default options, IP validation is skipped.
 		err := ValidateURLWithOptions(context.Background(), u, &ValidateHTTPURLOptions{})
-		// Should not get ErrInvalidURLScheme (may get ErrBlockedIP or nil depending on IP rules)
+		// Should not fail due to scheme validation or IP validation under default options.
 		if err != nil {
 			t.Fatalf("expected nil error, got: %v", err)
 		}
@@ -45,7 +45,7 @@ func TestValidateURL_EmptyHost(t *testing.T) {
 	u := &url.URL{Scheme: "https", Host: ""}
 	err := ValidateURLWithOptions(context.Background(), u, &ValidateHTTPURLOptions{})
 	if !strings.Contains(err.Error(), "Invalid URL. Hostname is empty") {
-		t.Fatalf("invalid URI, got: %v", err)
+		t.Fatalf("expected invalid URL (empty hostname), got: %v", err)
 	}
 }
 

@@ -181,7 +181,7 @@ func TestParseHTTPURL_AllowedSchemes(t *testing.T) {
 			AllowedSchemes: []string{"ftp", "https", "ws"},
 		})
 		if err == nil || !strings.Contains(err.Error(), `Invalid URI scheme. Accept one of [ftp, https, ws], got "http"`) {
-			t.Fatalf("expected ErrInvalidURLScheme, got: %v", err)
+			t.Fatalf("expected invalid URI scheme validation error, got: %v", err)
 		}
 	})
 }
