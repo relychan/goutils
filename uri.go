@@ -38,6 +38,7 @@ func ParsePathOrHTTPURL(input string) (*url.URL, error) {
 		return parsedURL, nil
 	}
 
+	if !isHTTPScheme(parsedURL.Scheme) {
 		return nil, &httperror.ValidationError{
 			Code:   ErrCodeInvalidURIScheme,
 			Detail: "Invalid HTTP scheme. Expected http(s), got " + strconv.Quote(parsedURL.Scheme),
@@ -117,14 +118,14 @@ func ParseHTTPURL(s string) (*url.URL, error) {
 	input := strings.TrimSpace(s)
 	if input == "" {
 		return nil, &httperror.ValidationError{
-			Code:   ErrCodeInvalidURL,
+			Code:   ErrCodeInvalidURI,
 			Detail: "Invalid HTTP URL. The input string is empty",
 		}
 	}
 
 	if !hasHTTPSchemePrefix(input) {
 		return nil, &httperror.ValidationError{
-			Code:   ErrCodeInvalidURIScheme,
+			Code:   ErrCodeInvalidURI,
 			Detail: "Invalid HTTP URL scheme",
 		}
 	}
