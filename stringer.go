@@ -33,6 +33,11 @@ func IsDigit[C byte | rune](c C) bool {
 	return c >= '0' && c <= '9'
 }
 
+// IsAlphabet checks if the character is an alphabet character.
+func IsAlphabet[C byte | rune](c C) bool {
+	return IsLowerAlphabet(c) || IsUpperAlphabet(c)
+}
+
 // IsLowerAlphabet checks if the character is a lowercase alphabet.
 func IsLowerAlphabet[C byte | rune](c C) bool {
 	return c >= 'a' && c <= 'z'

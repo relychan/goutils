@@ -62,7 +62,7 @@ func ParseFilePathOrURL(input string) (*url.URL, error) {
 	urlSepIndex := strings.IndexAny(input, ":?#")
 	if urlSepIndex != -1 {
 		if urlSepIndex == 1 && input[urlSepIndex] == ':' &&
-			input[0] >= 'A' && input[0] <= 'Z' &&
+			IsAlphabet(input[0]) &&
 			(len(input) == 2 || input[2] == '\\') {
 			// It is likely a Windows style's path
 			return nil, validateFilePath(input)
@@ -113,6 +113,7 @@ func ParseAbsoluteURL(input string) (*url.URL, error) {
 
 // ParseURL parses and validate the input string to be a valid URL.
 // If the URL is relative, it must start with a slash.
+// Use [ParseAbsoluteURL] if you expect strict absolute URLs.
 func ParseURL(input string) (*url.URL, error) {
 	input = strings.TrimSpace(input)
 	if input == "" {
@@ -135,6 +136,7 @@ func ParseURL(input string) (*url.URL, error) {
 
 // ParseHTTPURL parses and validate the input string to be a valid HTTP URL.
 // If the URL is relative, it must start with a slash.
+// Use [ParseAbsoluteHTTPURL] if you expect strict absolute URLs.
 func ParseHTTPURL(input string) (*url.URL, error) {
 	input = strings.TrimSpace(input)
 	if input == "" {
