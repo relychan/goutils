@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -837,18 +838,33 @@ func TestFileReaderFromPath(t *testing.T) {
 	t.Run("path_traversal_cleaned", func(t *testing.T) {
 		// Test that filepath.Clean is applied
 		_, _, err := FileReaderFromPath(context.Background(), "testdata/../testdata/config.json")
-		if err != nil {
-			t.Fatalf("expected nil error for cleaned path, got: %s", err)
+		if !errors.Is(err, errInvalidFilePath) {
+			t.Fatalf("expected error for traversal path, got: %s", err)
 		}
 	})
 }
 
 func TestFileReaderFromPath_IncludeExcludePaths(t *testing.T) {
+	testdataPath, err := filepath.Abs("testdata/*")
+	if err != nil {
+		panic(err)
+	}
+
+	testJSONPath, err := filepath.Abs("testdata/*.json")
+	if err != nil {
+		panic(err)
+	}
+
+	testYAMLPath, err := filepath.Abs("testdata/*.yaml")
+	if err != nil {
+		panic(err)
+	}
+
 	t.Run("local_include_path_allowed", func(t *testing.T) {
 		reader, _, err := FileReaderFromPath(
 			context.Background(),
 			"testdata/config.json",
-			DownloadFileIncludingPaths([]string{"testdata/*.json"}),
+			DownloadFileIncludingPaths([]string{testJSONPath}),
 		)
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
@@ -857,10 +873,10 @@ func TestFileReaderFromPath_IncludeExcludePaths(t *testing.T) {
 	})
 
 	t.Run("local_include_path_blocked", func(t *testing.T) {
-		_, _, err := FileReaderFromPath(
+		_, _, err = FileReaderFromPath(
 			context.Background(),
 			"testdata/config.json",
-			DownloadFileIncludingPaths([]string{"testdata/*.yaml"}),
+			DownloadFileIncludingPaths([]string{testYAMLPath}),
 		)
 		if !errors.Is(err, errDisallowedFilePath) {
 			t.Fatalf("expected errDisallowedFilePath, got: %v", err)
@@ -871,7 +887,7 @@ func TestFileReaderFromPath_IncludeExcludePaths(t *testing.T) {
 		_, _, err := FileReaderFromPath(
 			context.Background(),
 			"testdata/config.json",
-			DownloadFileExcludingPaths([]string{"testdata/*.json"}),
+			DownloadFileExcludingPaths([]string{testJSONPath}),
 		)
 		if !errors.Is(err, errDisallowedFilePath) {
 			t.Fatalf("expected errDisallowedFilePath, got: %v", err)
@@ -882,7 +898,7 @@ func TestFileReaderFromPath_IncludeExcludePaths(t *testing.T) {
 		reader, _, err := FileReaderFromPath(
 			context.Background(),
 			"testdata/config.json",
-			DownloadFileExcludingPaths([]string{"testdata/*.yaml"}),
+			DownloadFileExcludingPaths([]string{testYAMLPath}),
 		)
 		if err != nil {
 			t.Fatalf("expected nil error, got: %s", err)
@@ -895,8 +911,8 @@ func TestFileReaderFromPath_IncludeExcludePaths(t *testing.T) {
 		_, _, err := FileReaderFromPath(
 			context.Background(),
 			"testdata/config.json",
-			DownloadFileIncludingPaths([]string{"testdata/*"}),
-			DownloadFileExcludingPaths([]string{"testdata/*.json"}),
+			DownloadFileIncludingPaths([]string{testdataPath}),
+			DownloadFileExcludingPaths([]string{testJSONPath}),
 		)
 		if !errors.Is(err, errDisallowedFilePath) {
 			t.Fatalf("expected errDisallowedFilePath, got: %v", err)

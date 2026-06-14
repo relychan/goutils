@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
@@ -32,6 +33,7 @@ import (
 
 var (
 	errFilePathRequired             = errors.New("file path is required")
+	errInvalidFilePath              = errors.New("invalid file path")
 	errDisallowedFilePath           = errors.New("file path is not allowed to read")
 	errFileNoContent                = errors.New("file has no content")
 	errUnsupportedFilePathExtension = errors.New("only {json,yaml,yml} extension is supported")
@@ -139,26 +141,33 @@ func FileReaderFromPath(
 		return nil, "", errFilePathRequired
 	}
 
-	fileURL, err := ParsePathOrURL(filePath)
+	fileURL, err := ParseFilePathOrHTTPURL(filePath)
 	if err != nil {
 		return nil, "", err
 	}
 
-	if isHTTPScheme(fileURL.Scheme) {
+	if fileURL != nil {
 		return fileReaderFromURL(ctx, fileURL, filePath, defaultOptions)
 	}
 
-	filePath = filepath.Clean(filePath)
+	filePath, err = filepath.Abs(filePath)
+	if err != nil {
+		return nil, "", err
+	}
 
-	err = validateFilePath(filePath, filepath.Match, defaultOptions)
+	err = validateFilePathRules(filePath, filepath.Match, defaultOptions)
+	if err != nil {
+		return nil, "", err
+	}
+
+	reader, err := os.Open(filePath) //nolint:gosec
 	if err != nil {
 		return nil, "", err
 	}
 
 	ext := filepath.Ext(filePath)
-	reader, err := os.Open(filePath)
 
-	return reader, strings.ToLower(ext), err
+	return reader, strings.ToLower(ext), nil
 }
 
 func fileReaderFromURL(
@@ -177,11 +186,7 @@ func fileReaderFromURL(
 		}
 	}
 
-	if fileURL.Path != "" && fileURL.Path[0] != '/' {
-		fileURL.Path = "/" + fileURL.Path
-	}
-
-	err := validateFilePath(fileURL.Path, path.Match, options)
+	err := validateFilePathRules(fileURL.Path, path.Match, options)
 	if err != nil {
 		return nil, "", err
 	}
@@ -212,7 +217,56 @@ func fileReaderFromURL(
 	return resp.Body, ext, nil
 }
 
-func validateFilePath(
+func validateFilePath(filePath string) error {
+	if filePath == "" || filePath == "." {
+		return nil
+	}
+
+	switch filePath[0] {
+	case '~':
+		if filepath.Separator == '\\' {
+			// home-directory is not valid in Windows.
+			return errInvalidFilePath
+		}
+
+		filePath = filePath[1:]
+	case '.':
+		if filePath[1] == filepath.Separator {
+			filePath = filePath[1:]
+		}
+	default:
+	}
+
+	if len(filePath) > 0 && filePath[0] == filepath.Separator {
+		filePath = filePath[1:]
+	}
+
+	// allow traversal path prefixes.
+	for filePath != "" {
+		part := filePath
+
+		slashIndex := strings.IndexRune(filePath, filepath.Separator)
+		if slashIndex > -1 {
+			part = filePath[:slashIndex]
+		}
+
+		if part != ".." {
+			if !fs.ValidPath(filePath) {
+				return errInvalidFilePath
+			}
+
+			return nil
+		}
+
+		if slashIndex > -1 {
+			filePath = filePath[slashIndex+1:]
+		}
+	}
+
+	return nil
+}
+
+func validateFilePathRules(
 	filePath string,
 	matchFunc func(pattern string, name string) (matched bool, err error),
 	options *downloadFileOptions,
@@ -237,7 +291,7 @@ func validateFilePath(
 	}
 
 	for _, excludedPath := range options.ExcludePaths {
-		matched, err := filepath.Match(excludedPath, filePath)
+		matched, err := matchFunc(excludedPath, filePath)
 		if err != nil {
 			return err
 		}

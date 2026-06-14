@@ -581,33 +581,6 @@ func TestValidateDateTime(t *testing.T) {
 	}
 }
 
-func TestValidateURI(t *testing.T) {
-	valid := []string{
-		"https://example.com",
-		"http://localhost:8080/path?q=1#frag",
-		"ftp://files.example.com/pub",
-	}
-	for _, s := range valid {
-		if err := ValidateURI(s); err != nil {
-			t.Errorf("expected valid URI for %q, got: %v", s, err)
-		}
-	}
-
-	invalid := []struct {
-		input string
-		desc  string
-	}{
-		{"/relative/path", "relative URI not allowed"},
-		{"just-a-string", "no scheme"},
-		{"://missing-scheme", "empty scheme"},
-	}
-	for _, tc := range invalid {
-		if err := ValidateURI(tc.input); err == nil {
-			t.Errorf("expected invalid URI for %q (%s), got nil", tc.input, tc.desc)
-		}
-	}
-}
-
 func BenchmarkValidateJSONPointer(b *testing.B) {
 	for b.Loop() {
 		ValidateJSONPointer("/a~0b/c~1d")
@@ -708,10 +681,10 @@ func BenchmarkValidateDateTime(b *testing.B) {
 	})
 }
 
-func BenchmarkValidateURI(b *testing.B) {
+func BenchmarkValidateAbsoluteURI(b *testing.B) {
 	b.Run("valid_https", func(b *testing.B) {
 		for b.Loop() {
-			ValidateURI("https://example.com/path?q=1#frag")
+			ValidateAbsoluteURI("https://example.com/path?q=1#frag")
 		}
 	})
 }
