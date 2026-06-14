@@ -120,7 +120,7 @@ func ParseURL(input string) (*url.URL, error) {
 		return new(url.URL), nil
 	}
 
-	if isRelativeURL(input) {
+	if !isRelativeURL(input) {
 		return ParseAbsoluteURL(input)
 	}
 
@@ -143,7 +143,7 @@ func ParseHTTPURL(input string) (*url.URL, error) {
 		return new(url.URL), nil
 	}
 
-	if isRelativeURL(input) {
+	if !isRelativeURL(input) {
 		return ParseAbsoluteHTTPURL(input)
 	}
 
@@ -629,5 +629,5 @@ func isHTTPScheme(scheme string) bool {
 }
 
 func isRelativeURL(input string) bool {
-	return input[0] != '/' && input[0] != '?' && input[0] != '#'
+	return input[0] == '/' || input[0] == '?' || input[0] == '#'
 }
