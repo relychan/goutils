@@ -120,7 +120,7 @@ func ParseURL(input string) (*url.URL, error) {
 		return new(url.URL), nil
 	}
 
-	if input[0] != '/' {
+	if isRelativeURL(input) {
 		return ParseAbsoluteURL(input)
 	}
 
@@ -143,7 +143,7 @@ func ParseHTTPURL(input string) (*url.URL, error) {
 		return new(url.URL), nil
 	}
 
-	if input[0] != '/' {
+	if isRelativeURL(input) {
 		return ParseAbsoluteHTTPURL(input)
 	}
 
@@ -180,6 +180,32 @@ func ParseAbsoluteHTTPURL(s string) (*url.URL, error) {
 	}
 
 	return parsedURL, nil
+}
+
+// ParseRelativeURI parses and validate the input string to be a valid relative URI.
+func ParseRelativeURI(input string) (*url.URL, error) {
+	input = strings.TrimSpace(input)
+	if input == "" || input == "/" {
+		return &url.URL{
+			Path: "/",
+		}, nil
+	}
+
+	if !isRelativeURL(input) {
+		return nil, &httperror.ValidationError{
+			Code:   ErrCodeInvalidURI,
+			Detail: "Invalid relative URL syntax. The input string must start with a slash or question mark.",
+		}
+	}
+
+	result := &url.URL{}
+
+	err := AppendURL(result, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // ParseAndValidateURLWithOptions parses and validates URL from a string with options.
@@ -600,4 +626,8 @@ func isHTTPScheme(scheme string) bool {
 	default:
 		return false
 	}
+}
+
+func isRelativeURL(input string) bool {
+	return input[0] != '/' && input[0] != '?' && input[0] != '#'
 }
