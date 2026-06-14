@@ -23,9 +23,10 @@ import (
 	"testing"
 )
 
-func TestParseRelativeOrHttpURL(t *testing.T) {
+func TestFilePathOrHttpURL(t *testing.T) {
 	testCases := []struct {
-		URL string
+		URL   string
+		IsURL bool
 	}{
 		{
 			URL: "",
@@ -40,25 +41,26 @@ func TestParseRelativeOrHttpURL(t *testing.T) {
 			URL: "../healthz",
 		},
 		{
-			URL: "https://localhost:8080/hello?foo=bar#about",
+			URL:   "https://localhost:8080/hello?foo=bar#about",
+			IsURL: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.URL, func(t *testing.T) {
-			result, err := ParsePathOrHTTPURL(tc.URL)
+			result, err := ParseFilePathOrHTTPURL(tc.URL)
 			if err != nil {
 				t.Fatalf("expected nil error, got: %s", err)
 			}
 
-			if result.String() != tc.URL {
+			if tc.IsURL && result.String() != tc.URL {
 				t.Fatalf("expected equal, got: %s", result)
 			}
 		})
 	}
 }
 
-func TestParseRelativeOrHttpURL_Errors(t *testing.T) {
+func TestParseFilePathOrHTTPURL_Errors(t *testing.T) {
 	testCases := []struct {
 		name  string
 		input string
@@ -67,23 +69,23 @@ func TestParseRelativeOrHttpURL_Errors(t *testing.T) {
 		{
 			name:  "invalid scheme",
 			input: "ftp://example.com",
-			err:   `Invalid HTTP scheme. Expected http(s), got "ftp"`,
+			err:   `Invalid HTTP URL scheme`,
 		},
 		{
 			name:  "scheme prefix only",
 			input: "://example.com",
-			err:   `Invalid URL. Scheme is empty`,
+			err:   `Invalid HTTP URL scheme`,
 		},
 		{
 			name:  "postgresql scheme",
 			input: "postgresql://localhost/db",
-			err:   `Invalid HTTP scheme. Expected http(s), got "postgresql"`,
+			err:   `Invalid HTTP URL scheme`,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := ParsePathOrHTTPURL(tc.input)
+			_, err := ParseHTTPURL(tc.input)
 			if err == nil {
 				t.Fatalf("expected error, got nil")
 			}
@@ -95,7 +97,7 @@ func TestParseRelativeOrHttpURL_Errors(t *testing.T) {
 	}
 }
 
-func TestParseRelativeOrHTTPURL_RelativePaths(t *testing.T) {
+func TestParseHTTPURL_RelativePaths(t *testing.T) {
 	testCases := []struct {
 		name     string
 		input    string
@@ -115,7 +117,7 @@ func TestParseRelativeOrHTTPURL_RelativePaths(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := ParsePathOrHTTPURL(tc.input)
+			result, err := ParseHTTPURL(tc.input)
 			if err != nil {
 				t.Fatalf("expected nil error, got: %s", err)
 			}
@@ -127,7 +129,7 @@ func TestParseRelativeOrHTTPURL_RelativePaths(t *testing.T) {
 	}
 }
 
-func TestParseHttpURL(t *testing.T) {
+func TestParseAbsoluteHTTPURL(t *testing.T) {
 	testCases := []struct {
 		URL   string
 		Error string
@@ -150,7 +152,7 @@ func TestParseHttpURL(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.URL, func(t *testing.T) {
-			result, err := ParseHTTPURL(tc.URL)
+			result, err := ParseAbsoluteHTTPURL(tc.URL)
 			if tc.Error == "" {
 				if err != nil {
 					t.Fatalf("expected nil error, got: %s", err)
@@ -272,7 +274,7 @@ func TestParseAndValidateURL(t *testing.T) {
 	})
 }
 
-func TestParseURL(t *testing.T) {
+func TestParseAbsoluteURL(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
@@ -337,7 +339,7 @@ func TestParseURL(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			u, err := ParseURL(tc.input)
+			u, err := ParseAbsoluteURL(tc.input)
 			if tc.wantErr != "" {
 				if err == nil {
 					t.Fatalf("expected error containing %q, got nil", tc.wantErr)
@@ -360,7 +362,7 @@ func TestParseURL(t *testing.T) {
 	}
 }
 
-func TestParseURI(t *testing.T) {
+func TestParseAbsoluteURI(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
@@ -385,9 +387,9 @@ func TestParseURI(t *testing.T) {
 		{
 			// ParseURI delegates to url.Parse which accepts scheme-less strings;
 			// strict scheme enforcement only applies via ValidateURI / parseAndValidateURI.
-			name:     "scheme-less string is accepted by ParseURI",
-			input:    "example.com/path",
-			wantPath: "example.com/path",
+			name:    "scheme-less string is accepted by ParseURI",
+			input:   "example.com/path",
+			wantErr: "URI Scheme is empty",
 		},
 		{
 			name:     "IPv6 host",
@@ -405,7 +407,7 @@ func TestParseURI(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			u, err := ParseURI(tc.input)
+			u, err := ParseAbsoluteURI(tc.input)
 			if tc.wantErr != "" {
 				if err == nil {
 					t.Fatalf("expected error containing %q, got nil", tc.wantErr)
@@ -428,7 +430,7 @@ func TestParseURI(t *testing.T) {
 	}
 }
 
-func TestValidateURI_ErrorCode(t *testing.T) {
+func TestValidateAbsoluteURI_ErrorCode(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -443,7 +445,7 @@ func TestValidateURI_ErrorCode(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := ValidateURI(tc.input)
+			err := ValidateAbsoluteURI(tc.input)
 			if tc.wantErr && err == nil {
 				t.Fatal("expected validation error, got nil")
 			}
@@ -457,7 +459,7 @@ func TestValidateURI_ErrorCode(t *testing.T) {
 	}
 }
 
-func TestValidateURL(t *testing.T) {
+func TestValidateAbsoluteURL(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -477,7 +479,7 @@ func TestValidateURL(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := ValidateURL(tc.input)
+			err := ValidateAbsoluteURL(tc.input)
 			if tc.wantErr {
 				if err == nil {
 					t.Fatal("expected validation error, got nil")
@@ -517,9 +519,9 @@ func TestParsePathOrURL(t *testing.T) {
 			wantPath: "/search",
 		},
 		{
-			name:     "relative path",
-			input:    "../up/one",
-			wantPath: "../up/one",
+			name:    "relative path",
+			input:   "../up/one",
+			wantErr: "Invalid URL syntax",
 		},
 		{
 			name:     "valid http URL",
@@ -530,7 +532,7 @@ func TestParsePathOrURL(t *testing.T) {
 		{
 			name:    "colon at position 0",
 			input:   "://host",
-			wantErr: "Invalid URL. Scheme is empty",
+			wantErr: "Invalid URL syntax",
 		},
 		{
 			name:    "colon without double slash",
@@ -546,7 +548,7 @@ func TestParsePathOrURL(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			u, err := ParsePathOrURL(tc.input)
+			u, err := ParseURL(tc.input)
 			if tc.wantErr != "" {
 				if !strings.Contains(err.Error(), tc.wantErr) {
 					t.Fatalf("expected error %v, got: %v", tc.wantErr, err)
@@ -578,16 +580,16 @@ func TestParsePathOrURL_CTLBytes(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := ParsePathOrURL(tc.input)
-			if !strings.Contains(err.Error(), "Path contains invalid characters") {
+			_, err := ParseURL(tc.input)
+			if !strings.Contains(err.Error(), "URL path contains invalid characters") {
 				t.Fatalf("expected ErrInvalidURI for CTL byte input, got: %v", err)
 			}
 		})
 	}
 }
 
-func TestParsePathOrURL_QueryFragment(t *testing.T) {
-	u, err := ParsePathOrURL("/path?key=val&other=2#section")
+func TestParseURL_QueryFragment(t *testing.T) {
+	u, err := ParseURL("/path?key=val&other=2#section")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -602,7 +604,7 @@ func TestParsePathOrURL_QueryFragment(t *testing.T) {
 	}
 }
 
-func TestParseURL_IPv6(t *testing.T) {
+func TestParseAbsoluteURL_IPv6(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -632,7 +634,7 @@ func TestParseURL_IPv6(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := ParseURL(tc.input)
+			_, err := ParseAbsoluteURL(tc.input)
 			if tc.wantErr != "" {
 				if err == nil {
 					t.Fatalf("expected error containing %q, got nil", tc.wantErr)

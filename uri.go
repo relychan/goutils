@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -26,16 +27,16 @@ import (
 	"github.com/relychan/goutils/httperror"
 )
 
-// ParsePathOrHTTPURL validates and parses a path or HTTP URL.
-func ParsePathOrHTTPURL(input string) (*url.URL, error) {
-	parsedURL, err := ParsePathOrURL(input)
+// ParseFilePathOrHTTPURL validates and parses a file path or HTTP URL.
+func ParseFilePathOrHTTPURL(input string) (*url.URL, error) {
+	parsedURL, err := ParseFilePathOrURL(input)
 	if err != nil {
 		return nil, err
 	}
 
 	// Returns if the parsedURL is a path.
-	if parsedURL.Scheme == "" {
-		return parsedURL, nil
+	if parsedURL == nil {
+		return nil, nil
 	}
 
 	if !isHTTPScheme(parsedURL.Scheme) {
@@ -48,41 +49,29 @@ func ParsePathOrHTTPURL(input string) (*url.URL, error) {
 	return parsedURL, nil
 }
 
-// ParsePathOrURL validates and parses a path or URL.
-func ParsePathOrURL(input string) (*url.URL, error) {
+// ParseFilePathOrURL validates and parses a file path or URL.
+// If the input string is a URL, returns the parsed URL.
+// Otherwise returns null.
+func ParseFilePathOrURL(input string) (*url.URL, error) {
 	input = strings.TrimSpace(input)
-	if input == "" {
-		return new(url.URL), nil
+	if input == "" || input == "." ||
+		(filepath.Separator == '/' && input == string(filepath.Separator)) {
+		return nil, nil
 	}
 
-	schemeIndex := strings.IndexRune(input, ':')
-	if schemeIndex == 0 {
-		// The authority could be missing because of missing slashes.
-		return nil, &httperror.ValidationError{
-			Code:   ErrCodeInvalidURIScheme,
-			Detail: "Invalid URL. Scheme is empty",
+	urlSepIndex := strings.IndexAny(input, ":?#")
+	if urlSepIndex != -1 {
+		if urlSepIndex == 1 && input[urlSepIndex] == ':' &&
+			IsAlphabet(input[0]) &&
+			(len(input) == 2 || input[2] == '\\') {
+			// It is likely a Windows style's path
+			return nil, validateFilePath(input)
 		}
+
+		return ParseAbsoluteURL(input)
 	}
 
-	if schemeIndex > 0 {
-		return ParseURL(input)
-	}
-
-	if StringContainsCTLByte(input) {
-		return nil, &httperror.ValidationError{
-			Code:   ErrCodeInvalidPath,
-			Detail: "Path contains invalid characters",
-		}
-	}
-
-	urlPath, query, frag := SplitPathQueryFragment(input)
-	result := &url.URL{
-		Path:     urlPath,
-		RawQuery: query,
-		Fragment: frag,
-	}
-
-	return result, nil
+	return nil, validateFilePath(input)
 }
 
 // SplitPathQueryFragment splits path, query and fragment from string.
@@ -97,10 +86,10 @@ func SplitPathQueryFragment(input string) (string, string, string) {
 	return uriPath, query, fragment
 }
 
-// ParseURI parses and validate the input string to be a valid URI.
+// ParseAbsoluteURI parses and validate the input string to be a valid absolute URI.
 //
 //	scheme:[//authority]/path[?query][#fragment]
-func ParseURI(input string) (*url.URL, error) {
+func ParseAbsoluteURI(input string) (*url.URL, error) {
 	parsedURI, _, err := parseURIAndHostname(input)
 	if err != nil {
 		return nil, err
@@ -109,11 +98,11 @@ func ParseURI(input string) (*url.URL, error) {
 	return parsedURI, nil
 }
 
-// ParseURL parses and validate the input string to be a valid URL.
+// ParseAbsoluteURL parses and validate the input string to be a valid absolute URL.
 // Unlike URI, the URL requires an explicit authority.
 //
 //	scheme://authority[/path][?query][#fragment]
-func ParseURL(input string) (*url.URL, error) {
+func ParseAbsoluteURL(input string) (*url.URL, error) {
 	result, err := parseAndValidateURL(input)
 	if err != nil {
 		return nil, err
@@ -122,8 +111,54 @@ func ParseURL(input string) (*url.URL, error) {
 	return result, nil
 }
 
-// ParseHTTPURL parses and validate the input string to be a valid URI and have http(s) scheme.
-func ParseHTTPURL(s string) (*url.URL, error) {
+// ParseURL parses and validate the input string to be a valid URL.
+// If the URL is relative, it must start with a slash.
+// Use [ParseAbsoluteURL] if you expect strict absolute URLs.
+func ParseURL(input string) (*url.URL, error) {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return new(url.URL), nil
+	}
+
+	if input[0] != '/' {
+		return ParseAbsoluteURL(input)
+	}
+
+	result := &url.URL{}
+
+	err := AppendURL(result, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// ParseHTTPURL parses and validate the input string to be a valid HTTP URL.
+// If the URL is relative, it must start with a slash.
+// Use [ParseAbsoluteHTTPURL] if you expect strict absolute URLs.
+func ParseHTTPURL(input string) (*url.URL, error) {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return new(url.URL), nil
+	}
+
+	if input[0] != '/' {
+		return ParseAbsoluteHTTPURL(input)
+	}
+
+	result := &url.URL{}
+
+	err := AppendURL(result, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// ParseAbsoluteHTTPURL parses and validate the input string to be a valid absolute URL and have http(s) scheme.
+func ParseAbsoluteHTTPURL(s string) (*url.URL, error) {
 	input := strings.TrimSpace(s)
 	if input == "" {
 		return nil, &httperror.ValidationError{
@@ -154,7 +189,7 @@ func ParseAndValidateURLWithOptions(
 	urlStr string,
 	options *ValidateHTTPURLOptions,
 ) (*url.URL, error) {
-	parsedURL, err := ParseURL(urlStr)
+	parsedURL, err := ParseAbsoluteURL(urlStr)
 	if err != nil {
 		return nil, err
 	}
@@ -167,15 +202,15 @@ func ParseAndValidateURLWithOptions(
 	return parsedURL, nil
 }
 
-// ValidateURI checks if the input string is a valid URI.
-func ValidateURI(s string) *httperror.ValidationError {
+// ValidateAbsoluteURI checks if the input string is a valid absolute URI.
+func ValidateAbsoluteURI(s string) *httperror.ValidationError {
 	_, err := parseAndValidateURI(s)
 
 	return err
 }
 
-// ValidateURL checks if the input string is a valid URL.
-func ValidateURL(s string) *httperror.ValidationError {
+// ValidateAbsoluteURL checks if the input string is a valid absolute URL.
+func ValidateAbsoluteURL(s string) *httperror.ValidationError {
 	_, err := parseAndValidateURL(s)
 	if err != nil && err.Code == ErrCodeInvalidURI {
 		err.Code = ErrCodeInvalidURL
@@ -462,6 +497,13 @@ func parseURIAndHostname(input string) (*url.URL, string, *httperror.ValidationE
 		return nil, "", &httperror.ValidationError{
 			Code:   ErrCodeInvalidURI,
 			Detail: err.Error(),
+		}
+	}
+
+	if parsedURI.Scheme == "" {
+		return nil, "", &httperror.ValidationError{
+			Code:   ErrCodeInvalidURI,
+			Detail: "URI Scheme is empty",
 		}
 	}
 
