@@ -20,8 +20,8 @@ import (
 	"net"
 	"net/netip"
 	"strings"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/relychan/goutils/httperror"
 )
 
@@ -85,7 +85,7 @@ func ValidateJSONPointer(s string) *httperror.ValidationError {
 
 // ValidateUUID validates if the string is a valid UUID.
 func ValidateUUID(s string) *httperror.ValidationError {
-	err := uuid.Validate(s)
+	_, err := uuid.Parse(s)
 	if err != nil {
 		return &httperror.ValidationError{
 			Code:   ErrCodeInvalidUUID,

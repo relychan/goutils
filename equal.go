@@ -17,8 +17,7 @@ package goutils
 import (
 	"reflect"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // Equaler abstracts an interface to check the equality.
