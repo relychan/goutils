@@ -34,7 +34,7 @@ var (
 
 // Time wraps time.Time. It is used to parse and format custom date/time strings
 // from YAML, JSON, and text formats.
-type Time time.Time //nolint:recvcheck
+type Time time.Time
 
 // IsZero reports whether t represents the zero time instant,
 // January 1, year 1, 00:00:00 UTC.

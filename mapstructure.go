@@ -87,7 +87,7 @@ func DecodeNullableStringReflection(value reflect.Value) (*string, error) {
 	case reflect.String:
 		return new(inferredValue.String()), nil
 	case reflect.Interface:
-		str, ok := inferredValue.Interface().(string)
+		str, ok := reflect.TypeAssert[string](inferredValue)
 		if ok {
 			return &str, nil
 		}
@@ -1058,7 +1058,7 @@ func decodeNullableBooleanReflection(reflectValue reflect.Value, strict bool) (*
 		}
 
 		if !strict {
-			strValue, ok := value.Interface().(string)
+			strValue, ok := reflect.TypeAssert[string](value)
 			if ok {
 				result, err := parseBool(strValue)
 				if err != nil {

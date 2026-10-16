@@ -13,6 +13,7 @@ linters:
     - ireturn
     - goconst
     - gomodguard
+    - exhaustruct_v5
   settings:
     errcheck:
       # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
