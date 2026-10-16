@@ -20,8 +20,8 @@ import (
 	"net"
 	"net/netip"
 	"strings"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/relychan/goutils/httperror"
 )
 
@@ -85,7 +85,7 @@ func ValidateJSONPointer(s string) *httperror.ValidationError {
 
 // ValidateUUID validates if the string is a valid UUID.
 func ValidateUUID(s string) *httperror.ValidationError {
-	err := uuid.Validate(s)
+	_, err := uuid.Parse(s)
 	if err != nil {
 		return &httperror.ValidationError{
 			Code:   ErrCodeInvalidUUID,
@@ -298,15 +298,15 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 	}
 
 	// email address is generally recognized as having two parts joined with an at-sign
-	at := strings.LastIndexByte(s, '@')
-	if at == -1 {
+	before, after, ok := strings.CutLast(s, "@")
+	if !ok {
 		return &httperror.ValidationError{
 			Code:   ErrCodeInvalidEmail,
 			Detail: "Invalid email; @ character must exist",
 		}
 	}
 
-	local, domain := s[:at], s[at+1:]
+	local, domain := before, after
 
 	// local part may be up to 64 characters long
 	if len(local) > 64 {

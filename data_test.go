@@ -19,19 +19,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
-
-func TestUUIDv7(t *testing.T) {
-	value := NewUUIDv7()
-	ptr := new(value)
-
-	if value.String() != ptr.String() {
-		t.Error("expected equal")
-		t.FailNow()
-	}
-}
 
 func TestIsNil(t *testing.T) {
 	var jsonValue any
@@ -770,31 +759,6 @@ func TestUnwrapPointerFromReflectValue(t *testing.T) {
 		_, ok := UnwrapPointerFromReflectValue(rv)
 		if !ok {
 			t.Error("expected not null for function")
-		}
-	})
-}
-
-func TestNewUUIDv7_Extended(t *testing.T) {
-	t.Run("generates valid UUID", func(t *testing.T) {
-		id := NewUUIDv7()
-		if id == uuid.Nil {
-			t.Error("expected non-nil UUID")
-		}
-	})
-
-	t.Run("generates unique UUIDs", func(t *testing.T) {
-		id1 := NewUUIDv7()
-		id2 := NewUUIDv7()
-		if id1 == id2 {
-			t.Error("expected different UUIDs")
-		}
-	})
-
-	t.Run("UUID string format", func(t *testing.T) {
-		id := NewUUIDv7()
-		str := id.String()
-		if len(str) != 36 {
-			t.Errorf("expected UUID string length 36, got %d", len(str))
 		}
 	})
 }

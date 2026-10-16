@@ -17,8 +17,7 @@ package goutils
 import (
 	"reflect"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // IsZeroer abstracts an interface to check if the instance is zero.
@@ -131,16 +130,6 @@ func IsZero[T any](value T) bool { //nolint:cyclop,funlen,gocyclo
 
 		return isZeroReflection(reflectValue)
 	}
-}
-
-// NewUUIDv7 creates a random UUID version 7. Fallback to v4 if there is error.
-func NewUUIDv7() uuid.UUID {
-	value, err := uuid.NewV7()
-	if err == nil {
-		return value
-	}
-
-	return uuid.New()
 }
 
 // IsNil safely checks if a value is nil.

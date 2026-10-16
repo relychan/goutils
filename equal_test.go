@@ -18,8 +18,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // Test helper struct that implements Equaler interface
