@@ -298,15 +298,15 @@ func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
 	}
 
 	// email address is generally recognized as having two parts joined with an at-sign
-	at := strings.LastIndexByte(s, '@')
-	if at == -1 {
+	before, after, ok := strings.CutLast(s, "@")
+	if !ok {
 		return &httperror.ValidationError{
 			Code:   ErrCodeInvalidEmail,
 			Detail: "Invalid email; @ character must exist",
 		}
 	}
 
-	local, domain := s[:at], s[at+1:]
+	local, domain := before, after
 
 	// local part may be up to 64 characters long
 	if len(local) > 64 {
