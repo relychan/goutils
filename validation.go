@@ -288,7 +288,7 @@ func ValidateHostname(s string) *httperror.ValidationError {
 // ValidateEmail validates if the string is a valid [email address].
 //
 // [email address]: https://en.wikipedia.org/wiki/Email_address
-func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen
+func ValidateEmail(s string) *httperror.ValidationError { //nolint:cyclop,funlen,gocognit
 	// entire email address to be no more than 254 characters long
 	if len(s) > 254 {
 		return &httperror.ValidationError{
