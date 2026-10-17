@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"go.yaml.in/yaml/v4"
+	"github.com/pb33f/go-yaml"
 )
 
 // NullStr represents an enum for a null value.

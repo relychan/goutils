@@ -18,7 +18,7 @@ import (
 	"errors"
 	"testing"
 
-	"go.yaml.in/yaml/v4"
+	"github.com/pb33f/go-yaml"
 )
 
 func buildYAMLMappingNode(pairs ...string) *yaml.Node {

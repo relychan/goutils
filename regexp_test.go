@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"go.yaml.in/yaml/v4"
+	"github.com/pb33f/go-yaml"
 )
 
 func TestNewRegexpMatcher(t *testing.T) {

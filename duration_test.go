@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"go.yaml.in/yaml/v4"
+	"github.com/pb33f/go-yaml"
 )
 
 func TestDuration(t *testing.T) {

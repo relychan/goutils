@@ -8,7 +8,7 @@ Guidance for AI coding agents working in this repository.
 
 - **Go version**: 1.27 (see `go.mod`)
 - **Module**: `github.com/relychan/goutils`
-- **External dependencies**: only `go.yaml.in/yaml/v4`. UUID support uses the standard library `uuid` package — do not add `github.com/google/uuid`.
+- **External dependencies**: only `github.com/pb33f/go-yaml`. UUID support uses the standard library `uuid` package — do not add `github.com/google/uuid`.
 
 ## Repository Structure
 
