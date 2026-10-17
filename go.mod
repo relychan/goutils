@@ -2,4 +2,4 @@ module github.com/relychan/goutils
 
 go 1.27
 
-require go.yaml.in/yaml/v4 v4.0.0-rc.6
+require github.com/pb33f/go-yaml v0.1.1
